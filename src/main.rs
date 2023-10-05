@@ -1,11 +1,15 @@
-use std::{error::Error, io::{Stdout, self}, time::Duration};
+use std::{
+    error::Error,
+    io::{self, Stdout},
+    time::Duration,
+};
 
 use crossterm::{
     event::{self, Event, KeyCode},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use ratatui::{prelude::CrosstermBackend, widgets::Paragraph, Terminal};
+use ratatui::{prelude::CrosstermBackend, text::Line, widgets::Paragraph, Terminal};
 
 fn main() -> Result<(), Box<dyn Error>> {
     let mut terminal = setup_terminal()?;
@@ -31,8 +35,9 @@ fn restore_terminal(
 
 fn run(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<(), Box<dyn Error>> {
     Ok(loop {
+        let some_text = vec![Line::from("kek"), "lol".into(), "test".into()];
         terminal.draw(|frame| {
-            let greeting = Paragraph::new("Hello World!");
+            let greeting = Paragraph::new(some_text);
             frame.render_widget(greeting, frame.size());
         })?;
         if event::poll(Duration::from_millis(250))? {
