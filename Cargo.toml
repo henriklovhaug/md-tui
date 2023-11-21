@@ -5,4 +5,5 @@ edition = "2021"
 
 [dependencies]
 crossterm = "0.27.0"
-ratatui = { version = "0.23.0", features = ["all-widgets", "macros"] }
+ratatui = { version = "0.24.0", default-features = true, features = ["macros", "all-widgets"] }
+regex = "1.10.2"
