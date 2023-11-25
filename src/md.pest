@@ -1,0 +1,24 @@
+word     = _{ ASCII_ALPHANUMERIC | "(" | ")" | "{" | "}" | "/" | ":" | ";" | "|" | "#" | "-" | "." | "," }
+code_str =  { (word | " ")+ }
+code     =  { "`" ~ code_str ~ "`" }
+normal   = _{ (word | " ")+ }
+sentence =  { (normal | code)+ }
+link     =  { "[" ~ (sentence | " ")+ ~ "]" ~ "(" ~ (sentence)+ ~ ")" }
+digit    =  { '0'..'9' }
+
+u_list        = { "-" ~ " " ~ (sentence | " ")+ }
+o_list        = { digit ~ "." ~ " " ~ (sentence | " ")+ }
+h1            = { "# "+ ~ (sentence | " ") }
+h2            = { "## "+ ~ (sentence | " ") }
+h3            = { "### "+ ~ (sentence | " ") }
+h4            = { "#### "+ ~ (sentence | " ") }
+paragraph     = { (sentence)+ }
+code_block    = { "```" ~ (normal | NEWLINE)+ ~ "```" }
+table         = { "|" ~ (sentence | " ")+ }
+quote         = { ">" ~ (sentence | " ")+ }
+task_empty    = { "- [ ] " ~ (sentence | " ")+ }
+task_complete = { "- [x] " ~ (sentence | " ")+ }
+v_seperator   = { NEWLINE ~ NEWLINE}
+
+
+txt = { (table | task_complete | task_empty | u_list | o_list | code_block | v_seperator | code | h4 | h3 | h2 | h1 | paragraph | NEWLINE)+ }

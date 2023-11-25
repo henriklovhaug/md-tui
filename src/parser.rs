@@ -1,48 +1,56 @@
-use regex::RegexSet;
+use pest::{
+    iterators::{Pair, Pairs},
+    Parser,
+};
+use pest_derive::Parser;
 
-use crate::utils::{MdComponent, MdEnum, MdFile};
+use crate::utils::{MdComponent, MdComponentTree, MdEnum};
 
-pub fn parse_markdown(lines: Vec<String>) -> MdFile {
-    let line_regex_set = RegexSet::new(&[
-        r"^###.*",              // h3
-        r"^##.*",               // h2
-        r"^#.*",                // h1
-        r"^- \[.*\].*",         // task
-        r"^-.*",                // ul
-        r"^[1-9][0-9]*\..*",    // ol
-        r"^>.*",                // quote
-        r"^```.*",              // code block
-        r"^\[[a-zA-Z]\]\(.*\)", // link
-        r"^\s*$",               // empty line
-        r"\|.*",                // table
-        r"^.*",                 // paragraph
-    ])
-    .unwrap();
+#[derive(Parser)]
+#[grammar = "md.pest"]
+pub struct MdParser;
 
-    let mut components = MdFile::new();
-    for line in lines {
-        let comp = match line_regex_set
-            .matches(&line)
-            .into_iter()
-            .collect::<Vec<_>>()
-            .get(0)
-        {
-            Some(index) => match index {
-                0..=2 => MdComponent::new(MdEnum::Heading, line.to_string()),
-                3 => MdComponent::new(MdEnum::Task, line.to_string()),
-                4 => MdComponent::new(MdEnum::UnorderedList, line.to_string()),
-                5 => MdComponent::new(MdEnum::OrderedList, line.to_string()),
-                6 => MdComponent::new(MdEnum::Quote, line.to_string()),
-                7 => MdComponent::new(MdEnum::CodeBlock, line.to_string()),
-                8 => MdComponent::new(MdEnum::Link, line.to_string()),
-                9 => MdComponent::new(MdEnum::EmptyLine, "".to_string()),
-                10 => MdComponent::new(MdEnum::Table, line.to_string()),
-                11 => MdComponent::new(MdEnum::Paragraph, line.to_string()),
-                _ => panic!(),
-            },
-            None => panic!(),
-        };
-        components.push(comp);
+pub fn parse_markdown(file: &str) -> MdComponentTree {
+    let root: Pairs<'_, Rule> =
+        MdParser::parse(Rule::txt, file).unwrap_or_else(|e| panic!("{}", e));
+
+    let root_pair = root.into_iter().next().unwrap();
+    let mut root_component = MdComponentTree::new(parse_component(root_pair, None));
+    root_component.set_y_offset();
+    // print_tree(&root_component.root(), 0);
+    root_component
+}
+
+fn parse_component(pair: Pair<'_, Rule>, parent: Option<MdEnum>) -> MdComponent {
+    let content = pair.as_str().to_string();
+    let rule = format!("{:?}", pair.as_rule());
+    let kind = MdEnum::from_str(&rule);
+    let span = pair.as_span();
+    let width = (span.end() - span.start()) as u16;
+    let mut component = MdComponent::new(kind, width, content, parent);
+    let children = parse_children(pair.into_inner(), Some(kind));
+    component.add_children(children);
+    component
+}
+
+fn parse_children(pair: Pairs<'_, Rule>, parent: Option<MdEnum>) -> Vec<MdComponent> {
+    let mut children = Vec::new();
+    for inner_pair in pair {
+        children.push(parse_component(inner_pair, parent));
     }
-    components
+    children
+}
+
+fn print_tree(component: &MdComponent, depth: usize) {
+    println!(
+        "{:depth$}{:?}: {}, height: {}, offset: {}",
+        depth,
+        component.kind(),
+        component.content(),
+        component.height(),
+        component.y_offset(),
+    );
+    for child in component.children() {
+        print_tree(&child, depth + 1);
+    }
 }

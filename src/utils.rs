@@ -1,118 +1,44 @@
 use ratatui::{
     buffer::Buffer,
     layout::Rect,
-    widgets::{Block, Paragraph, Widget, Wrap},
+    widgets::{Paragraph, Widget, Wrap},
 };
 
 #[derive(Debug, Clone)]
-pub struct MdFile {
-    content: Vec<MdComponent>,
+pub struct MdComponentTree {
+    root: MdComponent,
 }
 
-impl MdFile {
-    pub fn compact(&mut self) {
-        let mut new_content = Vec::new();
+impl MdComponentTree {
+    pub fn new(root: MdComponent) -> Self {
+        Self { root }
+    }
 
-        for component in self.content.iter() {
-            if let Some(MdComponent {
-                kind: MdEnum::CodeBlock,
-                content,
-            }) = new_content.last_mut()
-            {
-                if component.kind != MdEnum::CodeBlock {
-                    content.push_str(&component.content);
-                    continue;
-                }
-            }
-            match component.kind {
-                MdEnum::Table => {
-                    if let Some(MdComponent {
-                        kind: MdEnum::Table,
-                        content,
-                    }) = new_content.last_mut()
-                    {
-                        content.push_str(&component.content);
-                    } else {
-                        new_content.push(component.clone());
-                    }
-                }
-                MdEnum::CodeBlock => {
-                    if let Some(MdComponent { content, .. }) = new_content.last_mut() {
-                        content.push_str(&component.content);
-                    } else {
-                        new_content.push(component.clone());
-                    }
-                }
+    pub fn root(&self) -> &MdComponent {
+        &self.root
+    }
 
-                MdEnum::OrderedList => {
-                    if let Some(MdComponent {
-                        kind: MdEnum::OrderedList,
-                        content,
-                    }) = new_content.last_mut()
-                    {
-                        content.push_str(&component.content);
-                    } else {
-                        new_content.push(component.clone());
-                    }
-                }
+    pub fn root_mut(&mut self) -> &mut MdComponent {
+        &mut self.root
+    }
 
-                MdEnum::UnorderedList => {
-                    if let Some(MdComponent {
-                        kind: MdEnum::UnorderedList,
-                        content,
-                    }) = new_content.last_mut()
-                    {
-                        content.push_str(&component.content);
-                    } else {
-                        new_content.push(component.clone());
-                    }
-                }
-
-                _ => new_content.push(component.clone()),
+    pub fn set_y_offset(&mut self) {
+        let mut y_offset = 0;
+        for child in self.root.children_mut() {
+            child.set_y_offset(y_offset);
+            if child.kind() != MdEnum::CodeBlock {
+                y_offset += 1;
+            } else {
+                y_offset += child.height();
             }
         }
-
-        self.content = new_content;
-    }
-
-    pub fn new() -> Self {
-        Self {
-            content: Vec::new(),
-        }
-    }
-
-    pub fn push(&mut self, component: MdComponent) {
-        self.content.push(component);
-    }
-
-    pub fn content(&self) -> &Vec<MdComponent> {
-        &self.content
-    }
-
-    pub fn height(&self) -> u16 {
-        self.content.iter().map(|c| c.height()).sum()
     }
 }
 
-impl Default for MdFile {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl Widget for MdFile {
+impl Widget for MdComponentTree {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let mut y = area.top();
-        let mut height = area.height;
-        self.content.get(0).unwrap().clone().render(area, buf);
-        for component in self.content {
-            let comp_height = component.height();
-            component.render(
-                Rect::new(area.left(), y, area.width, height),
-                buf,
-            );
-            y += comp_height;
-            height -= comp_height;
+        for child in self.root.children_owned() {
+            child.render(area, buf);
         }
     }
 }
@@ -120,12 +46,41 @@ impl Widget for MdFile {
 #[derive(Debug, Clone)]
 pub struct MdComponent {
     kind: MdEnum,
+    _parent_kind: Option<MdEnum>,
+    height: u16,
+    width: u16,
+    y_offset: u16,
     content: String,
+    children: Vec<MdComponent>,
+}
+
+fn count_newlines(s: &str) -> usize {
+    s.as_bytes().iter().filter(|&&c| c == b'\n').count()
 }
 
 impl MdComponent {
-    pub fn new(kind: MdEnum, content: String) -> Self {
-        Self { kind, content }
+    pub fn new(kind: MdEnum, width: u16, content: String, parent: Option<MdEnum>) -> Self {
+        let height = count_newlines(&content) as u16 + 1;
+        Self {
+            kind,
+            height,
+            width,
+            content,
+            y_offset: 0,
+            _parent_kind: parent,
+            children: Vec::new(),
+        }
+    }
+
+    pub fn set_y_offset(&mut self, y_offset: u16) {
+        self.y_offset = y_offset;
+        let mut height = self.height();
+        if !self.is_leaf() {
+            height = 0;
+        }
+        for child in self.children_mut() {
+            child.set_y_offset(y_offset + height);
+        }
     }
 
     pub fn kind(&self) -> MdEnum {
@@ -141,15 +96,69 @@ impl MdComponent {
     }
 
     pub fn height(&self) -> u16 {
-        self.content.lines().count() as u16
+        self.height
+    }
+
+    pub fn width(&self) -> u16 {
+        self.width
+    }
+
+    pub fn y_offset(&self) -> u16 {
+        self.y_offset
+    }
+
+    pub fn add_child(&mut self, child: MdComponent) {
+        self.children.push(child);
+    }
+
+    pub fn add_children(&mut self, children: Vec<MdComponent>) {
+        self.children.extend(children);
+    }
+
+    pub fn children(&self) -> &Vec<MdComponent> {
+        &self.children
+    }
+
+    pub fn children_owned(self) -> Vec<MdComponent> {
+        self.children
+    }
+
+    pub fn children_mut(&mut self) -> &mut Vec<MdComponent> {
+        &mut self.children
+    }
+
+    pub fn has_children(&self) -> bool {
+        !self.children.is_empty()
+    }
+
+    pub fn is_leaf(&self) -> bool {
+        self.children.is_empty()
     }
 }
 
 impl Widget for MdComponent {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        if self.height() + area.y > area.height {
+        if self.height() + self.y_offset() > area.height {
             return;
         }
+
+        if self.kind == MdEnum::VerticalSeperator || self.kind == MdEnum::EmptyLine {
+            return;
+        }
+
+        if self.has_children() {
+            for child in self.children {
+                child.render(area, buf);
+            }
+            return;
+        }
+
+        let area = Rect {
+            height: self.height(),
+            width: area.width,
+            y: self.y_offset(),
+            ..area
+        };
 
         let paragraph = Paragraph::new(self.content).wrap(Wrap { trim: true });
 
@@ -164,9 +173,37 @@ pub enum MdEnum {
     UnorderedList,
     OrderedList,
     CodeBlock,
+    Code,
     Paragraph,
     Link,
     Quote,
     Table,
     EmptyLine,
+    Digit,
+    VerticalSeperator,
+    Sentence,
+}
+
+impl MdEnum {
+    pub fn from_str(s: &str) -> Self {
+        match s {
+            "h1" | "h2" | "h3" | "h4" => Self::Heading,
+            "task" => Self::Task,
+            "u_list" => Self::UnorderedList,
+            "o_list" => Self::OrderedList,
+            "code_block" => Self::CodeBlock,
+            "code_str" => Self::CodeBlock,
+            "paragraph" => Self::Paragraph,
+            "link" => Self::Link,
+            "quote" => Self::Quote,
+            "table" => Self::Table,
+            "empty_line" => Self::EmptyLine,
+            "v_seperator" => Self::VerticalSeperator,
+            "sentence" => Self::Sentence,
+            _e => {
+                // println!("Parseerror on: {_e}");
+                Self::Paragraph
+            }
+        }
+    }
 }
