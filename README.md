@@ -6,6 +6,10 @@ A terminal markdown renderer
 
 ## This is currently a test file
 
+noe text
+
+### Heading 3
+
 A table with some text and more herea asklfj adskjfdksaljf adskjfh sd sdkjf hdfj
 asdfh sdkjfh sdkjfh asdjf sdakjfhads jfh
 
