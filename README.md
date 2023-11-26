@@ -2,16 +2,8 @@
 
 A terminal markdown renderer
 
-(Very early in development)
-
-## This is currently a test file
-
-noe text
-
-### Heading 3
-
-A table with some text and more herea asklfj adskjfdksaljf adskjfh sd sdkjf hdfj
-asdfh sdkjfh sdkjfh asdjf sdakjfhads jfh
+A table with some text and `with some code` more herea asklfj adskjfdksaljf
+adskjfh sd sdkjf hdfj asdfh sdkjfh sdkjfh asdjf sdakjfhads jfh
 
 | Column1 | Column2 | Column3 |
 | ------- | ------- | ------- |

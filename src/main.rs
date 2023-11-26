@@ -22,8 +22,8 @@ use ratatui::{
 use utils::MdComponentTree;
 
 pub mod parser;
-pub mod utils;
 pub mod render_helper;
+pub mod utils;
 
 #[derive(Default)]
 struct App {

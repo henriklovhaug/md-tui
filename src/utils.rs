@@ -4,6 +4,8 @@ use ratatui::{
     widgets::{Paragraph, Widget, Wrap},
 };
 
+use crate::render_helper::render;
+
 #[derive(Debug, Clone)]
 pub struct MdComponentTree {
     root: MdComponent,
@@ -146,27 +148,18 @@ impl Widget for MdComponent {
             return;
         }
 
-        if self.kind == MdEnum::VerticalSeperator || self.kind == MdEnum::EmptyLine {
-            return;
-        }
-
-        if self.has_children() {
-            for child in self.children {
-                child.render(area, buf);
-            }
-            return;
-        }
-
         let area = Rect {
             height: self.height(),
-            width: area.width,
-            y: self.y_offset(),
+            y: area.y + self.y_offset(),
+            width: if self.width() <= area.width {
+                self.width()
+            } else {
+                area.width
+            },
             ..area
         };
 
-        let paragraph = Paragraph::new(self.content).wrap(Wrap { trim: true });
-
-        paragraph.render(area, buf);
+        render(self.kind(), area, buf, self.children_owned());
     }
 }
 
@@ -175,6 +168,7 @@ pub enum MdEnum {
     Heading,
     Task,
     UnorderedList,
+    ListContainer,
     OrderedList,
     CodeBlock,
     Code,
@@ -192,18 +186,21 @@ impl MdEnum {
     pub fn from_str(s: &str) -> Self {
         match s {
             "h1" | "h2" | "h3" | "h4" => Self::Heading,
+            "heading" => Self::Heading,
             "task" => Self::Task,
             "u_list" => Self::UnorderedList,
             "o_list" => Self::OrderedList,
             "code_block" => Self::CodeBlock,
-            "code_str" => Self::CodeBlock,
+            "code_str" => Self::Code,
             "paragraph" => Self::Paragraph,
             "link" => Self::Link,
             "quote" => Self::Quote,
-            "table" => Self::Table,
+            "table" | "table_row" => Self::Table,
             "empty_line" => Self::EmptyLine,
             "v_seperator" => Self::VerticalSeperator,
             "sentence" => Self::Sentence,
+            "normal" => Self::Sentence,
+            "list_container" => Self::ListContainer,
             _e => {
                 // println!("Parseerror on: {_e}");
                 Self::Paragraph
