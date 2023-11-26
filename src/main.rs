@@ -10,7 +10,7 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use parser::parse_markdown;
+use parser::{parse_markdown, print_tree};
 use ratatui::{
     backend::{Backend, CrosstermBackend},
     layout::Constraint,
@@ -23,6 +23,7 @@ use utils::MdComponentTree;
 
 pub mod parser;
 pub mod utils;
+pub mod render_helper;
 
 #[derive(Default)]
 struct App {
@@ -36,6 +37,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let text = read_to_string("README.md")?;
 
     let markdown = parse_markdown(&text);
+    // print_tree(markdown.root(), 0);
     // return Ok(());
     // setup terminal
     enable_raw_mode()?;

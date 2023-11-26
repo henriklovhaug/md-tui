@@ -26,10 +26,13 @@ impl MdComponentTree {
         let mut y_offset = 0;
         for child in self.root.children_mut() {
             child.set_y_offset(y_offset);
-            if child.kind() != MdEnum::CodeBlock {
-                y_offset += 1;
-            } else {
+            if child.kind() != MdEnum::VerticalSeperator {
                 y_offset += child.height();
+                if child.kind() == MdEnum::Paragraph {
+                    y_offset -= 1;
+                }
+            } else {
+                y_offset += 1;
             }
         }
     }
@@ -80,6 +83,7 @@ impl MdComponent {
         }
         for child in self.children_mut() {
             child.set_y_offset(y_offset + height);
+            height += child.height();
         }
     }
 

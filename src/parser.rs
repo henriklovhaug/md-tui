@@ -41,7 +41,7 @@ fn parse_children(pair: Pairs<'_, Rule>, parent: Option<MdEnum>) -> Vec<MdCompon
     children
 }
 
-fn print_tree(component: &MdComponent, depth: usize) {
+pub fn print_tree(component: &MdComponent, depth: usize) {
     println!(
         "{:depth$}{:?}: {}, height: {}, offset: {}",
         depth,

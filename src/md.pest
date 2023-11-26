@@ -1,8 +1,8 @@
-word     = _{ ASCII_ALPHANUMERIC | "(" | ")" | "{" | "}" | "/" | ":" | ";" | "|" | "#" | "-" | "." | "," }
-code_str =  { (word | " ")+ }
+word     = _{ ASCII_ALPHANUMERIC | "(" | ")" | "{" | "}" | "/" | ":" | ";" | "-" | "." | "," }
+code_str =  { (word | " " | "|")+ }
 code     =  { "`" ~ code_str ~ "`" }
 normal   = _{ (word | " ")+ }
-sentence =  { (normal | code)+ }
+sentence =  { (normal | code | link)+ }
 link     =  { "[" ~ (sentence | " ")+ ~ "]" ~ "(" ~ (sentence)+ ~ ")" }
 digit    =  { '0'..'9' }
 
@@ -12,13 +12,14 @@ h1            = { "# "+ ~ (sentence | " ") }
 h2            = { "## "+ ~ (sentence | " ") }
 h3            = { "### "+ ~ (sentence | " ") }
 h4            = { "#### "+ ~ (sentence | " ") }
-paragraph     = { (sentence)+ }
+paragraph     = { (sentence | NEWLINE)+ }
 code_block    = { "```" ~ (normal | NEWLINE)+ ~ "```" }
-table         = { "|" ~ (sentence | " ")+ }
+table         = { "|" ~ (sentence | " " | "|" | NEWLINE)+ }
 quote         = { ">" ~ (sentence | " ")+ }
 task_empty    = { "- [ ] " ~ (sentence | " ")+ }
 task_complete = { "- [x] " ~ (sentence | " ")+ }
-v_seperator   = { NEWLINE ~ NEWLINE}
+v_seperator   = { NEWLINE ~ NEWLINE }
 
-
-txt = { (table | task_complete | task_empty | u_list | o_list | code_block | v_seperator | code | h4 | h3 | h2 | h1 | paragraph | NEWLINE)+ }
+txt = {
+    (table | quote | task_complete | task_empty | u_list | o_list | code_block | v_seperator | code | h4 | h3 | h2 | h1 | paragraph)+
+}
