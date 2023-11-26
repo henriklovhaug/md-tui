@@ -51,6 +51,6 @@ pub fn print_tree(component: &MdComponent, depth: usize) {
         component.y_offset(),
     );
     for child in component.children() {
-        print_tree(&child, depth + 1);
+        print_tree(child, depth + 1);
     }
 }

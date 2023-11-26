@@ -1,8 +1,4 @@
-use ratatui::{
-    buffer::Buffer,
-    layout::Rect,
-    widgets::{Paragraph, Widget, Wrap},
-};
+use ratatui::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 use crate::render_helper::render;
 

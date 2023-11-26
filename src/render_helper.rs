@@ -20,16 +20,15 @@ pub fn render(kind: MdEnum, area: Rect, buf: &mut Buffer, content: Vec<MdCompone
         MdEnum::Paragraph => render_paragraph(area, buf, content),
         MdEnum::Link => todo!(),
         MdEnum::Quote => todo!(),
-        MdEnum::Table => return,
+        MdEnum::Table => (),
         MdEnum::EmptyLine => todo!(),
         MdEnum::Digit => todo!(),
-        MdEnum::VerticalSeperator => return,
+        MdEnum::VerticalSeperator => (),
         MdEnum::Sentence => todo!(),
     }
 }
 
 fn render_heading(area: Rect, buf: &mut Buffer, content: Vec<MdComponent>) {
-
     let content = content
         .iter()
         .map(|c| Line::from(c.content()))
@@ -38,7 +37,6 @@ fn render_heading(area: Rect, buf: &mut Buffer, content: Vec<MdComponent>) {
     let paragraph = Paragraph::new(content)
         .block(Block::default().style(Style::default().bg(Color::Blue)))
         .wrap(Wrap { trim: true });
-
 
     paragraph.render(area, buf);
 }

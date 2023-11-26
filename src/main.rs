@@ -1,7 +1,7 @@
 use std::{
     error::Error,
-    fs::{read_to_string, File},
-    io::{self, BufRead, BufReader},
+    fs::read_to_string,
+    io::{self},
     time::{Duration, Instant},
 };
 
@@ -10,13 +10,10 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use parser::{parse_markdown, print_tree};
+use parser::parse_markdown;
 use ratatui::{
     backend::{Backend, CrosstermBackend},
-    layout::Constraint,
-    style::{Color, Modifier, Style},
-    text::{Line, Span},
-    widgets::{Block, Borders, Cell, Paragraph, Row, ScrollbarState, Table, Wrap},
+    widgets::ScrollbarState,
     Frame, Terminal,
 };
 use utils::MdComponentTree;
@@ -36,7 +33,7 @@ struct App {
 fn main() -> Result<(), Box<dyn Error>> {
     let text = read_to_string("README.md")?;
 
-    let markdown = parse_markdown(&text);
+    let _markdown = parse_markdown(&text);
     // print_tree(markdown.root(), 0);
     // return Ok(());
     // setup terminal
@@ -89,22 +86,22 @@ fn run_app<B: Backend>(
                 match key.code {
                     KeyCode::Char('q') => return Ok(()),
                     KeyCode::Char('j') => {
-                        app.vertical_scroll = app.vertical_scroll + 1;
+                        app.vertical_scroll += 1;
                         app.vertical_scroll_state =
                             app.vertical_scroll_state.position(app.vertical_scroll);
                     }
                     KeyCode::Char('k') => {
-                        app.vertical_scroll = app.vertical_scroll.checked_sub(1).unwrap_or(0);
+                        app.vertical_scroll = app.vertical_scroll.saturating_sub(1);
                         app.vertical_scroll_state =
                             app.vertical_scroll_state.position(app.vertical_scroll);
                     }
                     KeyCode::Char('h') => {
-                        app.horizontal_scroll = app.horizontal_scroll + 1;
+                        app.horizontal_scroll += 1;
                         app.horizontal_scroll_state =
                             app.horizontal_scroll_state.position(app.horizontal_scroll);
                     }
                     KeyCode::Char('l') => {
-                        app.horizontal_scroll = app.horizontal_scroll - 1;
+                        app.horizontal_scroll -= 1;
                         app.horizontal_scroll_state =
                             app.horizontal_scroll_state.position(app.horizontal_scroll);
                     }
@@ -118,7 +115,7 @@ fn run_app<B: Backend>(
     }
 }
 
-fn ui(f: &mut Frame, app: &mut App, lines: MdComponentTree) {
+fn ui(f: &mut Frame, _app: &mut App, lines: MdComponentTree) {
     let size = f.size();
     f.render_widget(lines, size);
 }
