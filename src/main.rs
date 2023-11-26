@@ -10,7 +10,7 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use parser::parse_markdown;
+use parser::{parse_markdown, print_tree};
 use ratatui::{
     backend::{Backend, CrosstermBackend},
     widgets::ScrollbarState,
@@ -19,7 +19,7 @@ use ratatui::{
 use utils::MdComponentTree;
 
 pub mod parser;
-pub mod render_helper;
+pub mod markdown_render;
 pub mod utils;
 
 #[derive(Default)]
@@ -31,11 +31,12 @@ struct App {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let text = read_to_string("README.md")?;
 
-    let _markdown = parse_markdown(&text);
+    // let text = read_to_string("README.md")?;
+    // let markdown = parse_markdown(&text);
     // print_tree(markdown.root(), 0);
     // return Ok(());
+
     // setup terminal
     enable_raw_mode()?;
     let mut stdout = io::stdout();
@@ -81,7 +82,7 @@ fn run_app<B: Backend>(
         let timeout = tick_rate
             .checked_sub(last_tick.elapsed())
             .unwrap_or_else(|| Duration::from_secs(0));
-        if crossterm::event::poll(timeout)? {
+        if event::poll(timeout)? {
             if let Event::Key(key) = event::read()? {
                 match key.code {
                     KeyCode::Char('q') => return Ok(()),

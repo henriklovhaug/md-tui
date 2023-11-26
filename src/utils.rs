@@ -1,6 +1,6 @@
 use ratatui::{buffer::Buffer, layout::Rect, widgets::Widget};
 
-use crate::render_helper::render;
+use crate::markdown_render::render;
 
 #[derive(Debug, Clone)]
 pub struct MdComponentTree {
@@ -26,11 +26,11 @@ impl MdComponentTree {
             child.set_y_offset(y_offset);
             if child.kind() != MdEnum::VerticalSeperator {
                 y_offset += child.height();
-                if child.kind() == MdEnum::Paragraph {
-                    y_offset -= 1;
-                }
             } else {
                 y_offset += 1;
+            }
+            if child.kind == MdEnum::Paragraph || child.kind == MdEnum::CodeBlock {
+                y_offset -= 1;
             }
         }
     }
@@ -83,6 +83,13 @@ impl MdComponent {
             child.set_y_offset(y_offset + height);
             height += child.height();
         }
+    }
+
+    pub fn count_seperators(&self) -> u16 {
+        self.children
+            .iter()
+            .filter(|c| c.kind() == MdEnum::VerticalSeperator)
+            .count() as u16
     }
 
     pub fn kind(&self) -> MdEnum {
@@ -172,6 +179,7 @@ pub enum MdEnum {
     Link,
     Quote,
     Table,
+    TableRow,
     EmptyLine,
     Digit,
     VerticalSeperator,
@@ -191,7 +199,8 @@ impl MdEnum {
             "paragraph" => Self::Paragraph,
             "link" => Self::Link,
             "quote" => Self::Quote,
-            "table" | "table_row" => Self::Table,
+            "table" => Self::Table,
+            "table_row" => Self::TableRow,
             "empty_line" => Self::EmptyLine,
             "v_seperator" => Self::VerticalSeperator,
             "sentence" => Self::Sentence,
