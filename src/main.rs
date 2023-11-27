@@ -13,13 +13,16 @@ use crossterm::{
 use parser::{parse_markdown, print_tree};
 use ratatui::{
     backend::{Backend, CrosstermBackend},
-    widgets::ScrollbarState,
+    layout::Constraint,
+    style::{Color, Modifier, Style},
+    text::{Line, Span},
+    widgets::{Block, Cell, Row, ScrollbarState, Table},
     Frame, Terminal,
 };
 use utils::MdComponentTree;
 
-pub mod parser;
 pub mod markdown_render;
+pub mod parser;
 pub mod utils;
 
 #[derive(Default)]
@@ -31,7 +34,6 @@ struct App {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-
     // let text = read_to_string("README.md")?;
     // let markdown = parse_markdown(&text);
     // print_tree(markdown.root(), 0);
@@ -116,77 +118,64 @@ fn run_app<B: Backend>(
     }
 }
 
-fn ui(f: &mut Frame, _app: &mut App, lines: MdComponentTree) {
+fn ui(f: &mut Frame, app: &mut App, lines: MdComponentTree) {
     let size = f.size();
     f.render_widget(lines, size);
+    return;
+
+    let mut size = f.size();
+    let height = &size.height.to_string();
+    let table = Table::new(vec![
+        // Row can be created from simple strings.
+        Row::new(vec!["Row11", "Row12", "Row13"]),
+        // You can style the entire row.
+        Row::new(vec!["Row21", "Row22", "Row23"]).style(Style::default().fg(Color::Blue)),
+        // If you need more control over the styling you may need to create Cells directly
+        Row::new(vec![
+            Cell::from("Row31"),
+            Cell::from("Row32").style(Style::default().fg(Color::Yellow)),
+            Cell::from(Line::from(vec![
+                Span::raw("Row"),
+                Span::styled("33", Style::default().fg(Color::Green)),
+            ])),
+        ]),
+        // If a Row need to display some content over multiple lines, you just have to change
+        // its height.
+        Row::new(vec![
+            Cell::from("Row\n41"),
+            Cell::from("Row\n42"),
+            Cell::from("Row\n43"),
+        ])
+        .height(2),
+    ])
+    // You can set the style of the entire Table.
+    .style(Style::default().fg(Color::White))
+    // It has an optional header, which is simply a Row always visible at the top.
+    .header(
+        Row::new(vec!["Col1", "Col2", height])
+            .style(Style::default().fg(Color::Yellow))
+            // If you want some space between the header and the rest of the rows, you can always
+            // specify some margin at the bottom.
+            .bottom_margin(1),
+    )
+    // As any other widget, a Table can be wrapped in a Block.
+    .block(Block::default().title("Table"))
+    // Columns widths are constrained in the same way as Layout...
+    .widths(&[
+        Constraint::Length(5),
+        Constraint::Length(5),
+        Constraint::Length(10),
+    ])
+    // ...and they can be separated by a fixed spacing.
+    .column_spacing(1)
+    // If you wish to highlight a row in any specific way when it is selected...
+    .highlight_style(Style::default().add_modifier(Modifier::BOLD))
+    // ...and potentially show a symbol in front of the selection.
+    .highlight_symbol(">>");
+
+    size.height -= 10;
+    size.width -= 10;
+    size.y += 10;
+    // size.x += 10;
+    f.render_widget(table, size);
 }
-// size.height = 0;
-// size.y = 0;
-// let paragraph = Paragraph::new(lines.clone())
-//     .block(Block::default().borders(Borders::ALL).title("Paragraph"))
-//     .scroll((app.vertical_scroll as u16, 0))
-//     .wrap(Wrap { trim: true });
-//
-// f.render_widget(paragraph, size);
-// f.render_widget(
-//     Block::default()
-//         .borders(Borders::ALL)
-//         .title("Vertical Scrollbar"),
-//     size,
-// );
-// let mut size = f.size();
-// let height = &size.height.to_string();
-// let table = Table::new(vec![
-//     // Row can be created from simple strings.
-//     Row::new(vec!["Row11", "Row12", "Row13"]),
-//     // You can style the entire row.
-//     Row::new(vec!["Row21", "Row22", "Row23"]).style(Style::default().fg(Color::Blue)),
-//     // If you need more control over the styling you may need to create Cells directly
-//     Row::new(vec![
-//         Cell::from("Row31"),
-//         Cell::from("Row32").style(Style::default().fg(Color::Yellow)),
-//         Cell::from(Line::from(vec![
-//             Span::raw("Row"),
-//             Span::styled("33", Style::default().fg(Color::Green)),
-//         ])),
-//     ]),
-//     // If a Row need to display some content over multiple lines, you just have to change
-//     // its height.
-//     Row::new(vec![
-//         Cell::from("Row\n41"),
-//         Cell::from("Row\n42"),
-//         Cell::from("Row\n43"),
-//     ])
-//     .height(2),
-// ])
-// // You can set the style of the entire Table.
-// .style(Style::default().fg(Color::White))
-// // It has an optional header, which is simply a Row always visible at the top.
-// .header(
-//     Row::new(vec!["Col1", "Col2", height])
-//         .style(Style::default().fg(Color::Yellow))
-//         // If you want some space between the header and the rest of the rows, you can always
-//         // specify some margin at the bottom.
-//         .bottom_margin(1),
-// )
-// // As any other widget, a Table can be wrapped in a Block.
-// .block(Block::default().title("Table"))
-// // Columns widths are constrained in the same way as Layout...
-// .widths(&[
-//     Constraint::Length(5),
-//     Constraint::Length(5),
-//     Constraint::Length(10),
-// ])
-// // ...and they can be separated by a fixed spacing.
-// .column_spacing(1)
-// // If you wish to highlight a row in any specific way when it is selected...
-// .highlight_style(Style::default().add_modifier(Modifier::BOLD))
-// // ...and potentially show a symbol in front of the selection.
-// .highlight_symbol(">>");
-//
-// size.height -= 10;
-// size.width -= 10;
-// size.y += 10;
-// // size.x += 10;
-// f.render_widget(table, size);
-// }

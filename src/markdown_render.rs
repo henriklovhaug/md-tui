@@ -1,6 +1,6 @@
 use ratatui::{
     buffer::Buffer,
-    layout::{Alignment, Rect},
+    layout::{Alignment, Constraint, Rect},
     style::{Color, Style},
     text::Line,
     widgets::{Block, Cell, List, ListItem, Paragraph, Row, Table, Widget, Wrap},
@@ -107,6 +107,13 @@ fn render_table(area: Rect, buf: &mut Buffer, content: Vec<MdComponent>) {
         .filter(|c| c.kind() != MdEnum::VerticalSeperator)
         .collect();
     let titles = content.first().unwrap();
+
+    let widths = titles
+        .children()
+        .iter()
+        .map(|c| Constraint::Length(c.content().len() as u16))
+        .collect::<Vec<_>>();
+
     let mut moved_content = content.to_owned();
     moved_content.drain(0..2);
 
@@ -114,7 +121,7 @@ fn render_table(area: Rect, buf: &mut Buffer, content: Vec<MdComponent>) {
         titles
             .children()
             .iter()
-            .map(|c| Cell::from(c.content()))
+            .map(|c| Cell::from(c.content().trim()))
             .collect::<Vec<_>>(),
     );
 
@@ -130,9 +137,11 @@ fn render_table(area: Rect, buf: &mut Buffer, content: Vec<MdComponent>) {
         })
         .collect::<Vec<_>>();
 
-    // println!("Row length: {}", rows.len());
-
-    let table = Table::new(rows).header(header);
+    let table = Table::new(rows)
+        .header(header)
+        .block(Block::default())
+        .column_spacing(1)
+        .widths(&widths);
 
     table.render(area, buf);
 }
