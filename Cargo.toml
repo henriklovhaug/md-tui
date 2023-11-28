@@ -8,4 +8,3 @@ crossterm = "0.27.0"
 pest = "2.7.5"
 pest_derive = "2.7.5"
 ratatui = { version = "0.24.0", default-features = true, features = ["macros", "all-widgets"] }
-regex = "1.10.2"
