@@ -1,7 +1,5 @@
 use ratatui::{buffer::Buffer, layout::Rect, widgets::Widget};
 
-use crate::markdown_render::render;
-
 #[derive(Debug, Clone)]
 pub struct MdComponentTree {
     root: MdComponent,
@@ -23,14 +21,12 @@ impl MdComponentTree {
     pub fn set_y_offset(&mut self, scroll: u16) {
         let mut y_offset = 0;
         for child in self.root.children_mut() {
-            child.set_y_offset(y_offset + scroll);
+            child.set_y_offset(y_offset);
+            child.set_scroll_offset(scroll);
             if child.kind() != MdEnum::VerticalSeperator {
                 y_offset += child.height();
             } else {
                 y_offset += 1;
-            }
-            if child.kind == MdEnum::Paragraph || child.kind == MdEnum::CodeBlock {
-                y_offset -= 1;
             }
         }
     }
@@ -51,7 +47,7 @@ pub struct MdComponent {
     height: u16,
     width: u16,
     y_offset: u16,
-    original_y_offset: u16,
+    scroll_offset: u16,
     content: String,
     children: Vec<MdComponent>,
 }
@@ -62,14 +58,13 @@ fn count_newlines(s: &str) -> usize {
 
 impl MdComponent {
     pub fn new(kind: MdEnum, width: u16, content: String, parent: Option<MdEnum>) -> Self {
-        let height = count_newlines(&content) as u16 + 1;
         Self {
             kind,
-            height,
+            height: count_newlines(&content) as u16,
             width,
             content,
             y_offset: 0,
-            original_y_offset: 0,
+            scroll_offset: 0,
             _parent_kind: parent,
             children: Vec::new(),
         }
@@ -118,8 +113,12 @@ impl MdComponent {
         self.y_offset
     }
 
-    pub fn original_y_offset(&self) -> u16 {
-        self.original_y_offset
+    pub fn scroll_offset(&self) -> u16 {
+        self.scroll_offset
+    }
+
+    pub fn set_scroll_offset(&mut self, offset: u16) {
+        self.scroll_offset = offset;
     }
 
     pub fn add_children(&mut self, children: Vec<MdComponent>) {
@@ -144,25 +143,6 @@ impl MdComponent {
 
     pub fn is_leaf(&self) -> bool {
         self.children.is_empty()
-    }
-}
-
-impl Widget for MdComponent {
-    fn render(self, area: Rect, buf: &mut Buffer) {
-        if self.height() + self.y_offset() > area.height {
-            return;
-        }
-
-        let area = Rect {
-            height: self.height(),
-            y: area.y + self.y_offset(),
-            width: [self.width(), area.width, 80]
-                .iter()
-                .fold(u16::MAX, |a, &b| a.min(b)),
-            ..area
-        };
-
-        render(self.kind(), area, buf, self.children_owned());
     }
 }
 

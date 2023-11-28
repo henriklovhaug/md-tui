@@ -1,3 +1,5 @@
+use std::cmp;
+
 use ratatui::{
     buffer::Buffer,
     layout::{Alignment, Constraint, Rect},
@@ -8,24 +10,58 @@ use ratatui::{
 
 use crate::utils::{MdComponent, MdEnum};
 
-pub fn render(kind: MdEnum, area: Rect, buf: &mut Buffer, content: Vec<MdComponent>) {
-    match kind {
-        MdEnum::Heading => render_heading(area, buf, content),
-        MdEnum::ListContainer => render_list(area, buf, content),
-        MdEnum::CodeBlock => render_code_block(area, buf, content),
-        MdEnum::Paragraph => render_paragraph(area, buf, content),
-        MdEnum::Table => render_table(area, buf, content),
-        MdEnum::Task => todo!(),
-        MdEnum::UnorderedList => todo!(),
-        MdEnum::OrderedList => unreachable!(),
-        MdEnum::Code => unreachable!(),
-        MdEnum::Link => todo!(),
-        MdEnum::Quote => todo!(),
-        MdEnum::EmptyLine => todo!(),
-        MdEnum::Digit => todo!(),
-        MdEnum::VerticalSeperator => (),
-        MdEnum::Sentence => todo!(),
-        MdEnum::TableRow => todo!(),
+impl Widget for MdComponent {
+    fn render(self, area: Rect, buf: &mut Buffer) {
+        if self.height() + self.y_offset() > area.height
+            || self.scroll_offset() > self.y_offset() + area.y
+        {
+            return;
+        }
+
+        let removed = area.y + self.y_offset() - self.scroll_offset();
+
+        let height = cmp::min(self.height(), removed + 1);
+
+        let area = Rect {
+            height,
+            y: area.y + self.y_offset() - self.scroll_offset(),
+            width: [self.width(), area.width, 80]
+                .iter()
+                .fold(u16::MAX, |a, &b| a.min(b)),
+            ..area
+        };
+
+        let kind = self.kind();
+
+        let mut content: Vec<MdComponent> = self
+            .children_owned()
+            .into_iter()
+            .filter(|c| c.kind() != MdEnum::VerticalSeperator)
+            .collect();
+
+        // println!("{:?}: {}, {}", kind, content.len(), height);
+        //
+        // if content.len() > height as usize && kind != MdEnum::VerticalSeperator {
+        //     content.drain(content.len() - height as usize..);
+        // }
+
+        match kind {
+            MdEnum::Heading => render_heading(area, buf, content),
+            MdEnum::ListContainer => render_list(area, buf, content),
+            MdEnum::CodeBlock => render_code_block(area, buf, content),
+            MdEnum::Paragraph => render_paragraph(area, buf, content),
+            MdEnum::Table => render_table(area, buf, content),
+            MdEnum::Task => todo!(),
+            MdEnum::Code => unreachable!(),
+            MdEnum::Link => todo!(),
+            MdEnum::Quote => todo!(),
+            MdEnum::EmptyLine => todo!(),
+            MdEnum::Digit => todo!(),
+            MdEnum::VerticalSeperator => (),
+            MdEnum::Sentence => todo!(),
+            MdEnum::TableRow => todo!(),
+            _ => panic!("{:?} should not be reachable", kind),
+        }
     }
 }
 
@@ -36,7 +72,7 @@ fn render_heading(area: Rect, buf: &mut Buffer, content: Vec<MdComponent>) {
         .collect::<Vec<_>>();
 
     let area = Rect {
-        height: area.height - 1,
+        height: area.height,
         ..area
     };
 
@@ -52,18 +88,11 @@ fn render_paragraph(area: Rect, buf: &mut Buffer, content: Vec<MdComponent>) {
     let content = Line::from(
         content
             .iter()
-            .filter_map(|c| {
-                if c.kind() == MdEnum::VerticalSeperator {
-                    None
-                } else {
-                    Some(c)
-                }
-            })
             .map(|c| match c.kind() {
                 MdEnum::Code => {
                     Span::styled(c.content(), Style::new().green().italic().on_dark_gray())
                 }
-                _ => Span::raw(c.content()),
+                _ => Span::raw(format!(" {} ", c.content().trim())),
             })
             .collect::<Vec<_>>(),
     );
@@ -76,13 +105,7 @@ fn render_paragraph(area: Rect, buf: &mut Buffer, content: Vec<MdComponent>) {
 fn render_list(area: Rect, buf: &mut Buffer, content: Vec<MdComponent>) {
     let content: Vec<ListItem<'_>> = content
         .iter()
-        .filter_map(|c| {
-            if c.kind() == MdEnum::VerticalSeperator {
-                None
-            } else {
-                Some(ListItem::new(Line::from(c.content())))
-            }
-        })
+        .map(|c| ListItem::new(Line::from(c.content())))
         .collect();
 
     let list = List::new(content);
@@ -107,10 +130,6 @@ fn render_code_block(area: Rect, buf: &mut Buffer, content: Vec<MdComponent>) {
 }
 
 fn render_table(area: Rect, buf: &mut Buffer, content: Vec<MdComponent>) {
-    let content: Vec<MdComponent> = content
-        .into_iter()
-        .filter(|c| c.kind() != MdEnum::VerticalSeperator)
-        .collect();
     let titles = content.first().unwrap();
 
     let widths = titles

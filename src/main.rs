@@ -2,7 +2,7 @@ use std::{
     error::Error,
     fs::read_to_string,
     io::{self},
-    time::{Duration, Instant},
+    time::{Duration, Instant}, os::unix::thread, thread::sleep,
 };
 
 use crossterm::{
@@ -13,7 +13,7 @@ use crossterm::{
 use parser::parse_markdown;
 use ratatui::{
     backend::{Backend, CrosstermBackend},
-    widgets::{ScrollbarState},
+    widgets::ScrollbarState,
     Frame, Terminal,
 };
 use utils::MdComponentTree;
@@ -116,6 +116,8 @@ fn run_app<B: Backend>(
         if last_tick.elapsed() >= tick_rate {
             last_tick = Instant::now();
         }
+
+        // sleep(Duration::from_millis(2000));
     }
 }
 
