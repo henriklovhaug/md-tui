@@ -49,22 +49,20 @@ fn render_heading(area: Rect, buf: &mut Buffer, content: Vec<MdComponent>) {
 }
 
 fn render_paragraph(area: Rect, buf: &mut Buffer, content: Vec<MdComponent>) {
-    let reduced = content
-        .iter()
-        .filter_map(|c| {
-            if c.kind() == MdEnum::VerticalSeperator {
-                None
-            } else {
-                Some(c)
-            }
-        })
-        .collect::<Vec<_>>();
-
     let content = Line::from(
-        reduced
+        content
             .iter()
+            .filter_map(|c| {
+                if c.kind() == MdEnum::VerticalSeperator {
+                    None
+                } else {
+                    Some(c)
+                }
+            })
             .map(|c| match c.kind() {
-                MdEnum::Code => Span::styled(c.content(), Style::new().green().italic()),
+                MdEnum::Code => {
+                    Span::styled(c.content(), Style::new().green().italic().on_dark_gray())
+                }
                 _ => Span::raw(c.content()),
             })
             .collect::<Vec<_>>(),
