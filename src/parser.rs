@@ -16,7 +16,7 @@ pub fn parse_markdown(file: &str) -> MdComponentTree {
 
     let root_pair = root.into_iter().next().unwrap();
     let mut root_component = MdComponentTree::new(parse_component(root_pair, None));
-    root_component.set_y_offset();
+    root_component.set_y_offset(0);
 
     root_component
 }

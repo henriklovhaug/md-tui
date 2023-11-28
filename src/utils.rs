@@ -20,10 +20,10 @@ impl MdComponentTree {
         &mut self.root
     }
 
-    pub fn set_y_offset(&mut self) {
+    pub fn set_y_offset(&mut self, scroll: u16) {
         let mut y_offset = 0;
         for child in self.root.children_mut() {
-            child.set_y_offset(y_offset);
+            child.set_y_offset(y_offset + scroll);
             if child.kind() != MdEnum::VerticalSeperator {
                 y_offset += child.height();
             } else {
@@ -51,6 +51,7 @@ pub struct MdComponent {
     height: u16,
     width: u16,
     y_offset: u16,
+    original_y_offset: u16,
     content: String,
     children: Vec<MdComponent>,
 }
@@ -68,6 +69,7 @@ impl MdComponent {
             width,
             content,
             y_offset: 0,
+            original_y_offset: 0,
             _parent_kind: parent,
             children: Vec::new(),
         }
@@ -116,8 +118,8 @@ impl MdComponent {
         self.y_offset
     }
 
-    pub fn add_child(&mut self, child: MdComponent) {
-        self.children.push(child);
+    pub fn original_y_offset(&self) -> u16 {
+        self.original_y_offset
     }
 
     pub fn add_children(&mut self, children: Vec<MdComponent>) {
