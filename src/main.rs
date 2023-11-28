@@ -13,10 +13,7 @@ use crossterm::{
 use parser::parse_markdown;
 use ratatui::{
     backend::{Backend, CrosstermBackend},
-    layout::Constraint,
-    style::{Color, Modifier, Style},
-    text::{Line, Span},
-    widgets::{Block, Cell, Row, ScrollbarState, Table},
+    widgets::{ScrollbarState},
     Frame, Terminal,
 };
 use utils::MdComponentTree;

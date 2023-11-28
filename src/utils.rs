@@ -156,7 +156,7 @@ impl Widget for MdComponent {
         let area = Rect {
             height: self.height(),
             y: area.y + self.y_offset(),
-            width: vec![self.width(), area.width, 80]
+            width: [self.width(), area.width, 80]
                 .iter()
                 .fold(u16::MAX, |a, &b| a.min(b)),
             ..area
