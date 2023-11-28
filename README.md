@@ -2,13 +2,13 @@
 
 A terminal markdown renderer
 
-A table with some text and `with some code` more herea asklfj adskjfdksaljf
-adskjfh sd sdkjf hdfj asdfh sdkjfh sdkjfh asdjf sdakjfhads jfh
+A table with some text and more `With some inline code` herea asklfj
+adskjfdksaljf adskjfh sd sdkjf hdfj asdfh sdkjfh sdkjfh asdjf sdakjfhads jfh
 
-| Column1 | Column2 | Column3 |
-| ------- | ------- | ------- |
-| Item1   | Item1   | Item1   |
-| kek     | noe mer | safdljd |
+| Column1 | Column2 | Column3 | Column4 |
+| ------- | ------- | ------- | ------- |
+| Item1   | Item1   | Item1   |         |
+| kek     | noe mer | safdljd |         |
 
 A list
 

@@ -1,8 +1,8 @@
 use ratatui::{
     buffer::Buffer,
     layout::{Alignment, Constraint, Rect},
-    style::{Color, Style},
-    text::Line,
+    style::{Color, Style, Stylize},
+    text::{Line, Span},
     widgets::{Block, Cell, List, ListItem, Paragraph, Row, Table, Widget, Wrap},
 };
 
@@ -49,16 +49,26 @@ fn render_heading(area: Rect, buf: &mut Buffer, content: Vec<MdComponent>) {
 }
 
 fn render_paragraph(area: Rect, buf: &mut Buffer, content: Vec<MdComponent>) {
-    let content = content
+    let reduced = content
         .iter()
         .filter_map(|c| {
             if c.kind() == MdEnum::VerticalSeperator {
                 None
             } else {
-                Some(Line::from(c.content()))
+                Some(c)
             }
         })
         .collect::<Vec<_>>();
+
+    let content = Line::from(
+        reduced
+            .iter()
+            .map(|c| match c.kind() {
+                MdEnum::Code => Span::styled(c.content(), Style::new().green().italic()),
+                _ => Span::raw(c.content()),
+            })
+            .collect::<Vec<_>>(),
+    );
 
     let paragraph = Paragraph::new(content).wrap(Wrap { trim: true });
 
@@ -66,7 +76,7 @@ fn render_paragraph(area: Rect, buf: &mut Buffer, content: Vec<MdComponent>) {
 }
 
 fn render_list(area: Rect, buf: &mut Buffer, content: Vec<MdComponent>) {
-    let content = content
+    let content: Vec<ListItem<'_>> = content
         .iter()
         .filter_map(|c| {
             if c.kind() == MdEnum::VerticalSeperator {
@@ -75,17 +85,14 @@ fn render_list(area: Rect, buf: &mut Buffer, content: Vec<MdComponent>) {
                 Some(ListItem::new(Line::from(c.content())))
             }
         })
-        .collect::<Vec<_>>();
+        .collect();
 
     let list = List::new(content);
     list.render(area, buf);
 }
 
 fn render_code_block(area: Rect, buf: &mut Buffer, content: Vec<MdComponent>) {
-    let content = content
-        .iter()
-        .map(|c| Line::from(c.content()))
-        .collect::<Vec<_>>();
+    let content: Vec<Line<'_>> = content.iter().map(|c| Line::from(c.content())).collect();
 
     let area = Rect {
         x: area.x + 1,
