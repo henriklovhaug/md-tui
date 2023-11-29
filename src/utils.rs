@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use ratatui::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 #[derive(Debug, Clone)]
@@ -18,7 +20,7 @@ impl MdComponentTree {
         &mut self.root
     }
 
-    pub fn set_height(&mut self, _height: u16,width: u16) {
+    pub fn set_height(&mut self, _height: u16, width: u16) {
         for child in self.root.children_mut() {
             child.set_height(width);
         }
@@ -101,7 +103,7 @@ impl MdComponent {
                 let mut offset_index = 0;
                 let mut offsets = Vec::new();
                 self.content()
-                    .replace("\n", " ")
+                    .replace('\n', " ")
                     .chars()
                     .enumerate()
                     .for_each(|(i, c)| {
@@ -213,31 +215,33 @@ pub enum MdEnum {
     Sentence,
 }
 
-impl MdEnum {
-    pub fn from_str(s: &str) -> Self {
+impl FromStr for MdEnum {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "h1" | "h2" | "h3" | "h4" => Self::Heading,
-            "heading" => Self::Heading,
-            "task" => Self::Task,
-            "u_list" => Self::UnorderedList,
-            "o_list" => Self::OrderedList,
-            "code_block" => Self::CodeBlock,
-            "programming_language" => Self::PLanguage,
-            "code_str" => Self::Code,
-            "paragraph" => Self::Paragraph,
-            "link" => Self::Link,
-            "quote" => Self::Quote,
-            "table" => Self::Table,
-            "table_row" => Self::TableRow,
-            "v_seperator" => Self::VerticalSeperator,
-            "block_sep" => Self::BlockSeperator,
-            "sentence" => Self::Sentence,
-            "normal" => Self::Sentence,
-            "table_sentence" => Self::Sentence,
-            "list_container" => Self::ListContainer,
+            "h1" | "h2" | "h3" | "h4" => Ok(Self::Heading),
+            "heading" => Ok(Self::Heading),
+            "task" => Ok(Self::Task),
+            "u_list" => Ok(Self::UnorderedList),
+            "o_list" => Ok(Self::OrderedList),
+            "code_block" => Ok(Self::CodeBlock),
+            "programming_language" => Ok(Self::PLanguage),
+            "code_str" => Ok(Self::Code),
+            "paragraph" => Ok(Self::Paragraph),
+            "link" => Ok(Self::Link),
+            "quote" => Ok(Self::Quote),
+            "table" => Ok(Self::Table),
+            "table_row" => Ok(Self::TableRow),
+            "v_seperator" => Ok(Self::VerticalSeperator),
+            "block_sep" => Ok(Self::BlockSeperator),
+            "sentence" => Ok(Self::Sentence),
+            "normal" => Ok(Self::Sentence),
+            "table_sentence" => Ok(Self::Sentence),
+            "list_container" => Ok(Self::ListContainer),
             _e => {
                 // println!("Parseerror on: {_e}");
-                Self::Paragraph
+                Ok(Self::Paragraph)
             }
         }
     }

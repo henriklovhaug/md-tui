@@ -1,5 +1,3 @@
-use std::cmp;
-
 use ratatui::{
     buffer::Buffer,
     layout::{Alignment, Constraint, Rect},
@@ -18,7 +16,7 @@ impl Widget for MdComponent {
             return;
         }
 
-        let removed = area.y + self.y_offset() - self.scroll_offset();
+        let _removed = area.y + self.y_offset() - self.scroll_offset();
 
         // let height = cmp::min(self.height(), removed + 1);
 
@@ -33,7 +31,7 @@ impl Widget for MdComponent {
 
         let kind = self.kind();
 
-        let mut content: Vec<MdComponent> = self
+        let content: Vec<MdComponent> = self
             .children_owned()
             .into_iter()
             .filter(|c| c.kind() != MdEnum::VerticalSeperator)
@@ -59,7 +57,7 @@ impl Widget for MdComponent {
             MdEnum::VerticalSeperator => (),
             MdEnum::Sentence => todo!(),
             MdEnum::TableRow => todo!(),
-            MdEnum::BlockSeperator => return,
+            MdEnum::BlockSeperator => (),
             _ => panic!("{:?} should not be reachable", kind),
         }
     }
