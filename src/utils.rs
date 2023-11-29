@@ -18,22 +18,18 @@ impl MdComponentTree {
         &mut self.root
     }
 
-    pub fn set_heights(&mut self, width: u16) {
+    pub fn set_height(&mut self, _height: u16,width: u16) {
         for child in self.root.children_mut() {
             child.set_height(width);
         }
     }
 
-    pub fn set_y_offset(&mut self, scroll: u16, width: u16) {
+    pub fn set_y_offset(&mut self, scroll: u16) {
         let mut y_offset = 0;
         for child in self.root.children_mut() {
             child.set_y_offset(y_offset);
             child.set_scroll_offset(scroll);
-            if child.kind() != MdEnum::VerticalSeperator {
-                y_offset += child.height();
-            } else {
-                y_offset += 1;
-            }
+            y_offset += child.height();
         }
     }
 }
@@ -89,9 +85,15 @@ impl MdComponent {
             MdEnum::Heading => self.height = 1,
             // MdEnum::Task => todo!(),
             // MdEnum::UnorderedList => todo!(),
-            // MdEnum::ListContainer => todo!(),
+            MdEnum::ListContainer => self.height = self.children().len() as u16,
             // MdEnum::OrderedList => todo!(),
-            // MdEnum::CodeBlock => todo!(),
+            MdEnum::CodeBlock => {
+                self.height = self
+                    .children()
+                    .iter()
+                    .filter(|c| c.kind() == MdEnum::Sentence)
+                    .count() as u16;
+            }
             // MdEnum::Code => todo!(),
             MdEnum::Paragraph => {
                 let mut height = 1;
@@ -114,7 +116,7 @@ impl MdComponent {
                     });
                 self.height = height as u16;
             }
-            // MdEnum::Table => self.,
+            MdEnum::Table => self.height = self.children().len() as u16 - 1,
             _ => self.height = 1,
             // MdEnum::Link => todo!(),
             // MdEnum::Quote => todo!(),
@@ -198,6 +200,7 @@ pub enum MdEnum {
     ListContainer,
     OrderedList,
     CodeBlock,
+    PLanguage,
     Code,
     Paragraph,
     Link,
@@ -219,6 +222,7 @@ impl MdEnum {
             "u_list" => Self::UnorderedList,
             "o_list" => Self::OrderedList,
             "code_block" => Self::CodeBlock,
+            "programming_language" => Self::PLanguage,
             "code_str" => Self::Code,
             "paragraph" => Self::Paragraph,
             "link" => Self::Link,

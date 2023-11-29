@@ -1,8 +1,9 @@
 use std::{
+    cmp,
     error::Error,
     fs::read_to_string,
     io::{self},
-    time::{Duration, Instant}, os::unix::thread, thread::sleep,
+    time::{Duration, Instant},
 };
 
 use crossterm::{
@@ -32,8 +33,13 @@ struct App {
 
 fn main() -> Result<(), Box<dyn Error>> {
     // let text = read_to_string("README.md")?;
-    // let markdown = parse_markdown(&text);
+    // let mut markdown = parse_markdown(&text);
+    // markdown.set_height(80);
+    // markdown.set_y_offset(0);
     // parser::print_tree(markdown.root(), 0);
+    // for ci in markdown.root().children() {
+    //     println!("Kind: {:?}, height: {}", ci.kind(), ci.height());
+    // }
     // return Ok(());
 
     // setup terminal
@@ -76,6 +82,9 @@ fn run_app<B: Backend>(
     let mut markdown = parse_markdown(&text);
 
     loop {
+        let width = terminal.size()?.width;
+        let height = terminal.size()?.height;
+        markdown.set_height(height, cmp::min(width, 80));
         markdown.set_y_offset(app.vertical_scroll);
 
         terminal.draw(|f| ui(f, markdown.clone()))?;
@@ -116,8 +125,6 @@ fn run_app<B: Backend>(
         if last_tick.elapsed() >= tick_rate {
             last_tick = Instant::now();
         }
-
-        // sleep(Duration::from_millis(2000));
     }
 }
 

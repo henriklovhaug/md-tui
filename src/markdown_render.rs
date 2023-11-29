@@ -20,10 +20,10 @@ impl Widget for MdComponent {
 
         let removed = area.y + self.y_offset() - self.scroll_offset();
 
-        let height = cmp::min(self.height(), removed + 1);
+        // let height = cmp::min(self.height(), removed + 1);
 
         let area = Rect {
-            height,
+            height: self.height(),
             y: area.y + self.y_offset() - self.scroll_offset(),
             width: [self.width(), area.width, 80]
                 .iter()
@@ -59,6 +59,7 @@ impl Widget for MdComponent {
             MdEnum::VerticalSeperator => (),
             MdEnum::Sentence => todo!(),
             MdEnum::TableRow => todo!(),
+            MdEnum::BlockSeperator => return,
             _ => panic!("{:?} should not be reachable", kind),
         }
     }
@@ -69,11 +70,6 @@ fn render_heading(area: Rect, buf: &mut Buffer, content: Vec<MdComponent>) {
         .iter()
         .map(|c| Line::styled(c.content(), Style::default().fg(Color::Black)))
         .collect::<Vec<_>>();
-
-    let area = Rect {
-        height: area.height,
-        ..area
-    };
 
     let paragraph = Paragraph::new(content)
         .block(Block::default().style(Style::default().bg(Color::Blue)))
@@ -117,7 +113,6 @@ fn render_code_block(area: Rect, buf: &mut Buffer, content: Vec<MdComponent>) {
     let area = Rect {
         x: area.x + 1,
         width: area.width - 2,
-        height: area.height - 1,
         ..area
     };
 
