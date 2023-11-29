@@ -55,7 +55,6 @@ impl Widget for MdComponent {
             MdEnum::Code => unreachable!(),
             MdEnum::Link => todo!(),
             MdEnum::Quote => todo!(),
-            MdEnum::EmptyLine => todo!(),
             MdEnum::Digit => todo!(),
             MdEnum::VerticalSeperator => (),
             MdEnum::Sentence => todo!(),

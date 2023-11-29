@@ -15,8 +15,7 @@ pub fn parse_markdown(file: &str) -> MdComponentTree {
         MdParser::parse(Rule::txt, file).unwrap_or_else(|e| panic!("{}", e));
 
     let root_pair = root.into_iter().next().unwrap();
-    let mut root_component = MdComponentTree::new(parse_component(root_pair, None));
-    root_component.set_y_offset(0);
+    let root_component = MdComponentTree::new(parse_component(root_pair, None));
 
     root_component
 }

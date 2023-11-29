@@ -1,31 +1,34 @@
 // Lines
-word          = _{ ASCII_ALPHANUMERIC | "(" | ")" | "{" | "}" | "/" | ":" | ";" | "-" | "." | "," }
-code_str      =  { (word | " " | "|")+ }
-code          = _{ "`" ~ code_str ~ "`" }
-normal        =  { (word | " ")+ }
-link          =  { "[" ~ (sentence | " ")+ ~ "]" ~ "(" ~ (sentence)+ ~ ")" }
-sentence      = _{ (normal | code | link)+ }
-digit         =  { '0'..'9' }
-task_empty    =  { "- [ ] " ~ (sentence | " ")+ }
-task_complete =  { "- [x] " ~ (sentence | " ")+ }
-u_list        =  { ("-" | "*") ~ " " ~ (sentence | " ")+ }
-o_list        =  { digit ~ "." ~ " " ~ (sentence | " ")+ }
-h1            = _{ "# " ~ (sentence | " ")+ }
-h2            = _{ "## " ~ (sentence | " ")+ }
-h3            = _{ "### " ~ (sentence | " ")+ }
-h4            = _{ "#### " ~ (sentence | " ")+ }
+char           = _{ ASCII_ALPHANUMERIC | "(" | ")" | "{" | "}" | "/" | ":" | ";" | "-" | "." | "," | "|" }
+table_char     = _{ ASCII_ALPHANUMERIC | "(" | ")" | "{" | "}" | "/" | ":" | ";" | "-" | "." | "," }
+code_str       =  { (char | " " | "|")+ }
+code           = _{ "`" ~ code_str ~ "`" }
+normal         =  { (char | " ")+ }
+link           =  { "[" ~ (sentence | " ")+ ~ "]" ~ "(" ~ (sentence)+ ~ ")" }
+sentence       = _{ (normal | code | link)+ }
+table_sentence =  { (table_char | code | link)+ }
+digit          =  { '0'..'9' }
+table_row      =  { "|" ~ (table_sentence | " " | "|")+ }
+task_empty     =  { "- [ ] " ~ (sentence | " ")+ }
+task_complete  =  { "- [x] " ~ (sentence | " ")+ }
+u_list         =  { ("-" | "*") ~ " " ~ (sentence | " ")+ }
+o_list         =  { digit+ ~ "." ~ " " ~ (sentence | " ")+ }
+h1             = _{ "# " ~ (sentence | " ")+ }
+h2             = _{ "## " ~ (sentence | " ")+ }
+h3             = _{ "### " ~ (sentence | " ")+ }
+h4             = _{ "#### " ~ (sentence | " ")+ }
+v_seperator    = _{ NEWLINE }
 
 // Blocks
 heading        = { (h1 | h2 | h3 | h4) ~ (v_seperator | EOI) }
 list_container = { ((u_list ~ v_seperator | o_list ~ v_seperator))+ }
-paragraph      = { (sentence ~ v_seperator)+ }
+paragraph      = { (NEWLINE? ~ sentence)+ }
 code_block     = { "```" ~ (normal | NEWLINE)+ ~ "```" }
-table_row      = { "|" ~ (sentence | " " | "|")+ }
-table          = { (table_row ~ v_seperator)+ }
+table          = { (v_seperator? ~ table_row)+ }
 quote          = { ">" ~ (sentence | " ")+ }
-task           = { (task_empty | task_complete) ~ v_seperator }
-v_seperator    = { NEWLINE }
+task           = { v_seperator? ~ (task_empty | task_complete) }
+block_sep      = { NEWLINE ~ NEWLINE }
 
 txt = {
-    (v_seperator | table | quote | task | list_container | code_block | heading | paragraph)+
+    (block_sep | table | quote | task | list_container | code_block | heading | paragraph)+
 }
