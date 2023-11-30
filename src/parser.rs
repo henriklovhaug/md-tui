@@ -6,7 +6,7 @@ use pest::{
 };
 use pest_derive::Parser;
 
-use crate::utils::{MdComponent, MdComponentTree, MdEnum};
+use crate::nodes::{MdComponent, MdComponentTree, MdEnum};
 
 #[derive(Parser)]
 #[grammar = "md.pest"]

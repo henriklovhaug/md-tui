@@ -1,28 +1,30 @@
+use std::cmp;
+
 use ratatui::{
     buffer::Buffer,
     layout::{Alignment, Constraint, Rect},
     style::{Color, Style, Stylize},
     text::{Line, Span},
-    widgets::{Block, Cell, List, ListItem, Paragraph, Row, Table, Widget, Wrap},
+    widgets::{Block, Cell, List, ListItem, Paragraph, Row, Table, Widget},
 };
 
-use crate::utils::{MdComponent, MdEnum};
+use crate::nodes::{MdComponent, MdEnum};
 
 impl Widget for MdComponent {
     fn render(self, area: Rect, buf: &mut Buffer) {
         if self.height() + self.y_offset() > area.height
-            || self.scroll_offset() > self.y_offset() + area.y
+            || self.scroll_offset() > self.y_offset() + self.height()
         {
             return;
         }
 
-        let _removed = area.y + self.y_offset() - self.scroll_offset();
+        let removed = self.height() + self.y_offset() - self.scroll_offset();
 
         // let height = cmp::min(self.height(), removed + 1);
 
         let area = Rect {
-            height: self.height(),
-            y: area.y + self.y_offset() - self.scroll_offset(),
+            height: cmp::min(self.height(), removed),
+            y: area.y + self.y_offset().saturating_sub(self.scroll_offset()),
             width: [self.width(), area.width, 80]
                 .iter()
                 .fold(u16::MAX, |a, &b| a.min(b)),
@@ -31,11 +33,17 @@ impl Widget for MdComponent {
 
         let kind = self.kind();
 
-        let content: Vec<MdComponent> = self
-            .children_owned()
-            .into_iter()
-            .filter(|c| c.kind() != MdEnum::VerticalSeperator)
-            .collect();
+        // let content: Vec<MdComponent> = self
+        //     .children_owned()
+        //     .into_iter()
+        //     .filter(|c| c.kind() != MdEnum::VerticalSeperator)
+        //     .collect();
+
+        let remove_amount = cmp::max(self.height() - area.height, 0);
+        let mut content = self.children_owned();
+        if kind != MdEnum::BlockSeperator {
+            content.drain(0..remove_amount as usize);
+        }
 
         // println!("{:?}: {}, {}", kind, content.len(), height);
         //
@@ -71,8 +79,7 @@ fn render_heading(area: Rect, buf: &mut Buffer, content: Vec<MdComponent>) {
 
     let paragraph = Paragraph::new(content)
         .block(Block::default().style(Style::default().bg(Color::Blue)))
-        .alignment(Alignment::Center)
-        .wrap(Wrap { trim: true });
+        .alignment(Alignment::Center);
 
     paragraph.render(area, buf);
 }
@@ -90,7 +97,7 @@ fn render_paragraph(area: Rect, buf: &mut Buffer, content: Vec<MdComponent>) {
             .collect::<Vec<_>>(),
     );
 
-    let paragraph = Paragraph::new(content).wrap(Wrap { trim: true });
+    let paragraph = Paragraph::new(content);
 
     paragraph.render(area, buf);
 }
@@ -114,9 +121,8 @@ fn render_code_block(area: Rect, buf: &mut Buffer, content: Vec<MdComponent>) {
         ..area
     };
 
-    let paragraph = Paragraph::new(content)
-        .block(Block::default().style(Style::default().bg(Color::DarkGray)))
-        .wrap(Wrap { trim: true });
+    let paragraph =
+        Paragraph::new(content).block(Block::default().style(Style::default().bg(Color::DarkGray)));
 
     paragraph.render(area, buf);
 }

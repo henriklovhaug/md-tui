@@ -22,7 +22,7 @@ impl MdComponentTree {
 
     pub fn set_height(&mut self, _height: u16, width: u16) {
         for child in self.root.children_mut() {
-            child.set_height(width);
+            child.transform(width);
         }
     }
 
@@ -82,7 +82,7 @@ impl MdComponent {
         }
     }
 
-    pub fn set_height(&mut self, width: u16) {
+    pub fn transform(&mut self, width: u16) {
         match self.kind {
             MdEnum::Heading => self.height = 1,
             // MdEnum::Task => todo!(),
@@ -208,6 +208,7 @@ pub enum MdEnum {
     Link,
     Quote,
     Table,
+    TableSeperator,
     TableRow,
     Digit,
     VerticalSeperator,
@@ -232,6 +233,7 @@ impl FromStr for MdEnum {
             "link" => Ok(Self::Link),
             "quote" => Ok(Self::Quote),
             "table" => Ok(Self::Table),
+            "table_seperator" => Ok(Self::TableSeperator),
             "table_row" => Ok(Self::TableRow),
             "v_seperator" => Ok(Self::VerticalSeperator),
             "block_sep" => Ok(Self::BlockSeperator),

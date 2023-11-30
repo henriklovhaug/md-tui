@@ -17,11 +17,11 @@ use ratatui::{
     widgets::ScrollbarState,
     Frame, Terminal,
 };
-use utils::MdComponentTree;
+use nodes::MdComponentTree;
 
 pub mod markdown_render;
 pub mod parser;
-pub mod utils;
+pub mod nodes;
 
 #[derive(Default)]
 struct App {
@@ -32,15 +32,15 @@ struct App {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    // let text = read_to_string("README.md")?;
-    // let mut markdown = parse_markdown(&text);
-    // markdown.set_height(80);
-    // markdown.set_y_offset(0);
-    // parser::print_tree(markdown.root(), 0);
-    // for ci in markdown.root().children() {
-    //     println!("Kind: {:?}, height: {}", ci.kind(), ci.height());
-    // }
-    // return Ok(());
+    let text = read_to_string("README.md")?;
+    let mut markdown = parse_markdown(&text);
+    markdown.set_height(200,80);
+    markdown.set_y_offset(0);
+    parser::print_tree(markdown.root(), 0);
+    for ci in markdown.root().children() {
+        println!("Kind: {:?}, height: {}", ci.kind(), ci.height());
+    }
+    return Ok(());
 
     // setup terminal
     enable_raw_mode()?;
