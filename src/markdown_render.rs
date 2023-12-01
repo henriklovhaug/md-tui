@@ -5,12 +5,12 @@ use ratatui::{
     layout::{Alignment, Constraint, Rect},
     style::{Color, Style, Stylize},
     text::{Line, Span},
-    widgets::{Block, Cell, List, ListItem, Paragraph, Row, Table, Widget},
+    widgets::{Block, Cell, List, ListItem, Paragraph, Row, Table, Widget, Wrap},
 };
 
-use crate::nodes::{MdComponent, MdEnum};
+use crate::nodes::{ParseNode, MdEnum};
 
-impl Widget for MdComponent {
+impl Widget for ParseNode {
     fn render(self, area: Rect, buf: &mut Buffer) {
         if self.height() + self.y_offset() > area.height
             || self.scroll_offset() > self.y_offset() + self.height()
@@ -71,7 +71,7 @@ impl Widget for MdComponent {
     }
 }
 
-fn render_heading(area: Rect, buf: &mut Buffer, content: Vec<MdComponent>) {
+fn render_heading(area: Rect, buf: &mut Buffer, content: Vec<ParseNode>) {
     let content = content
         .iter()
         .map(|c| Line::styled(c.content(), Style::default().fg(Color::Black)))
@@ -84,7 +84,7 @@ fn render_heading(area: Rect, buf: &mut Buffer, content: Vec<MdComponent>) {
     paragraph.render(area, buf);
 }
 
-fn render_paragraph(area: Rect, buf: &mut Buffer, content: Vec<MdComponent>) {
+fn render_paragraph(area: Rect, buf: &mut Buffer, content: Vec<ParseNode>) {
     let content = Line::from(
         content
             .iter()
@@ -102,7 +102,7 @@ fn render_paragraph(area: Rect, buf: &mut Buffer, content: Vec<MdComponent>) {
     paragraph.render(area, buf);
 }
 
-fn render_list(area: Rect, buf: &mut Buffer, content: Vec<MdComponent>) {
+fn render_list(area: Rect, buf: &mut Buffer, content: Vec<ParseNode>) {
     let content: Vec<ListItem<'_>> = content
         .iter()
         .map(|c| ListItem::new(Line::from(c.content())))
@@ -112,8 +112,12 @@ fn render_list(area: Rect, buf: &mut Buffer, content: Vec<MdComponent>) {
     list.render(area, buf);
 }
 
-fn render_code_block(area: Rect, buf: &mut Buffer, content: Vec<MdComponent>) {
-    let content: Vec<Line<'_>> = content.iter().map(|c| Line::from(c.content())).collect();
+fn render_code_block(area: Rect, buf: &mut Buffer, content: Vec<ParseNode>) {
+    let content: Vec<Line<'_>> = content
+        .iter()
+        .filter(|c| c.kind() != MdEnum::PLanguage)
+        .map(|c| Line::from(c.content()))
+        .collect();
 
     let area = Rect {
         x: area.x + 1,
@@ -121,13 +125,14 @@ fn render_code_block(area: Rect, buf: &mut Buffer, content: Vec<MdComponent>) {
         ..area
     };
 
-    let paragraph =
-        Paragraph::new(content).block(Block::default().style(Style::default().bg(Color::DarkGray)));
+    let paragraph = Paragraph::new(content)
+        .block(Block::default().style(Style::default().bg(Color::DarkGray)))
+        .wrap(Wrap { trim: false });
 
     paragraph.render(area, buf);
 }
 
-fn render_table(area: Rect, buf: &mut Buffer, content: Vec<MdComponent>) {
+fn render_table(area: Rect, buf: &mut Buffer, content: Vec<ParseNode>) {
     let titles = content.first().unwrap();
 
     let widths = titles
