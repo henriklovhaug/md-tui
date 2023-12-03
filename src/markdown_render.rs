@@ -77,22 +77,15 @@ impl Widget for RenderComponent {
 fn style_word(word: &Word) -> Span<'_> {
     match word.kind() {
         WordType::MetaInfo => unreachable!(),
-        WordType::Normal => Span::raw(format!("{} ", word.content())),
-        WordType::Code => Span::styled(
-            format!("{} ", word.content()),
-            Style::default().fg(Color::Red),
-        ),
+        WordType::Normal => Span::raw(word.content()),
+        WordType::Code => Span::styled(word.content(), Style::default().fg(Color::Red)),
         WordType::Link => todo!(),
-        WordType::Italic => Span::styled(
-            format!("{} ", word.content()),
-            Style::default().fg(Color::Green).italic(),
-        ),
-        WordType::Bold => Span::styled(
-            format!("{} ", word.content()),
-            Style::default().fg(Color::Green).bold(),
-        ),
+        WordType::Italic => {
+            Span::styled(word.content(), Style::default().fg(Color::Green).italic())
+        }
+        WordType::Bold => Span::styled(word.content(), Style::default().fg(Color::Green).bold()),
         WordType::Strikethrough => Span::styled(
-            format!("{} ", word.content()),
+            word.content(),
             Style::default()
                 .fg(Color::Green)
                 .add_modifier(Modifier::CROSSED_OUT),

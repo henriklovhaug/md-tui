@@ -5,18 +5,19 @@ table_char     = _{ ASCII_ALPHANUMERIC | norwegian_char | "(" | ")" | "{" | "}" 
 digit          =  { '0'..'9' }
 
 // Lines
-word               = { char+ }
-inline_code_word   = { char+ }
-italic_word        = { char+ }
-bold_word          = { char+ }
-strikethrough_word = { char+ }
+word               = { " "* ~ char+ ~ (" " | NEWLINE)? }
+inline_code_word   = { " "* ~ char+ ~ " "? }
+italic_word        = { char+ ~ " "? }
+bold_word          = { char+ ~ " "? }
+strikethrough_word = { char+ ~ " "? }
+link_word          = { (char | "#" | "-")+ }
 
 code_str             =  { (inline_code_word | " " | "|")+ }
 code                 =  { "`" ~ code_str ~ "`" }
 programming_language =  { ASCII_ALPHA+ }
 code_line            =  { (char | " ")+ }
 normal               = _{ (!(NUMBER ~ ".") ~ (word | " "))+ }
-link                 =  { "[" ~ (sentence | " ")+ ~ "]" ~ "(" ~ (sentence)+ ~ ")" }
+link                 =  { "- [" ~ (link_word | " ")+ ~ "]" ~ "(" ~ (link_word)+ ~ ")" }
 table_word           =  { (table_char | code | link | " ")+ }
 italic               = _{ ("*" ~ (italic_word | " " | NEWLINE)+ ~ "*") | ("_" ~ (italic_word | " " | NEWLINE)+ ~ "_") }
 bold                 = _{ "**" ~ (bold_word | " " | NEWLINE)+ ~ "**" }
@@ -41,12 +42,12 @@ v_seperator = _{ NEWLINE }
 // Blocks
 heading        = { (h1 | h2 | h3 | h4) }
 list_container = { (v_seperator? ~ (u_list | o_list))+ }
-paragraph      = { (NEWLINE? ~ sentence)+ }
+paragraph      = { (sentence)+ }
 code_block     = { "```" ~ (programming_language | NEWLINE) ~ (code_line | NEWLINE)+ ~ "```" }
 table          = { (v_seperator? ~ (table_seperator | table_row))+ }
 quote          = { ">" ~ (sentence | " ")+ }
 task           = { v_seperator? ~ (task_empty | task_complete) }
-block_sep      = { NEWLINE ~ NEWLINE }
+block_sep      = { NEWLINE ~ NEWLINE | NEWLINE }
 
 txt = {
     (block_sep | table | quote | task | list_container | code_block | heading | paragraph)+

@@ -26,7 +26,7 @@ pub fn parse_markdown(file: &str) -> RenderRoot {
 }
 
 fn parse_text(pair: Pair<'_, Rule>) -> ParseNode {
-    let content = pair.as_str().to_string();
+    let content = pair.as_str().replace("\n", " ");
     let rule = format!("{:?}", pair.as_rule());
     let kind = MdEnum::from_str(&rule).expect("Infalliable. Change when enum is complete");
     let span = pair.as_span();
