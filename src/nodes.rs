@@ -360,8 +360,7 @@ impl RenderComponent {
                         line.push(word.clone());
                     } else {
                         lines.push(line);
-                        line = Vec::new();
-                        line.push(word.clone());
+                        line = vec![word.clone()];
                         len = word.content.len() + 1;
                     }
                 }

@@ -74,7 +74,7 @@ impl Widget for RenderComponent {
     }
 }
 
-fn style_word<'a>(word: &'a Word) -> Span<'a> {
+fn style_word(word: &Word) -> Span<'_> {
     match word.kind() {
         WordType::MetaInfo => unreachable!(),
         WordType::Normal => Span::raw(format!("{} ", word.content())),
