@@ -10,38 +10,71 @@ use ratatui::{
 
 use crate::nodes::{RenderComponent, RenderNode, Word, WordType};
 
+fn clips_upper_bound(_area: Rect, component: &RenderComponent) -> bool {
+    component.scroll_offset() > component.y_offset()
+}
+
+fn clips_lower_bound(area: Rect, component: &RenderComponent) -> bool {
+    component.y_offset() > area.height || component.y_offset() + component.height() > area.height
+}
+
+enum Clipping {
+    Upper,
+    Lower,
+    None,
+}
+
 impl Widget for RenderComponent {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        if self.height() + self.y_offset() > area.height
+        if self.y_offset().saturating_sub(self.scroll_offset()) > area.height
             || self.scroll_offset() > self.y_offset() + self.height()
         {
             return;
         }
+        let kind = self.kind();
 
-        let height = cmp::min(
-            self.height(),
-            (self.height() + self.y_offset()).saturating_sub(self.scroll_offset()),
-        );
+        let y = self.y_offset().saturating_sub(self.scroll_offset());
 
-        let area = Rect {
-            height,
-            y: self.y_offset().saturating_sub(self.scroll_offset()),
-            ..area
+        let clips = if clips_upper_bound(area, &self) {
+            Clipping::Upper
+        } else if clips_lower_bound(area, &self) {
+            Clipping::Lower
+        } else {
+            Clipping::None
         };
 
-        match self.kind() {
-            RenderNode::Paragraph => render_paragraph(area, buf, self.content()),
-            RenderNode::Heading => render_heading(area, buf, self.content()),
+        let height = if clips_upper_bound(area, &self) {
+            let height = cmp::min(
+                self.height(),
+                (self.height() + self.y_offset()).saturating_sub(self.scroll_offset()),
+            );
+            height
+        } else if clips_lower_bound(area, &self) {
+            let height = cmp::min(
+                self.height(),
+                (self.y_offset() + self.height() + self.scroll_offset())
+                    .saturating_sub(area.height),
+            );
+            height
+        } else {
+            self.height()
+        };
+
+        let area = Rect { height, y, ..area };
+
+        match kind {
+            RenderNode::Paragraph => render_paragraph(area, buf, self.content_owned(), clips),
+            RenderNode::Heading => render_heading(area, buf, self.content_owned()),
             RenderNode::Task => todo!(),
-            RenderNode::List => render_list(area, buf, self.content()),
-            RenderNode::CodeBlock => render_code_block(area, buf, self.content()),
+            RenderNode::List => render_list(area, buf, self.content_owned(), clips),
+            RenderNode::CodeBlock => render_code_block(area, buf, self.content_owned(), clips),
             RenderNode::LineBreak => (),
-            RenderNode::Table => render_table(area, buf, self.content()),
+            RenderNode::Table => render_table(area, buf, self.content_owned(), clips),
         }
     }
 }
 
-fn render_heading(area: Rect, buf: &mut Buffer, content: &Vec<Vec<Word>>) {
+fn render_heading(area: Rect, buf: &mut Buffer, content: Vec<Vec<Word>>) {
     let content = content
         .first()
         .unwrap()
@@ -56,8 +89,28 @@ fn render_heading(area: Rect, buf: &mut Buffer, content: &Vec<Vec<Word>>) {
     paragraph.render(area, buf);
 }
 
-fn render_paragraph(area: Rect, buf: &mut Buffer, content: &Vec<Vec<Word>>) {
-    let mut lines = content
+fn render_paragraph(area: Rect, buf: &mut Buffer, content: Vec<Vec<Word>>, clip: Clipping) {
+    let content = match clip {
+        Clipping::Upper => {
+            let len = content.len();
+            let height = area.height;
+            let offset = len - height as usize;
+            let mut content = content;
+            content.drain(0..offset as usize);
+            content
+        }
+        Clipping::Lower => {
+            let len = content.len();
+            let height = area.height;
+            let offset = len - height as usize;
+            let mut content = content;
+            content.drain(offset as usize..len);
+            content
+        }
+        Clipping::None => content,
+    };
+
+    let lines = content
         .iter()
         .map(|c| {
             Line::from(
@@ -79,15 +132,32 @@ fn render_paragraph(area: Rect, buf: &mut Buffer, content: &Vec<Vec<Word>>) {
         })
         .collect::<Vec<_>>();
 
-    lines.drain(..(lines.len() - area.height as usize));
-
     let paragraph = Paragraph::new(lines);
 
     paragraph.render(area, buf);
 }
 
-fn render_list(area: Rect, buf: &mut Buffer, content: &Vec<Vec<Word>>) {
-    let mut content: Vec<ListItem<'_>> = content
+fn render_list(area: Rect, buf: &mut Buffer, content: Vec<Vec<Word>>, clip: Clipping) {
+    let content = match clip {
+        Clipping::Upper => {
+            let len = content.len();
+            let height = area.height;
+            let offset = len - height as usize;
+            let mut content = content;
+            content.drain(0..offset as usize);
+            content
+        }
+        Clipping::Lower => {
+            let len = content.len();
+            let height = area.height;
+            let offset = len - height as usize;
+            let mut content = content;
+            content.drain(offset as usize..len);
+            content
+        }
+        Clipping::None => content,
+    };
+    let content: Vec<ListItem<'_>> = content
         .iter()
         .map(|c| {
             ListItem::new(Line::from(
@@ -98,28 +168,44 @@ fn render_list(area: Rect, buf: &mut Buffer, content: &Vec<Vec<Word>>) {
         })
         .collect();
 
-    content.drain(..(content.len() - area.height as usize));
-
     let list = List::new(content);
     list.render(area, buf);
 }
 
-fn render_code_block(area: Rect, buf: &mut Buffer, content: &Vec<Vec<Word>>) {
+fn render_code_block(area: Rect, buf: &mut Buffer, content: Vec<Vec<Word>>, clip: Clipping) {
     let mut content = content
-        .first()
-        .unwrap()
         .iter()
-        .filter(|c| c.kind() != WordType::MetaInfo)
-        .map(|c| Line::styled(c.content(), Style::default().fg(Color::Red)))
+        .filter(|c| c.iter().any(|i| i.kind() != WordType::MetaInfo))
+        .map(|c| {
+            Line::from(
+                c.iter()
+                    .map(|i| Span::styled(i.content(), Style::default().fg(Color::Red)))
+                    .collect::<Vec<_>>(),
+            )
+        })
         .collect::<Vec<_>>();
+
+    match clip {
+        Clipping::Upper => {
+            let len = content.len();
+            let height = area.height;
+            let offset = len - height as usize;
+            content.drain(0..offset as usize);
+        }
+        Clipping::Lower => {
+            let len = content.len();
+            let height = area.height;
+            let offset = len - height as usize;
+            content.drain(offset as usize..len);
+        }
+        Clipping::None => (),
+    }
 
     let area = Rect {
         x: area.x + 1,
         width: area.width - 2,
         ..area
     };
-
-    content.drain(..(content.len() - area.height as usize));
 
     let paragraph = Paragraph::new(content)
         .block(Block::default().style(Style::default().bg(Color::Blue)))
@@ -128,7 +214,7 @@ fn render_code_block(area: Rect, buf: &mut Buffer, content: &Vec<Vec<Word>>) {
     paragraph.render(area, buf);
 }
 
-fn render_table(area: Rect, buf: &mut Buffer, content: &Vec<Vec<Word>>) {
+fn render_table(area: Rect, buf: &mut Buffer, content: Vec<Vec<Word>>, clip: Clipping) {
     let titles = content.first().unwrap();
 
     let widths = titles
@@ -155,9 +241,21 @@ fn render_table(area: Rect, buf: &mut Buffer, content: &Vec<Vec<Word>>) {
         })
         .collect::<Vec<_>>();
 
-    rows.drain(..(content.len() - area.height as usize));
-
-    println!("Header len: {:?}", header);
+    match clip {
+        Clipping::Upper => {
+            let len = rows.len();
+            let height = area.height;
+            let offset = len - height as usize;
+            rows.drain(0..offset as usize);
+        }
+        Clipping::Lower => {
+            let len = rows.len();
+            let height = area.height;
+            let offset = len - height as usize;
+            rows.drain(offset as usize..len);
+        }
+        Clipping::None => (),
+    }
 
     let table = Table::new(rows)
         .header(header.style(Style::default().fg(Color::Black)))

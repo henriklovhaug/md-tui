@@ -302,6 +302,10 @@ impl RenderComponent {
         &mut self.content
     }
 
+    pub fn content_owned(self) -> Vec<Vec<Word>> {
+        self.content
+    }
+
     pub fn height(&self) -> u16 {
         self.height
     }
@@ -332,10 +336,8 @@ impl RenderComponent {
             RenderNode::CodeBlock => {
                 let height = self
                     .content
-                    .first()
-                    .unwrap()
                     .iter()
-                    .filter(|c| c.kind() != WordType::MetaInfo)
+                    .filter(|c| c.iter().any(|x| x.kind() != WordType::MetaInfo))
                     .count() as u16;
                 self.height = height;
             }

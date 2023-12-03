@@ -86,9 +86,9 @@ fn parse_component(parse_node: ParseNode) -> RenderComponent {
             for node in leaf_nodes {
                 let word_type = WordType::from(node.kind());
                 let content = node.content().to_owned();
-                words.push(Word::new(content, word_type));
+                words.push(vec![Word::new(content, word_type)]);
             }
-            RenderComponent::new(RenderNode::CodeBlock, words)
+            RenderComponent::new_formatted(RenderNode::CodeBlock, words)
         }
 
         MdEnum::ListContainer => {
@@ -120,7 +120,7 @@ fn parse_component(parse_node: ParseNode) -> RenderComponent {
                 }
                 words.push(inner_words);
             }
-            RenderComponent::new_formatted(RenderNode::List, words)
+            RenderComponent::new_formatted(RenderNode::Table, words)
         }
 
         MdEnum::BlockSeperator => RenderComponent::new(RenderNode::LineBreak, Vec::new()),
