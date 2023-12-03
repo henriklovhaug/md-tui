@@ -15,7 +15,11 @@ fn clips_upper_bound(_area: Rect, component: &RenderComponent) -> bool {
 }
 
 fn clips_lower_bound(area: Rect, component: &RenderComponent) -> bool {
-    component.y_offset() > area.height || component.y_offset() + component.height() > area.height
+    component
+        .y_offset()
+        .saturating_sub(component.scroll_offset())
+        > area.height
+        || component.y_offset() + component.height() > area.height
 }
 
 enum Clipping {
@@ -43,21 +47,17 @@ impl Widget for RenderComponent {
             Clipping::None
         };
 
-        let height = if clips_upper_bound(area, &self) {
-            let height = cmp::min(
+        let height = match clips {
+            Clipping::Upper => cmp::min(
                 self.height(),
                 (self.height() + self.y_offset()).saturating_sub(self.scroll_offset()),
-            );
-            height
-        } else if clips_lower_bound(area, &self) {
-            let height = cmp::min(
-                self.height(),
-                (self.y_offset() + self.height() + self.scroll_offset())
-                    .saturating_sub(area.height),
-            );
-            height
-        } else {
-            self.height()
+            ),
+            Clipping::Lower => {
+                let new_y = self.y_offset() - self.scroll_offset();
+                let new_height = new_y;
+                cmp::min(self.height(), area.height.saturating_sub(new_height))
+            }
+            Clipping::None => self.height(),
         };
 
         let area = Rect { height, y, ..area };
@@ -100,11 +100,8 @@ fn render_paragraph(area: Rect, buf: &mut Buffer, content: Vec<Vec<Word>>, clip:
             content
         }
         Clipping::Lower => {
-            let len = content.len();
-            let height = area.height;
-            let offset = len - height as usize;
             let mut content = content;
-            content.drain(offset as usize..len);
+            content.drain(area.height as usize..);
             content
         }
         Clipping::None => content,
@@ -148,11 +145,8 @@ fn render_list(area: Rect, buf: &mut Buffer, content: Vec<Vec<Word>>, clip: Clip
             content
         }
         Clipping::Lower => {
-            let len = content.len();
-            let height = area.height;
-            let offset = len - height as usize;
             let mut content = content;
-            content.drain(offset as usize..len);
+            content.drain(area.height as usize..);
             content
         }
         Clipping::None => content,
@@ -193,10 +187,7 @@ fn render_code_block(area: Rect, buf: &mut Buffer, content: Vec<Vec<Word>>, clip
             content.drain(0..offset as usize);
         }
         Clipping::Lower => {
-            let len = content.len();
-            let height = area.height;
-            let offset = len - height as usize;
-            content.drain(offset as usize..len);
+            content.drain(area.height as usize..);
         }
         Clipping::None => (),
     }
@@ -249,10 +240,7 @@ fn render_table(area: Rect, buf: &mut Buffer, content: Vec<Vec<Word>>, clip: Cli
             rows.drain(0..offset as usize);
         }
         Clipping::Lower => {
-            let len = rows.len();
-            let height = area.height;
-            let offset = len - height as usize;
-            rows.drain(offset as usize..len);
+            rows.drain(area.height as usize..);
         }
         Clipping::None => (),
     }

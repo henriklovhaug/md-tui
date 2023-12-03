@@ -83,7 +83,7 @@ fn run_app<B: Backend>(
         let _width = terminal.size()?.width;
         let _height = terminal.size()?.height;
 
-        markdown.set_y_offset(app.vertical_scroll);
+        markdown.set_scroll(app.vertical_scroll);
 
         terminal.draw(|f| ui(f, markdown.clone()))?;
 

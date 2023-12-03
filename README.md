@@ -53,3 +53,9 @@ proident adipisicing id nulla nisi laboris ex in Lorem sunt duis officia
 eiusmod. Aliqua reprehenderit commodo ex non excepteur duis sunt velit enim.
 Voluptate laboris sint cupidatat ullamco ut ea consectetur et est culpa et culpa
 duis.
+
+| Column1 | Column2 |
+| ------- | ------- |
+| Item1.1 | Item2.1 |
+| Item1.2 | Item2.2 |
+| Item1.3 | Item2.3 |

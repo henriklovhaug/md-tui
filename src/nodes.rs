@@ -9,7 +9,6 @@ pub struct ParseRoot {
 
 impl ParseRoot {
     pub fn new(children: Vec<ParseNode>) -> Self {
-        let children = children;
         Self { children }
     }
 
@@ -168,7 +167,7 @@ impl RenderRoot {
         &mut self.components
     }
 
-    pub fn set_y_offset(&mut self, scroll: u16) {
+    pub fn set_scroll(&mut self, scroll: u16) {
         let mut y_offset = 0;
         for component in self.components.iter_mut() {
             component.set_y_offset(y_offset);
