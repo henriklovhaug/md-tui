@@ -14,7 +14,6 @@ use nodes::RenderRoot;
 use parser::parse_markdown;
 use ratatui::{
     backend::{Backend, CrosstermBackend},
-    widgets::ScrollbarState,
     Frame, Terminal,
 };
 
@@ -24,10 +23,7 @@ pub mod parser;
 
 #[derive(Default)]
 struct App {
-    pub vertical_scroll_state: ScrollbarState,
-    pub horizontal_scroll_state: ScrollbarState,
     pub vertical_scroll: u16,
-    pub horizontal_scroll: usize,
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -96,25 +92,9 @@ fn run_app<B: Backend>(
                     KeyCode::Char('q') => return Ok(()),
                     KeyCode::Char('j') => {
                         app.vertical_scroll += 1;
-                        app.vertical_scroll_state = app
-                            .vertical_scroll_state
-                            .position(app.vertical_scroll as usize);
                     }
                     KeyCode::Char('k') => {
                         app.vertical_scroll = app.vertical_scroll.saturating_sub(1);
-                        app.vertical_scroll_state = app
-                            .vertical_scroll_state
-                            .position(app.vertical_scroll as usize);
-                    }
-                    KeyCode::Char('h') => {
-                        app.horizontal_scroll += 1;
-                        app.horizontal_scroll_state =
-                            app.horizontal_scroll_state.position(app.horizontal_scroll);
-                    }
-                    KeyCode::Char('l') => {
-                        app.horizontal_scroll -= 1;
-                        app.horizontal_scroll_state =
-                            app.horizontal_scroll_state.position(app.horizontal_scroll);
                     }
                     _ => {}
                 }

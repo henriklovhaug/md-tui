@@ -355,13 +355,14 @@ impl RenderComponent {
                 let mut lines = Vec::new();
                 let mut line = Vec::new();
                 for word in self.content.iter().flatten() {
-                    if word.content.len() + line.len() + len < width as usize {
+                    if word.content.len() + len < width as usize {
                         len += word.content.len() + 1;
                         line.push(word.clone());
                     } else {
                         lines.push(line);
                         line = Vec::new();
-                        len = 0;
+                        line.push(word.clone());
+                        len = word.content.len() + 1;
                     }
                 }
                 if !line.is_empty() {
