@@ -3,7 +3,7 @@ use std::cmp;
 use ratatui::{
     buffer::Buffer,
     layout::{Alignment, Constraint, Rect},
-    style::{Color, Style},
+    style::{Color, Modifier, Style, Stylize},
     text::{Line, Span},
     widgets::{Block, Cell, List, ListItem, Paragraph, Row, Table, Widget, Wrap},
 };
@@ -74,6 +74,32 @@ impl Widget for RenderComponent {
     }
 }
 
+fn style_word<'a>(word: &'a Word) -> Span<'a> {
+    match word.kind() {
+        WordType::MetaInfo => unreachable!(),
+        WordType::Normal => Span::raw(format!("{} ", word.content())),
+        WordType::Code => Span::styled(
+            format!("{} ", word.content()),
+            Style::default().fg(Color::Red),
+        ),
+        WordType::Link => todo!(),
+        WordType::Italic => Span::styled(
+            format!("{} ", word.content()),
+            Style::default().fg(Color::Green).italic(),
+        ),
+        WordType::Bold => Span::styled(
+            format!("{} ", word.content()),
+            Style::default().fg(Color::Green).bold(),
+        ),
+        WordType::Strikethrough => Span::styled(
+            format!("{} ", word.content()),
+            Style::default()
+                .fg(Color::Green)
+                .add_modifier(Modifier::CROSSED_OUT),
+        ),
+    }
+}
+
 fn render_heading(area: Rect, buf: &mut Buffer, content: Vec<Vec<Word>>) {
     let content = content
         .first()
@@ -96,7 +122,7 @@ fn render_paragraph(area: Rect, buf: &mut Buffer, content: Vec<Vec<Word>>, clip:
             let height = area.height;
             let offset = len - height as usize;
             let mut content = content;
-            content.drain(0..offset as usize);
+            content.drain(0..offset);
             content
         }
         Clipping::Lower => {
@@ -113,17 +139,7 @@ fn render_paragraph(area: Rect, buf: &mut Buffer, content: Vec<Vec<Word>>, clip:
             Line::from(
                 c.iter()
                     .filter(|i| i.kind() != WordType::MetaInfo)
-                    .map(|i| match i.kind() {
-                        WordType::MetaInfo => unreachable!(),
-                        WordType::Normal => Span::raw(format!("{} ", i.content())),
-                        WordType::Code => Span::styled(
-                            format!("{} ", i.content()),
-                            Style::default().fg(Color::Red),
-                        ),
-                        WordType::Link => todo!(),
-                        WordType::Italic => todo!(),
-                        WordType::Bold => todo!(),
-                    })
+                    .map(|i| style_word(i))
                     .collect::<Vec<_>>(),
             )
         })
@@ -141,7 +157,7 @@ fn render_list(area: Rect, buf: &mut Buffer, content: Vec<Vec<Word>>, clip: Clip
             let height = area.height;
             let offset = len - height as usize;
             let mut content = content;
-            content.drain(0..offset as usize);
+            content.drain(0..offset);
             content
         }
         Clipping::Lower => {
@@ -153,11 +169,9 @@ fn render_list(area: Rect, buf: &mut Buffer, content: Vec<Vec<Word>>, clip: Clip
     };
     let content: Vec<ListItem<'_>> = content
         .iter()
-        .map(|c| {
+        .map(|c| -> ListItem<'_> {
             ListItem::new(Line::from(
-                c.iter()
-                    .map(|i| format!("{} ", i.content()))
-                    .collect::<String>(),
+                c.iter().map(|i| style_word(i)).collect::<Vec<_>>(),
             ))
         })
         .collect();
@@ -184,7 +198,7 @@ fn render_code_block(area: Rect, buf: &mut Buffer, content: Vec<Vec<Word>>, clip
             let len = content.len();
             let height = area.height;
             let offset = len - height as usize;
-            content.drain(0..offset as usize);
+            content.drain(0..offset);
         }
         Clipping::Lower => {
             content.drain(area.height as usize..);
@@ -223,13 +237,7 @@ fn render_table(area: Rect, buf: &mut Buffer, content: Vec<Vec<Word>>, clip: Cli
 
     let mut rows = moved_content
         .iter()
-        .map(|c| {
-            Row::new(
-                c.iter()
-                    .map(|i| Cell::from(i.content()))
-                    .collect::<Vec<_>>(),
-            )
-        })
+        .map(|c| Row::new(c.iter().map(|i| style_word(i)).collect::<Vec<_>>()))
         .collect::<Vec<_>>();
 
     match clip {
@@ -237,7 +245,7 @@ fn render_table(area: Rect, buf: &mut Buffer, content: Vec<Vec<Word>>, clip: Cli
             let len = rows.len();
             let height = area.height;
             let offset = len - height as usize;
-            rows.drain(0..offset as usize);
+            rows.drain(0..offset);
         }
         Clipping::Lower => {
             rows.drain(area.height as usize..);

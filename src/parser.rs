@@ -22,9 +22,7 @@ pub fn parse_markdown(file: &str) -> RenderRoot {
 
     let parse_root = ParseRoot::new(parse_text(root_pair).children_owned());
 
-    let render_root = node_to_component(parse_root);
-
-    render_root
+    node_to_component(parse_root)
 }
 
 fn parse_text(pair: Pair<'_, Rule>) -> ParseNode {

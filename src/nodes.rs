@@ -108,6 +108,9 @@ pub enum MdEnum {
     VerticalSeperator,
     BlockSeperator,
     Sentence,
+    Bold,
+    Italic,
+    Strikethrough,
 }
 
 impl FromStr for MdEnum {
@@ -137,6 +140,9 @@ impl FromStr for MdEnum {
             "table_word" => Ok(Self::Word),
             "list_container" => Ok(Self::ListContainer),
             "word" => Ok(Self::Word),
+            "bold" | "bold_word" => Ok(Self::Bold),
+            "italic" | "italic_word" => Ok(Self::Italic),
+            "strikethrough" | "strikethrough_word" => Ok(Self::Strikethrough),
             _e => {
                 // println!("Parseerror on: {_e}");
                 Ok(Self::Paragraph)
@@ -199,6 +205,7 @@ pub enum WordType {
     Link,
     Italic,
     Bold,
+    Strikethrough,
 }
 
 impl From<MdEnum> for WordType {
@@ -224,6 +231,9 @@ impl From<MdEnum> for WordType {
             MdEnum::VerticalSeperator => todo!(),
             MdEnum::BlockSeperator => WordType::MetaInfo,
             MdEnum::Sentence => WordType::Normal,
+            MdEnum::Bold => WordType::Bold,
+            MdEnum::Italic => WordType::Italic,
+            MdEnum::Strikethrough => WordType::Strikethrough,
         }
     }
 }
@@ -330,7 +340,7 @@ impl RenderComponent {
             RenderNode::Heading => self.height = 1,
             RenderNode::Task => self.height = 1,
             RenderNode::List => {
-                self.content.iter().len() as u16;
+                self.content.iter().len();
             }
             RenderNode::CodeBlock => {
                 let height = self
@@ -345,7 +355,7 @@ impl RenderComponent {
                 let mut lines = Vec::new();
                 let mut line = Vec::new();
                 for word in self.content.iter().flatten() {
-                    if word.content.len() + 1 + len < width as usize {
+                    if word.content.len() + line.len() + len < width as usize {
                         len += word.content.len() + 1;
                         line.push(word.clone());
                     } else {

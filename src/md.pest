@@ -1,28 +1,42 @@
+// Characters
+norwegian_char =  { "æ" | "ø" | "å" | "Æ" | "Ø" | "Å" }
+char           = _{ ASCII_ALPHANUMERIC | norwegian_char | "(" | ")" | "{" | "}" | "/" | ":" | ";" | "-" | "." | "," | "|" }
+table_char     = _{ ASCII_ALPHANUMERIC | norwegian_char | "(" | ")" | "{" | "}" | "/" | ":" | ";" | "-" | "." | "," }
+digit          =  { '0'..'9' }
+
 // Lines
-char                 = _{ ASCII_ALPHANUMERIC | "(" | ")" | "{" | "}" | "/" | ":" | ";" | "-" | "." | "," | "|" }
-word                 =  { char+ }
-table_char           = _{ ASCII_ALPHANUMERIC | "(" | ")" | "{" | "}" | "/" | ":" | ";" | "-" | "." | "," }
-inline_code_word     =  { (char)+ }
+word               = { char+ }
+inline_code_word   = { char+ }
+italic_word        = { char+ }
+bold_word          = { char+ }
+strikethrough_word = { char+ }
+
 code_str             =  { (inline_code_word | " " | "|")+ }
-programming_language =  { ASCII_ALPHA+ }
 code                 =  { "`" ~ code_str ~ "`" }
-normal               = _{ (!(NUMBER ~ ".") ~ (word | " "))+ }
+programming_language =  { ASCII_ALPHA+ }
 code_line            =  { (char | " ")+ }
+normal               = _{ (!(NUMBER ~ ".") ~ (word | " "))+ }
 link                 =  { "[" ~ (sentence | " ")+ ~ "]" ~ "(" ~ (sentence)+ ~ ")" }
-sentence             =  { (normal | code | link)+ }
 table_word           =  { (table_char | code | link | " ")+ }
-digit                =  { '0'..'9' }
-table_row            =  { "|" ~ (table_word | " " | "|")+ }
-table_seperator      =  { ("|"? ~ " "? ~ "-"+ ~ " "? ~ "|")+ }
-task_empty           =  { "- [ ] " ~ (sentence | " ")+ }
-task_complete        =  { "- [x] " ~ (sentence | " ")+ }
-u_list               =  { ("-" | "*") ~ " " ~ (sentence | " ")+ }
-o_list               =  { digit+ ~ "." ~ " " ~ (sentence | " ")+ }
-h1                   = _{ "# " ~ (sentence | " ")+ }
-h2                   = _{ "## " ~ (sentence | " ")+ }
-h3                   = _{ "### " ~ (sentence | " ")+ }
-h4                   = _{ "#### " ~ (sentence | " ")+ }
-v_seperator          = _{ NEWLINE }
+italic               = _{ ("*" ~ (italic_word | " " | NEWLINE)+ ~ "*") | ("_" ~ (italic_word | " " | NEWLINE)+ ~ "_") }
+bold                 = _{ "**" ~ (bold_word | " " | NEWLINE)+ ~ "**" }
+strikethrough        = _{ "~~" ~ (strikethrough_word | " " | NEWLINE)+ ~ "~~" }
+
+sentence  = { (code | link | italic | bold | strikethrough | normal)+ }
+table_row = { "|" ~ (table_word | " " | "|")+ }
+
+table_seperator = { ("|"? ~ " "? ~ "-"+ ~ " "? ~ "|")+ }
+task_empty      = { "- [ ] " ~ (sentence | " ")+ }
+task_complete   = { "- [x] " ~ (sentence | " ")+ }
+
+u_list =  { ("-" | "*") ~ " " ~ (sentence | " ")+ }
+o_list =  { digit+ ~ "." ~ " " ~ (sentence | " ")+ }
+h1     = _{ "# " ~ (sentence | " ")+ }
+h2     = _{ "## " ~ (sentence | " ")+ }
+h3     = _{ "### " ~ (sentence | " ")+ }
+h4     = _{ "#### " ~ (sentence | " ")+ }
+
+v_seperator = _{ NEWLINE }
 
 // Blocks
 heading        = { (h1 | h2 | h3 | h4) }
