@@ -1,5 +1,4 @@
 use std::{
-    cmp,
     error::Error,
     fs::read_to_string,
     io::{self},
@@ -11,7 +10,7 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use nodes::ParseRoot;
+use nodes::RenderRoot;
 use parser::parse_markdown;
 use ratatui::{
     backend::{Backend, CrosstermBackend},
@@ -32,15 +31,13 @@ struct App {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let text = read_to_string("README.md")?;
-    let mut markdown = parse_markdown(&text);
-    // markdown.set_height(200, 80);
-    markdown.set_y_offset(0);
-    // parser::print_tree(markdown.children(), 0);
-    // for ci in markdown.children_owned().children() {
-    //     println!("Kind: {:?}, height: {}", ci.kind(), ci.height());
-    // }
-    return Ok(());
+    // let text = read_to_string("README.md")?;
+    // let mut markdown = parse_markdown(&text);
+    // markdown.transform(80);
+    // markdown.set_y_offset(0);
+    //
+    // parser::print_from_root(&markdown);
+    // return Ok(());
 
     // setup terminal
     enable_raw_mode()?;
@@ -80,10 +77,12 @@ fn run_app<B: Backend>(
     let text = read_to_string("README.md")?;
 
     let mut markdown = parse_markdown(&text);
+    markdown.transform(80);
 
     loop {
-        let width = terminal.size()?.width;
-        let height = terminal.size()?.height;
+        let _width = terminal.size()?.width;
+        let _height = terminal.size()?.height;
+
         markdown.set_y_offset(app.vertical_scroll);
 
         terminal.draw(|f| ui(f, markdown.clone()))?;
@@ -127,7 +126,7 @@ fn run_app<B: Backend>(
     }
 }
 
-fn ui(f: &mut Frame, lines: ParseRoot) {
+fn ui(f: &mut Frame, lines: RenderRoot) {
     let size = f.size();
     f.render_widget(lines, size);
 }

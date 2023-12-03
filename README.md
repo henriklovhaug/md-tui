@@ -6,24 +6,20 @@ A table with some text and more `With some inline code` herea asklfj
 adskjfdksaljf adskjfh sd sdkjf hdfj asdfh sdkjfh sdkjfh asdjf sdakjfhads jfh
 adskjfdksaljf adskjfh sd sdkjf hdfj asdfh sdkjfh sdkjfh asdjf sdakjfhads jfh
 
-
-| Column1 | Column2 | Column3 | Column4 |
-| ------- | ------- | ------- | ------- |
-| Item1   | Item1   | Item1   |         |
-| kek     | noe mer | safdljd |         |
-| kek     | noe mer | safdljd |         |
-
-A list
-
-1. first
-2. second
-3. third `noe kode`
+| Column1 | Column2             | Column3 | Column4 |
+| ------- | ------------------- | ------- | ------- |
+| Item1.1 | Item2.1 med noe mer | Item3.1 | Item4.1 |
+| Item1.2 | Item2.2             | Item3.2 | Item4.2 |
 
 ```java
-public static void main(){
-    // Todo
+public static main void() {
+    //TODO
 }
 ```
+
+1. first with more
+2. second
+3. third
 
 Lorem ipsum dolor sit amet, officia excepteur ex fugiat reprehenderit enim
 labore culpa sint ad nisi Lorem pariatur mollit ex esse exercitation amet. Nisi

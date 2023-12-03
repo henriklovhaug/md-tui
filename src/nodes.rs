@@ -8,8 +8,8 @@ pub struct ParseRoot {
 }
 
 impl ParseRoot {
-    pub fn new(children: ParseNode) -> Self {
-        let children = vec![children];
+    pub fn new(children: Vec<ParseNode>) -> Self {
+        let children = children;
         Self { children }
     }
 
@@ -20,133 +20,26 @@ impl ParseRoot {
     pub fn children_owned(self) -> Vec<ParseNode> {
         self.children
     }
-
-    pub fn set_y_offset(&mut self, scroll: u16) {
-        let mut y_offset = 0;
-        for child in self.children.iter_mut() {
-            child.set_y_offset(y_offset);
-            child.set_scroll_offset(scroll);
-            y_offset += child.height();
-        }
-    }
 }
-
-// impl Widget for ParseRoot {
-//     fn render(self, area: Rect, buf: &mut Buffer) {
-//         for child in self..children_owned() {
-//             child.render(area, buf);
-//         }
-//     }
-// }
 
 #[derive(Debug, Clone)]
 pub struct ParseNode {
     kind: MdEnum,
-    _parent_kind: Option<MdEnum>,
     height: u16,
     width: u16,
-    y_offset: u16,
-    scroll_offset: u16,
     content: String,
     children: Vec<ParseNode>,
 }
 
 impl ParseNode {
-    pub fn new(kind: MdEnum, width: u16, content: String, parent: Option<MdEnum>) -> Self {
+    pub fn new(kind: MdEnum, width: u16, content: String) -> Self {
         Self {
             kind,
             height: 0,
             width,
             content,
-            y_offset: 0,
-            scroll_offset: 0,
-            _parent_kind: parent,
             children: Vec::new(),
         }
-    }
-
-    pub fn set_y_offset(&mut self, y_offset: u16) {
-        self.y_offset = y_offset;
-        let mut height = self.height();
-        if !self.is_leaf() {
-            height = 0;
-        }
-        for child in self.children_mut() {
-            child.set_y_offset(y_offset + height);
-            height += child.height();
-        }
-    }
-
-    pub fn transform(&mut self, width: u16) {
-        match self.kind {
-            MdEnum::Heading => self.height = 1,
-            // MdEnum::Task => todo!(),
-            // MdEnum::UnorderedList => todo!(),
-            MdEnum::ListContainer => self.height = self.children().len() as u16,
-            // MdEnum::OrderedList => todo!(),
-            MdEnum::CodeBlock => {
-                self.height = self
-                    .children()
-                    .iter()
-                    .filter(|c| c.kind() == MdEnum::Sentence)
-                    .count() as u16;
-            }
-            // MdEnum::Code => todo!(),
-            MdEnum::Paragraph => {
-                let mut height = 1;
-                let mut prev_offset = 0;
-                let mut offset_index = 0;
-                let mut offsets = Vec::new();
-                self.content()
-                    .replace('\n', " ")
-                    .chars()
-                    .enumerate()
-                    .for_each(|(i, c)| {
-                        if c == ' ' {
-                            offset_index = i - offsets.iter().sum::<usize>();
-                            if offset_index > width as usize {
-                                height += 1;
-                                offsets.push(prev_offset);
-                            }
-                            prev_offset = offset_index;
-                        }
-                    });
-                self.height = height as u16;
-                // let mut children = Vec::new();
-                // let mut line_components = Vec::new();
-                // for child in self.children_owned() {
-                //     let current_line_length = line_components
-                //         .iter()
-                //         .map(|c: &MdComponent| c.content().len() as u16)
-                //         .sum::<u16>();
-                //     if (current_line_length + child.content().len() as u16) < width
-                //     {
-                //         line_components.push(child);
-                //     } else {
-                //         let split_index = width as usize - current_line_length as usize;
-                //         let (left, right) = self.split(split_index);
-                //         line_components.push(left);
-                //         // children.pus
-                //     }
-                // }
-            }
-            MdEnum::Table => self.height = self.children().len() as u16 - 1,
-            _ => self.height = 1,
-            // MdEnum::Link => todo!(),
-            // MdEnum::Quote => todo!(),
-            // MdEnum::TableRow => todo!(),
-            // MdEnum::Digit => todo!(),
-            // MdEnum::VerticalSeperator => todo!(),
-            // MdEnum::BlockSeperator => todo!(),
-            // MdEnum::Sentence => todo!(),
-        }
-    }
-
-    pub fn count_seperators(&self) -> u16 {
-        self.children
-            .iter()
-            .filter(|c| c.kind() == MdEnum::VerticalSeperator)
-            .count() as u16
     }
 
     pub fn kind(&self) -> MdEnum {
@@ -167,18 +60,6 @@ impl ParseNode {
 
     pub fn width(&self) -> u16 {
         self.width
-    }
-
-    pub fn y_offset(&self) -> u16 {
-        self.y_offset
-    }
-
-    pub fn scroll_offset(&self) -> u16 {
-        self.scroll_offset
-    }
-
-    pub fn set_scroll_offset(&mut self, offset: u16) {
-        self.scroll_offset = offset;
     }
 
     pub fn add_children(&mut self, children: Vec<ParseNode>) {
@@ -253,8 +134,8 @@ impl FromStr for MdEnum {
             "v_seperator" => Ok(Self::VerticalSeperator),
             "block_sep" => Ok(Self::BlockSeperator),
             "sentence" | "code_line" => Ok(Self::Sentence),
-            "normal" => Ok(Self::Sentence),
-            "table_sentence" => Ok(Self::Sentence),
+            "normal" | "digit" => Ok(Self::Sentence),
+            "table_word" => Ok(Self::Word),
             "list_container" => Ok(Self::ListContainer),
             "word" => Ok(Self::Word),
             _e => {
@@ -265,37 +146,7 @@ impl FromStr for MdEnum {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
-pub enum RenderNode {
-    Paragraph,
-    Heading,
-    Task,
-    List,
-    CodeBlock,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum WordType {
-    MetaInfo,
-    Normal,
-    Code,
-    Link,
-    Italic,
-    Bold,
-}
-
 #[derive(Debug, Clone)]
-pub struct Word {
-    content: String,
-    word_type: WordType,
-}
-
-pub struct RenderComponent {
-    kind: RenderNode,
-    content: Vec<Vec<Word>>,
-    height: u16,
-}
-
 pub struct RenderRoot {
     components: Vec<RenderComponent>,
 }
@@ -316,6 +167,106 @@ impl RenderRoot {
     pub fn components_mut(&mut self) -> &mut Vec<RenderComponent> {
         &mut self.components
     }
+
+    pub fn set_y_offset(&mut self, scroll: u16) {
+        let mut y_offset = 0;
+        for component in self.components.iter_mut() {
+            component.set_y_offset(y_offset);
+            component.set_scroll_offset(scroll);
+            y_offset += component.height();
+        }
+    }
+
+    pub fn transform(&mut self, width: u16) {
+        for component in self.components_mut() {
+            component.transform(width);
+        }
+    }
+}
+
+impl Widget for RenderRoot {
+    fn render(self, area: Rect, buf: &mut Buffer) {
+        for component in self.components_owned() {
+            component.render(area, buf);
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum WordType {
+    MetaInfo,
+    Normal,
+    Code,
+    Link,
+    Italic,
+    Bold,
+}
+
+impl From<MdEnum> for WordType {
+    fn from(value: MdEnum) -> Self {
+        match value {
+            MdEnum::Heading => todo!(),
+            MdEnum::Word => WordType::Normal,
+            MdEnum::Task => todo!(),
+            MdEnum::UnorderedList => todo!(),
+            MdEnum::ListContainer => todo!(),
+            MdEnum::OrderedList => todo!(),
+            MdEnum::CodeBlock => todo!(),
+            MdEnum::PLanguage => WordType::MetaInfo,
+            MdEnum::CodeStr => todo!(),
+            MdEnum::Code => WordType::Code,
+            MdEnum::Paragraph => WordType::Normal,
+            MdEnum::Link => todo!(),
+            MdEnum::Quote => todo!(),
+            MdEnum::Table => todo!(),
+            MdEnum::TableSeperator => todo!(),
+            MdEnum::TableRow => WordType::Normal,
+            MdEnum::Digit => WordType::Normal,
+            MdEnum::VerticalSeperator => todo!(),
+            MdEnum::BlockSeperator => WordType::MetaInfo,
+            MdEnum::Sentence => WordType::Normal,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Word {
+    content: String,
+    word_type: WordType,
+}
+
+impl Word {
+    pub fn new(content: String, word_type: WordType) -> Self {
+        Self { content, word_type }
+    }
+
+    pub fn content(&self) -> &str {
+        &self.content
+    }
+
+    pub fn kind(&self) -> WordType {
+        self.word_type
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum RenderNode {
+    Paragraph,
+    LineBreak,
+    Heading,
+    Task,
+    List,
+    Table,
+    CodeBlock,
+}
+
+#[derive(Debug, Clone)]
+pub struct RenderComponent {
+    kind: RenderNode,
+    content: Vec<Vec<Word>>,
+    height: u16,
+    offset: u16,
+    scroll_offset: u16,
 }
 
 impl RenderComponent {
@@ -324,6 +275,18 @@ impl RenderComponent {
             kind,
             content: vec![content],
             height: 0,
+            offset: 0,
+            scroll_offset: 0,
+        }
+    }
+
+    pub fn new_formatted(kind: RenderNode, content: Vec<Vec<Word>>) -> Self {
+        Self {
+            kind,
+            height: content.len() as u16,
+            content,
+            offset: 0,
+            scroll_offset: 0,
         }
     }
 
@@ -343,6 +306,22 @@ impl RenderComponent {
         self.height
     }
 
+    pub fn y_offset(&self) -> u16 {
+        self.offset
+    }
+
+    pub fn scroll_offset(&self) -> u16 {
+        self.scroll_offset
+    }
+
+    pub fn set_y_offset(&mut self, y_offset: u16) {
+        self.offset = y_offset;
+    }
+
+    pub fn set_scroll_offset(&mut self, offset: u16) {
+        self.scroll_offset = offset;
+    }
+
     pub fn transform(&mut self, width: u16) {
         match self.kind {
             RenderNode::Heading => self.height = 1,
@@ -353,8 +332,10 @@ impl RenderComponent {
             RenderNode::CodeBlock => {
                 let height = self
                     .content
+                    .first()
+                    .unwrap()
                     .iter()
-                    .filter(|c| c.iter().all(|w| w.word_type == WordType::Normal))
+                    .filter(|c| c.kind() != WordType::MetaInfo)
                     .count() as u16;
                 self.height = height;
             }
@@ -363,8 +344,8 @@ impl RenderComponent {
                 let mut lines = Vec::new();
                 let mut line = Vec::new();
                 for word in self.content.iter().flatten() {
-                    if word.content.len() + len < width as usize {
-                        len += word.content.len();
+                    if word.content.len() + 1 + len < width as usize {
+                        len += word.content.len() + 1;
                         line.push(word.clone());
                     } else {
                         lines.push(line);
@@ -377,6 +358,13 @@ impl RenderComponent {
                 }
                 self.height = lines.len() as u16;
                 self.content = lines;
+            }
+            RenderNode::LineBreak => {
+                self.height = 1;
+            }
+            RenderNode::Table => {
+                let height = self.content.len() as u16;
+                self.height = height;
             }
         }
     }
