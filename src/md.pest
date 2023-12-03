@@ -22,7 +22,7 @@ table_word           =  { (table_char | code | link | " ")+ }
 italic               = _{ ("*" ~ (italic_word | " " | NEWLINE)+ ~ "*") | ("_" ~ (italic_word | " " | NEWLINE)+ ~ "_") }
 bold                 = _{ "**" ~ (bold_word | " " | NEWLINE)+ ~ "**" }
 strikethrough        = _{ "~~" ~ (strikethrough_word | " " | NEWLINE)+ ~ "~~" }
-o_list_counter       = { digit+ ~ ". " }
+o_list_counter       =  { digit+ ~ ". " }
 
 sentence  = { (code | link | italic | bold | strikethrough | normal)+ }
 table_row = { "|" ~ (table_word | " " | "|")+ }
@@ -50,6 +50,8 @@ quote          = { ">" ~ (sentence | " ")+ }
 task           = { v_seperator? ~ (task_empty | task_complete) }
 block_sep      = { NEWLINE ~ NEWLINE | NEWLINE }
 
+comment = _{ "<!--" ~ (char | " ")+ ~ ">" }
+
 txt = {
-    (block_sep | table | quote | task | list_container | code_block | heading | paragraph)+
+    (comment | block_sep | table | quote | task | list_container | code_block | heading | paragraph)+
 }
