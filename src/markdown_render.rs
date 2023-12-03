@@ -169,7 +169,9 @@ fn render_list(area: Rect, buf: &mut Buffer, content: Vec<Vec<Word>>, clip: Clip
         })
         .collect();
 
-    let list = List::new(content);
+    let list = List::new(content)
+        .highlight_symbol("*")
+        .repeat_highlight_symbol(true);
     list.render(area, buf);
 }
 

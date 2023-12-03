@@ -24,18 +24,14 @@ impl ParseRoot {
 #[derive(Debug, Clone)]
 pub struct ParseNode {
     kind: MdEnum,
-    height: u16,
-    width: u16,
     content: String,
     children: Vec<ParseNode>,
 }
 
 impl ParseNode {
-    pub fn new(kind: MdEnum, width: u16, content: String) -> Self {
+    pub fn new(kind: MdEnum, content: String) -> Self {
         Self {
             kind,
-            height: 0,
-            width,
             content,
             children: Vec::new(),
         }
@@ -51,14 +47,6 @@ impl ParseNode {
 
     pub fn content_mut(&mut self) -> &mut String {
         &mut self.content
-    }
-
-    pub fn height(&self) -> u16 {
-        self.height
-    }
-
-    pub fn width(&self) -> u16 {
-        self.width
     }
 
     pub fn add_children(&mut self, children: Vec<ParseNode>) {
@@ -137,7 +125,7 @@ impl FromStr for MdEnum {
             "block_sep" => Ok(Self::BlockSeperator),
             "sentence" | "code_line" => Ok(Self::Sentence),
             "normal" | "digit" => Ok(Self::Sentence),
-            "table_word" => Ok(Self::Word),
+            "table_word" | "o_list_counter" => Ok(Self::Word),
             "list_container" => Ok(Self::ListContainer),
             "word" => Ok(Self::Word),
             "bold" | "bold_word" => Ok(Self::Bold),

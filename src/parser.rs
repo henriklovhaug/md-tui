@@ -26,12 +26,10 @@ pub fn parse_markdown(file: &str) -> RenderRoot {
 }
 
 fn parse_text(pair: Pair<'_, Rule>) -> ParseNode {
-    let content = pair.as_str().replace("\n", " ");
+    let content = pair.as_str().replace('\n', " ");
     let rule = format!("{:?}", pair.as_rule());
     let kind = MdEnum::from_str(&rule).expect("Infalliable. Change when enum is complete");
-    let span = pair.as_span();
-    let width = (span.end() - span.start()) as u16;
-    let mut component = ParseNode::new(kind, width, content);
+    let mut component = ParseNode::new(kind, content);
     let children = parse_node_children(pair.into_inner());
     component.add_children(children);
     component

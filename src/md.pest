@@ -2,7 +2,7 @@
 norwegian_char =  { "æ" | "ø" | "å" | "Æ" | "Ø" | "Å" }
 char           = _{ ASCII_ALPHANUMERIC | norwegian_char | "(" | ")" | "{" | "}" | "/" | ":" | ";" | "-" | "." | "," | "|" }
 table_char     = _{ ASCII_ALPHANUMERIC | norwegian_char | "(" | ")" | "{" | "}" | "/" | ":" | ";" | "-" | "." | "," }
-digit          =  { '0'..'9' }
+digit          = _{ '0'..'9' }
 
 // Lines
 word               = { " "* ~ char+ ~ (" " | NEWLINE)? }
@@ -10,7 +10,7 @@ inline_code_word   = { " "* ~ char+ ~ " "? }
 italic_word        = { char+ ~ " "? }
 bold_word          = { char+ ~ " "? }
 strikethrough_word = { char+ ~ " "? }
-link_word          = { (char | "#" | "-")+ }
+link_word          = { (char | "#" | "-" | " ")+ }
 
 code_str             =  { (inline_code_word | " " | "|")+ }
 code                 =  { "`" ~ code_str ~ "`" }
@@ -22,6 +22,7 @@ table_word           =  { (table_char | code | link | " ")+ }
 italic               = _{ ("*" ~ (italic_word | " " | NEWLINE)+ ~ "*") | ("_" ~ (italic_word | " " | NEWLINE)+ ~ "_") }
 bold                 = _{ "**" ~ (bold_word | " " | NEWLINE)+ ~ "**" }
 strikethrough        = _{ "~~" ~ (strikethrough_word | " " | NEWLINE)+ ~ "~~" }
+o_list_counter       = { digit+ ~ ". " }
 
 sentence  = { (code | link | italic | bold | strikethrough | normal)+ }
 table_row = { "|" ~ (table_word | " " | "|")+ }
@@ -31,7 +32,7 @@ task_empty      = { "- [ ] " ~ (sentence | " ")+ }
 task_complete   = { "- [x] " ~ (sentence | " ")+ }
 
 u_list =  { ("-" | "*") ~ " " ~ (sentence | " ")+ }
-o_list =  { digit+ ~ "." ~ " " ~ (sentence | " ")+ }
+o_list =  { o_list_counter ~ (sentence | " ")+ }
 h1     = _{ "# " ~ (sentence | " ")+ }
 h2     = _{ "## " ~ (sentence | " ")+ }
 h3     = _{ "### " ~ (sentence | " ")+ }
