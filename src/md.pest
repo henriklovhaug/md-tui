@@ -1,30 +1,32 @@
 // Characters
-norwegian_char =  { "æ" | "ø" | "å" | "Æ" | "Ø" | "Å" }
+norwegian_char = _{ "æ" | "ø" | "å" | "Æ" | "Ø" | "Å" }
 char           = _{ ASCII_ALPHANUMERIC | norwegian_char | "(" | ")" | "{" | "}" | "/" | ":" | ";" | "-" | "." | "," | "|" }
 table_char     = _{ ASCII_ALPHANUMERIC | norwegian_char | "(" | ")" | "{" | "}" | "/" | ":" | ";" | "-" | "." | "," }
+link_char      = _{ ASCII_ALPHANUMERIC | norwegian_char | "{" | "}" | "/" | ":" | ";" | "-" | "." | "," }
 digit          = _{ '0'..'9' }
 
-// Lines
-word               = { " "* ~ char+ ~ (" " | NEWLINE)? }
-inline_code_word   = { " "* ~ char+ ~ " "? }
-italic_word        = { char+ ~ " "? }
-bold_word          = { char+ ~ " "? }
-strikethrough_word = { char+ ~ " "? }
-link_word          = { (char | "#" | "-" | " ")+ }
+// Words
+word               =  { " "* ~ char+ ~ (" " | NEWLINE)? }
+inline_code_word   =  { " "* ~ char+ ~ " "? }
+italic_word        =  { char+ ~ " "? }
+bold_word          =  { char+ ~ " "? }
+strikethrough_word =  { char+ ~ " "? }
+link_word          = _{ (link_char | "#" | "-" | " ")+ }
 
+// Lines
 code_str             =  { (inline_code_word | " " | "|")+ }
 code                 =  { "`" ~ code_str ~ "`" }
 programming_language =  { ASCII_ALPHA+ }
 code_line            =  { (char | " ")+ }
 normal               = _{ (!(NUMBER ~ ".") ~ (word | " "))+ }
-link                 =  { "- [" ~ (link_word | " ")+ ~ "]" ~ "(" ~ (link_word)+ ~ ")" }
+link                 =  { " "* ~ "- [" ~ (link_word | " ")+ ~ "]" ~ "(#" ~ (link_word)+ ~ ")" }
 table_word           =  { (table_char | code | link | " ")+ }
 italic               = _{ ("*" ~ (italic_word | " " | NEWLINE)+ ~ "*") | ("_" ~ (italic_word | " " | NEWLINE)+ ~ "_") }
 bold                 = _{ "**" ~ (bold_word | " " | NEWLINE)+ ~ "**" }
 strikethrough        = _{ "~~" ~ (strikethrough_word | " " | NEWLINE)+ ~ "~~" }
 o_list_counter       =  { digit+ ~ ". " }
 
-sentence  = { (code | link | italic | bold | strikethrough | normal)+ }
+sentence  = { (code | italic | bold | strikethrough | normal)+ }
 table_row = { "|" ~ (table_word | " " | "|")+ }
 
 table_seperator = { ("|"? ~ " "? ~ "-"+ ~ " "? ~ "|")+ }
@@ -53,5 +55,5 @@ block_sep      = { NEWLINE ~ NEWLINE | NEWLINE }
 comment = _{ "<!--" ~ (char | " ")+ ~ ">" }
 
 txt = {
-    (comment | block_sep | table | quote | task | list_container | code_block | heading | paragraph)+
+    (link | comment | block_sep | table | quote | task | list_container | code_block | heading | paragraph)+
 }

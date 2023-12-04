@@ -1,5 +1,11 @@
 # MD-CLI
 
+<!--toc:start-->
+
+- [MD-CLI](#md-cli)
+
+<!--toc:end-->
+
 A terminal markdown renderer
 
 A table with some text and more `With some inline code` herea asklfj
@@ -18,7 +24,8 @@ public static main void() {
 }
 ```
 
-1. first with more
+1. first with more Lorem ipsum dolor sit amet, qui minim labore adipisicing
+   minim sint cillum sint consectetur cupidatat.
 2. second `With code`
 3. third
 
