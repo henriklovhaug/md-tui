@@ -1,5 +1,6 @@
 use std::str::FromStr;
 
+use itertools::Itertools;
 use pest::{
     iterators::{Pair, Pairs},
     Parser,
@@ -20,7 +21,9 @@ pub fn parse_markdown(file: &str) -> RenderRoot {
 
     let root_pair = root.into_iter().next().unwrap();
 
-    let parse_root = ParseRoot::new(parse_text(root_pair).children_owned());
+    let children = parse_text(root_pair).children_owned();
+    let children = children.iter().dedup().cloned().collect();
+    let parse_root = ParseRoot::new(children);
 
     node_to_component(parse_root)
 }
@@ -143,6 +146,12 @@ pub fn print_from_root(root: &RenderRoot) {
 }
 
 fn print_component(component: &RenderComponent, _depth: usize) {
+    println!(
+        "Component: {:?}, height: {}, y_offset: {}",
+        component.kind(),
+        component.height(),
+        component.y_offset()
+    );
     component.content().iter().for_each(|w| {
         w.iter().for_each(|w| {
             println!("Content: {}, kind: {:?}", w.content(), w.kind());

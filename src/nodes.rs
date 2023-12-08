@@ -21,7 +21,7 @@ impl ParseRoot {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ParseNode {
     kind: MdEnum,
     content: String,
@@ -351,17 +351,15 @@ impl RenderComponent {
                 let mut lines = Vec::new();
                 let mut line = Vec::new();
                 for word in self.content.iter().flatten() {
-                    if word.content.len() + len < width as usize {
-                        if line.is_empty() {
-                            let mut word = word.clone();
-                            let content = word.content.trim_start().to_owned();
-                            word.set_content(content);
-                            line.push(word);
-                        } else {
-                            line.push(word.clone());
-                        }
+                    if word.content.len() + len < width as usize && !line.is_empty() {
+                        line.push(word.clone());
                         len += word.content.len() + 1;
                     } else {
+                        if line.is_empty() {
+                            line.push(word.clone());
+                            len += word.content.len() + 1;
+                            continue;
+                        }
                         lines.push(line);
                         len = word.content.len() + 1;
                         let mut word = word.clone();

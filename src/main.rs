@@ -30,7 +30,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     // let text = read_to_string("README.md")?;
     // let mut markdown = parse_markdown(&text);
     // markdown.transform(80);
-    // markdown.set_y_offset(0);
+    // markdown.set_scroll(0);
     //
     // parser::print_from_root(&markdown);
     // return Ok(());

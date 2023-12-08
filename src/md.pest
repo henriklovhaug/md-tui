@@ -35,7 +35,10 @@ link_prefix               = { "- [" }
 quote_prefix              = { "> " }
 code_block_prefix         = { "```" }
 table_prefix              = { "|" }
-forbidden_sentence_prefic = { NEWLINE ~ (task_prefix | link_prefix | quote_prefix | code_block_prefix | table_prefix) }
+list_prefix               = { "-" | NUMBER ~ ". " }
+forbidden_sentence_prefic = {
+    NEWLINE ~ (task_prefix | link_prefix | quote_prefix | code_block_prefix | table_prefix | list_prefix)
+}
 
 sentence      = { (code | italic | bold | strikethrough | normal)+ }
 task_sentence = { (code | italic | bold | strikethrough | task_normal)+ }
@@ -55,7 +58,7 @@ h4     = _{ "#### " ~ (sentence | " ")+ }
 v_seperator = _{ NEWLINE }
 
 // Blocks
-heading        = { (h1 | h2 | h3 | h4) }
+heading        = { (h1 | h2 | h3 | h4) ~ (NEWLINE | EOI) }
 list_container = { (v_seperator? ~ (u_list | o_list))+ }
 paragraph      = { (sentence)+ }
 code_block     = { "```" ~ (programming_language | NEWLINE) ~ (code_line | NEWLINE)+ ~ "```" }
@@ -67,5 +70,5 @@ block_sep      = { v_seperator }
 comment = _{ "<!--" ~ (char | " ")+ ~ ">" }
 
 txt = {
-    (task | link | comment | table | quote | list_container | code_block | heading | paragraph | block_sep)+
+    (task | link | comment | table | quote | list_container | code_block | heading | paragraph | block_sep+)+
 }
