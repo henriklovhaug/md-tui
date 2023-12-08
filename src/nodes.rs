@@ -241,6 +241,14 @@ impl Word {
         &self.content
     }
 
+    pub fn content_mut(&mut self) -> &mut String {
+        &mut self.content
+    }
+
+    pub fn set_content(&mut self, content: impl Into<String>) {
+        self.content = content.into();
+    }
+
     pub fn kind(&self) -> WordType {
         self.word_type
     }
@@ -344,12 +352,22 @@ impl RenderComponent {
                 let mut line = Vec::new();
                 for word in self.content.iter().flatten() {
                     if word.content.len() + len < width as usize {
+                        if line.is_empty() {
+                            let mut word = word.clone();
+                            let content = word.content.trim_start().to_owned();
+                            word.set_content(content);
+                            line.push(word);
+                        } else {
+                            line.push(word.clone());
+                        }
                         len += word.content.len() + 1;
-                        line.push(word.clone());
                     } else {
                         lines.push(line);
-                        line = vec![word.clone()];
                         len = word.content.len() + 1;
+                        let mut word = word.clone();
+                        let content = word.content.trim_start().to_owned();
+                        word.set_content(content);
+                        line = vec![word];
                     }
                 }
                 if !line.is_empty() {

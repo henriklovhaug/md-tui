@@ -9,9 +9,9 @@
 A terminal markdown renderer
 
 A table with some text and more `With some inline code` herea asklfj
-adskjfdksaljf _some italic_ sd sdkjf hdfj ~~noe strike erj lksajdf dskjf sadljf
-asdljf asdlfj asdlfjlkasfd~~ sdkjfh sdkjfh asdjf sdakjfhads jfh adskjfdksaljf
-adskjfh sd sdkjf hdfj asdfh sdkjfh sdkjfh asdjf sdakjfhads jfh
+adskjfdksaljf _some italic_ sd sdkjf hdfj ~~noe strike erj lksajdf dskjf sad ljf
+asdljf asdlfj asdlfjlkasfd~~ sdkjfh sdkjfh asdjf sda 2. kjfhads jfh
+adskjfdksaljf adskjfh sd sdkjf hdfj asdfh sdkjfh sdkjfh asdjf sdakjfhads jfh
 
 | Column1 | Column2             | Column3 | Column4 |
 | ------- | ------------------- | ------- | ------- |
