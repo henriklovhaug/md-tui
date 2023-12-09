@@ -58,6 +58,21 @@ fn node_to_component(root: ParseRoot) -> RenderRoot {
 
 fn parse_component(parse_node: ParseNode) -> RenderComponent {
     match parse_node.kind() {
+        MdParseEnum::Task => {
+            let leaf_nodes = get_leaf_nodes(parse_node);
+            let mut words = Vec::new();
+            for node in leaf_nodes {
+                let word_type = WordType::from(node.kind());
+                let content = node
+                    .content()
+                    .chars()
+                    .dedup_by(|x, y| *x == ' ' && *y == ' ')
+                    .collect();
+                words.push(Word::new(content, word_type));
+            }
+            RenderComponent::new(RenderNode::Task, words)
+        }
+
         MdParseEnum::Paragraph => {
             let leaf_nodes = get_leaf_nodes(parse_node);
             let mut words = Vec::new();

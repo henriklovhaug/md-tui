@@ -65,11 +65,12 @@ impl Widget for RenderComponent {
         match kind {
             RenderNode::Paragraph => render_paragraph(area, buf, self.content_owned(), clips),
             RenderNode::Heading => render_heading(area, buf, self.content_owned()),
-            RenderNode::Task => todo!(),
+            RenderNode::Task => render_task(area, buf, self.content_owned(), clips),
             RenderNode::List => render_list(area, buf, self.content_owned(), clips),
             RenderNode::CodeBlock => render_code_block(area, buf, self.content_owned(), clips),
             RenderNode::LineBreak => (),
             RenderNode::Table => render_table(area, buf, self.content_owned(), clips),
+            RenderNode::Quote => todo!(),
         }
     }
 }
@@ -255,4 +256,39 @@ fn render_table(area: Rect, buf: &mut Buffer, content: Vec<Vec<Word>>, clip: Cli
         .widths(&widths);
 
     table.render(area, buf);
+}
+
+fn render_task(area: Rect, buf: &mut Buffer, content: Vec<Vec<Word>>, clip: Clipping) {
+    let content = match clip {
+        Clipping::Upper => {
+            let len = content.len();
+            let height = area.height;
+            let offset = len - height as usize;
+            let mut content = content;
+            content.drain(0..offset);
+            content
+        }
+        Clipping::Lower => {
+            let mut content = content;
+            content.drain(area.height as usize..);
+            content
+        }
+        Clipping::None => content,
+    };
+
+    let lines = content
+        .iter()
+        .map(|c| {
+            Line::from(
+                c.iter()
+                    .filter(|i| i.kind() != WordType::MetaInfo)
+                    .map(|i| style_word(i))
+                    .collect::<Vec<_>>(),
+            )
+        })
+        .collect::<Vec<_>>();
+
+    let paragraph = Paragraph::new(lines);
+
+    paragraph.render(area, buf);
 }

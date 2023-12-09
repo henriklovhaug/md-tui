@@ -1,8 +1,22 @@
 // Characters
 norwegian_char = _{ "æ" | "ø" | "å" | "Æ" | "Ø" | "Å" }
-char           = _{ ASCII_ALPHANUMERIC | norwegian_char | "(" | ")" | "{" | "}" | "/" | ":" | ";" | "-" | "." | "," | "|" }
+char           = _{
+    ASCII_ALPHANUMERIC
+  | norwegian_char
+  | "("
+  | ")"
+  | "{"
+  | "}"
+  | "/"
+  | ":"
+  | ";"
+  | "-"
+  | "."
+  | ","
+  | "|"
+}
 table_char     = _{ ASCII_ALPHANUMERIC | norwegian_char | "(" | ")" | "{" | "}" | "/" | ":" | ";" | "-" | "." | "," }
-link_char      = _{ ASCII_ALPHANUMERIC | norwegian_char | "{" | "}" | "/" | ":" | ";" | "-" | "." | "," }
+link_char      = _{ ASCII_ALPHANUMERIC | norwegian_char | "{" | "}" | "/" | ":" | ";" | "-" | "." | "," | "-" }
 digit          = _{ '0'..'9' }
 
 // Words
@@ -18,7 +32,6 @@ code                 =  { "`" ~ code_word+ ~ "`" }
 programming_language =  { ASCII_ALPHA+ }
 code_line            =  { (char | " ")+ }
 normal               = _{ word+ }
-task_normal          = _{ ((NEWLINE ~ "- [" ~ (" " | "x" | "X") ~ "]") ~ (word))+ }
 markdown_link        =  { " "* ~ "- [" ~ link_word+ ~ "]" ~ "(#" ~ link_word+ ~ ")" }
 external_link        =  { " "* ~ "- [" ~ link_word+ ~ "]" ~ "(" ~ link_word+ ~ ")" }
 link                 = _{ (markdown_link | external_link) }
@@ -29,23 +42,22 @@ strikethrough        = _{ "~~" ~ (strikethrough_word | NEWLINE)+ ~ "~~" }
 o_list_counter       =  { digit+ ~ ". " }
 
 // Prefixes
-task_prefix               = { "- [ ] " | "- [x] " }
-link_prefix               = { "- [" }
-quote_prefix              = { "> " }
-code_block_prefix         = { "```" }
-table_prefix              = { "|" }
-list_prefix               = { "-" | NUMBER ~ ". " }
-forbidden_sentence_prefic = {
+task_open                 =  { "- [ ] " }
+task_complete             =  { "- [x] " | "- [X] " }
+task_prefix               = _{ task_open | task_complete }
+link_prefix               =  { "- [" }
+quote_prefix              =  { ">" }
+code_block_prefix         =  { "```" }
+table_prefix              =  { "|" }
+list_prefix               =  { "-" | (NUMBER ~ ". ") }
+forbidden_sentence_prefic =  {
     NEWLINE ~ (task_prefix | link_prefix | quote_prefix | code_block_prefix | table_prefix | list_prefix)
 }
 
-sentence      = _{ (code | italic | bold | strikethrough | normal)+ }
-task_sentence =  { (code | italic | bold | strikethrough | task_normal)+ }
-table_row     =  { "|" ~ (table_word | " " | "|")+ }
+sentence = _{ (code | italic | bold | strikethrough | normal)+ }
 
+table_row       = { "|" ~ (table_word | " " | "|")+ }
 table_seperator = { ("|"? ~ " "? ~ "-"+ ~ " "? ~ "|")+ }
-task_empty      = { "- [ ] " ~ (task_sentence | " ")+ }
-task_complete   = { "- [x] " ~ (task_sentence | " ")+ }
 
 u_list =  { ("-" | "*") ~ " " ~ (sentence | " ")+ }
 o_list =  { o_list_counter ~ (sentence | " ")+ }
@@ -57,11 +69,11 @@ h4     = _{ "#### " ~ (sentence | " ")+ }
 // Blocks
 heading        = { (h1 | h2 | h3 | h4) ~ (NEWLINE | EOI) }
 list_container = { (NEWLINE? ~ (u_list | o_list))+ }
-paragraph      = { (sentence)+ }
+paragraph      = { sentence+ }
 code_block     = { "```" ~ (programming_language | NEWLINE) ~ (code_line | NEWLINE)+ ~ "```" }
 table          = { (NEWLINE? ~ (table_seperator | table_row))+ }
 quote          = { ">" ~ (sentence | " ")+ }
-task           = { NEWLINE? ~ (task_empty | task_complete) }
+task           = { NEWLINE? ~ task_prefix ~ sentence }
 block_sep      = { NEWLINE }
 horizontal_sep = { "---"+ }
 

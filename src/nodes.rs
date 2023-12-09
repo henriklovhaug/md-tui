@@ -45,10 +45,6 @@ impl ParseNode {
         &self.content
     }
 
-    pub fn content_mut(&mut self) -> &mut String {
-        &mut self.content
-    }
-
     pub fn add_children(&mut self, children: Vec<ParseNode>) {
         self.children.extend(children);
     }
@@ -60,18 +56,6 @@ impl ParseNode {
     pub fn children_owned(self) -> Vec<ParseNode> {
         self.children
     }
-
-    pub fn children_mut(&mut self) -> &mut Vec<ParseNode> {
-        &mut self.children
-    }
-
-    pub fn has_children(&self) -> bool {
-        !self.children.is_empty()
-    }
-
-    pub fn is_leaf(&self) -> bool {
-        self.children.is_empty()
-    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -79,6 +63,8 @@ pub enum MdParseEnum {
     Heading,
     Word,
     Task,
+    TaskOpen,
+    TaskClosed,
     UnorderedList,
     ListContainer,
     OrderedList,
@@ -107,6 +93,8 @@ impl FromStr for MdParseEnum {
         match s {
             "h1" | "h2" | "h3" | "h4" | "heading" => Ok(Self::Heading),
             "task" => Ok(Self::Task),
+            "task_open" => Ok(Self::TaskOpen),
+            "task_complete" => Ok(Self::TaskClosed),
             "u_list" => Ok(Self::UnorderedList),
             "o_list" => Ok(Self::OrderedList),
             "code_block" => Ok(Self::CodeBlock),
@@ -193,7 +181,11 @@ pub enum WordType {
 impl From<MdParseEnum> for WordType {
     fn from(value: MdParseEnum) -> Self {
         match value {
-            MdParseEnum::PLanguage | MdParseEnum::BlockSeperator => WordType::MetaInfo,
+            MdParseEnum::PLanguage
+            | MdParseEnum::BlockSeperator
+            | MdParseEnum::TaskOpen
+            | MdParseEnum::TaskClosed => WordType::MetaInfo,
+
             MdParseEnum::Code => WordType::Code,
             MdParseEnum::Bold => WordType::Bold,
             MdParseEnum::Italic => WordType::Italic,
@@ -257,6 +249,7 @@ pub enum RenderNode {
     List,
     Table,
     CodeBlock,
+    Quote,
 }
 
 #[derive(Debug, Clone)]
@@ -328,7 +321,44 @@ impl RenderComponent {
     pub fn transform(&mut self, width: u16) {
         match self.kind {
             RenderNode::Heading => self.height = 1,
-            RenderNode::Task => self.height = 1,
+            RenderNode::Task => {
+                const CHECKBOX: &str = "✅ ";
+                const UNCHECKED: &str = "❌ ";
+                let width = width as usize - 3;
+                let mut len = 0;
+                let mut lines = Vec::new();
+                let mut line = Vec::new();
+                let checked_str = match self.content[0][0].content.as_str() {
+                    "- [x] " => CHECKBOX,
+                    "- [ ] " => UNCHECKED,
+                    _ => UNCHECKED,
+                };
+                let word = Word::new(checked_str.to_owned(), WordType::Normal);
+                line.push(word);
+                for word in self
+                    .content
+                    .iter()
+                    .flatten()
+                    .filter(|c| c.kind() != WordType::MetaInfo)
+                {
+                    if word.content.len() + len < width {
+                        line.push(word.clone());
+                        len += word.content.len() + 1;
+                    } else {
+                        lines.push(line);
+                        len = word.content.len() + 1;
+                        let mut word = word.clone();
+                        let content = format!("   {}", word.content.trim_start().to_owned());
+                        word.set_content(content);
+                        line = vec![word];
+                    }
+                }
+                if !line.is_empty() {
+                    lines.push(line);
+                }
+                self.height = lines.len() as u16;
+                self.content = lines;
+            }
             RenderNode::List => {
                 self.content.iter().len();
             }
@@ -375,6 +405,7 @@ impl RenderComponent {
                 let height = self.content.len() as u16;
                 self.height = height;
             }
+            RenderNode::Quote => todo!(),
         }
     }
 }
