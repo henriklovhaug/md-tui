@@ -22,6 +22,8 @@ adskjfdksaljf _some italic_ sd sdkjf hdfj ~~noe strike erj lksajdf dskjf sad ljf
 asdljf asdlfj asdlfjlkasfd~~ sdkjfh sdkjfh asdjf sda 2. kjfhads jfh
 adskjfdksaljf adskjfh sd sdkjf hdfj asdfh sdkjfh sdkjfh asdjf sdakjfhads jfh
 
+## Table
+
 | Column1 | Column2             | Column3 | Column4 |
 | ------- | ------------------- | ------- | ------- |
 | Item1.1 | Item2.1 med noe mer | Item3.1 | Item4.1 |

@@ -348,35 +348,6 @@ impl RenderComponent {
     pub fn transform(&mut self, width: u16) {
         match self.kind {
             RenderNode::Heading => self.height = 1,
-            RenderNode::Task => {
-                let width = width as usize - 4;
-                let mut len = 0;
-                let mut lines = Vec::new();
-                let mut line = Vec::new();
-                for word in self.content.iter().flatten() {
-                    if word.content.len() + len < width && !line.is_empty() {
-                        line.push(word.clone());
-                        len += word.content.len() + 1;
-                    } else {
-                        if line.is_empty() {
-                            line.push(word.clone());
-                            len += word.content.len() + 1;
-                            continue;
-                        }
-                        lines.push(line);
-                        len = word.content.len() + 1;
-                        let mut word = word.clone();
-                        let content = word.content.trim_start().to_owned();
-                        word.set_content(content);
-                        line = vec![word];
-                    }
-                }
-                if !line.is_empty() {
-                    lines.push(line);
-                }
-                self.height = lines.len() as u16;
-                self.content = lines;
-            }
             RenderNode::List => {
                 self.content.iter().len();
             }
@@ -388,12 +359,24 @@ impl RenderComponent {
                     .count() as u16;
                 self.height = height;
             }
-            RenderNode::Paragraph => {
+            RenderNode::Paragraph | RenderNode::Task => {
+                let width = match self.kind {
+                    RenderNode::Paragraph => width as usize,
+                    RenderNode::Task => width as usize - 4,
+                    _ => unreachable!(),
+                };
                 let mut len = 0;
                 let mut lines = Vec::new();
                 let mut line = Vec::new();
+                let mut last_kind = WordType::Normal;
                 for word in self.content.iter().flatten() {
-                    if word.content.len() + len < width as usize && !line.is_empty() {
+                    if word.content.len() + len < width && !line.is_empty() {
+                        if word.kind() == WordType::Normal
+                            && !word.content.starts_with(' ')
+                            && last_kind != WordType::Normal
+                        {
+                            line.push(Word::new(" ".to_owned(), WordType::Normal));
+                        }
                         line.push(word.clone());
                         len += word.content.len() + 1;
                     } else {
@@ -409,6 +392,7 @@ impl RenderComponent {
                         word.set_content(content);
                         line = vec![word];
                     }
+                    last_kind = word.kind();
                 }
                 if !line.is_empty() {
                     lines.push(line);

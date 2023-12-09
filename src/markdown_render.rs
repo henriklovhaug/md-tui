@@ -251,8 +251,8 @@ fn render_table(area: Rect, buf: &mut Buffer, content: Vec<Vec<Word>>, clip: Cli
     match clip {
         Clipping::Upper => {
             let len = rows.len();
-            let height = area.height;
-            let offset = len - height as usize;
+            let height = area.height as usize;
+            let offset = len - height;
             rows.drain(0..offset);
         }
         Clipping::Lower => {

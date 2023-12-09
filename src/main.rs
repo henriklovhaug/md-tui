@@ -15,6 +15,7 @@ use nodes::RenderRoot;
 use parser::parse_markdown;
 use ratatui::{
     backend::{Backend, CrosstermBackend},
+    layout::Rect,
     Frame, Terminal,
 };
 
@@ -136,5 +137,10 @@ fn run_app<B: Backend>(
 
 fn ui(f: &mut Frame, lines: RenderRoot) {
     let size = f.size();
-    f.render_widget(lines, size);
+    let area = Rect {
+        x: 2,
+        width: size.width - 2,
+        ..size
+    };
+    f.render_widget(lines, area);
 }

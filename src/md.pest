@@ -67,7 +67,7 @@ h3     = _{ "### " ~ (sentence | " ")+ }
 h4     = _{ "#### " ~ (sentence | " ")+ }
 
 // Blocks
-heading        = { (h1 | h2 | h3 | h4) ~ (NEWLINE | EOI) }
+heading        = { (h1 | h2 | h3 | h4) }
 list_container = { (NEWLINE? ~ (u_list | o_list))+ }
 paragraph      = { sentence+ }
 code_block     = { "```" ~ (programming_language | NEWLINE) ~ (code_line | NEWLINE)+ ~ "```" }
