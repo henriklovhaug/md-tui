@@ -1,4 +1,5 @@
 use std::{
+    cmp,
     error::Error,
     fs::read_to_string,
     io::{self},
@@ -73,11 +74,15 @@ fn run_app<B: Backend>(
     let text = read_to_string("README.md")?;
 
     let mut markdown = parse_markdown(&text);
-    markdown.transform(80);
+    let mut width = cmp::min(terminal.size()?.width, 80);
+    markdown.transform(width);
 
     loop {
-        let _width = terminal.size()?.width;
-        let _height = terminal.size()?.height;
+        let new_width = cmp::min(terminal.size()?.width, 80);
+        if new_width != width {
+            markdown.transform(new_width);
+            width = new_width;
+        }
 
         markdown.set_scroll(app.vertical_scroll);
 
@@ -95,6 +100,15 @@ fn run_app<B: Backend>(
                     }
                     KeyCode::Char('k') => {
                         app.vertical_scroll = app.vertical_scroll.saturating_sub(1);
+                    }
+                    KeyCode::Char('g') => {
+                        app.vertical_scroll = 0;
+                    }
+                    KeyCode::Char('G') => {
+                        app.vertical_scroll = markdown.height().saturating_sub(1);
+                    }
+                    KeyCode::Char('r') => {
+                        markdown.transform(new_width)
                     }
                     _ => {}
                 }

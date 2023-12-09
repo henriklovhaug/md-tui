@@ -157,6 +157,10 @@ impl RenderRoot {
             component.transform(width);
         }
     }
+
+    pub fn height(&self) -> u16 {
+        self.components.iter().map(|c| c.height()).sum()
+    }
 }
 
 impl Widget for RenderRoot {
@@ -256,6 +260,7 @@ pub enum RenderNode {
 pub struct RenderComponent {
     kind: RenderNode,
     content: Vec<Vec<Word>>,
+    meta_info: Vec<Word>,
     height: u16,
     offset: u16,
     scroll_offset: u16,
@@ -263,9 +268,16 @@ pub struct RenderComponent {
 
 impl RenderComponent {
     pub fn new(kind: RenderNode, content: Vec<Word>) -> Self {
+        let meta_info: Vec<Word> = content
+            .iter()
+            .filter(|c| c.kind() == WordType::MetaInfo)
+            .cloned()
+            .collect();
+
         Self {
             kind,
             content: vec![content],
+            meta_info,
             height: 0,
             offset: 0,
             scroll_offset: 0,
@@ -273,9 +285,17 @@ impl RenderComponent {
     }
 
     pub fn new_formatted(kind: RenderNode, content: Vec<Vec<Word>>) -> Self {
+        let meta_info: Vec<Word> = content
+            .iter()
+            .flatten()
+            .filter(|c| c.kind() == WordType::MetaInfo)
+            .cloned()
+            .collect();
+
         Self {
             kind,
             height: content.len() as u16,
+            meta_info,
             content,
             offset: 0,
             scroll_offset: 0,
@@ -292,6 +312,10 @@ impl RenderComponent {
 
     pub fn content_mut(&mut self) -> &mut Vec<Vec<Word>> {
         &mut self.content
+    }
+
+    pub fn meta_info(&self) -> &Vec<Word> {
+        &self.meta_info
     }
 
     pub fn content_owned(self) -> Vec<Vec<Word>> {
@@ -331,10 +355,13 @@ impl RenderComponent {
                 let checked_str = match self.content[0][0].content.as_str() {
                     "- [x] " => CHECKBOX,
                     "- [ ] " => UNCHECKED,
-                    _ => UNCHECKED,
+                    _ => "",
                 };
-                let word = Word::new(checked_str.to_owned(), WordType::Normal);
-                line.push(word);
+                if checked_str == CHECKBOX || checked_str == UNCHECKED {
+                    let word = Word::new(checked_str.to_owned(), WordType::Normal);
+                    line.push(word);
+                    len += checked_str.len();
+                }
                 for word in self
                     .content
                     .iter()
