@@ -107,9 +107,7 @@ fn run_app<B: Backend>(
                     KeyCode::Char('G') => {
                         app.vertical_scroll = markdown.height().saturating_sub(1);
                     }
-                    KeyCode::Char('r') => {
-                        markdown.transform(new_width)
-                    }
+                    KeyCode::Char('r') => markdown.transform(new_width),
                     _ => {}
                 }
             }

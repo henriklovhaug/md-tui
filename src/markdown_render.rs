@@ -60,12 +60,20 @@ impl Widget for RenderComponent {
             Clipping::None => self.height(),
         };
 
+        let meta_info = self.meta_info().to_owned();
+
         let area = Rect { height, y, ..area };
 
         match kind {
             RenderNode::Paragraph => render_paragraph(area, buf, self.content_owned(), clips),
             RenderNode::Heading => render_heading(area, buf, self.content_owned()),
-            RenderNode::Task => render_task(area, buf, self.content_owned(), clips),
+            RenderNode::Task => render_task(
+                area,
+                buf,
+                self.content_owned(),
+                clips,
+                &meta_info.first().unwrap(),
+            ),
             RenderNode::List => render_list(area, buf, self.content_owned(), clips),
             RenderNode::CodeBlock => render_code_block(area, buf, self.content_owned(), clips),
             RenderNode::LineBreak => (),
@@ -105,6 +113,11 @@ fn render_heading(area: Rect, buf: &mut Buffer, content: Vec<Vec<Word>>) {
     let paragraph = Paragraph::new(content)
         .block(Block::default().style(Style::default().bg(Color::Blue)))
         .alignment(Alignment::Center);
+
+    let area = Rect {
+        width: cmp::min(area.width, 80),
+        ..area
+    };
 
     paragraph.render(area, buf);
 }
@@ -204,12 +217,12 @@ fn render_code_block(area: Rect, buf: &mut Buffer, content: Vec<Vec<Word>>, clip
 
     let area = Rect {
         x: area.x + 1,
-        width: area.width - 2,
+        width: cmp::min(area.width - 2, 80),
         ..area
     };
 
     let paragraph = Paragraph::new(content)
-        .block(Block::default().style(Style::default().bg(Color::Blue)))
+        .block(Block::default().style(Style::default().bg(Color::Rgb(48, 48, 48))))
         .wrap(Wrap { trim: false });
 
     paragraph.render(area, buf);
@@ -258,7 +271,32 @@ fn render_table(area: Rect, buf: &mut Buffer, content: Vec<Vec<Word>>, clip: Cli
     table.render(area, buf);
 }
 
-fn render_task(area: Rect, buf: &mut Buffer, content: Vec<Vec<Word>>, clip: Clipping) {
+fn render_task(
+    area: Rect,
+    buf: &mut Buffer,
+    content: Vec<Vec<Word>>,
+    clip: Clipping,
+    meta_info: &Word,
+) {
+    const CHECKBOX: &str = "✅ ";
+    const UNCHECKED: &str = "❌ ";
+
+    let checkbox = if meta_info.content() == "- [ ] " {
+        UNCHECKED
+    } else {
+        CHECKBOX
+    };
+
+    let paragraph = Paragraph::new(checkbox);
+
+    paragraph.render(area, buf);
+
+    let area = Rect {
+        x: area.x + 4,
+        width: area.width - 4,
+        ..area
+    };
+
     let content = match clip {
         Clipping::Upper => {
             let len = content.len();

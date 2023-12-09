@@ -89,6 +89,7 @@ pub enum MdParseEnum {
 impl FromStr for MdParseEnum {
     type Err = ();
 
+    /// This cannot return Err
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "h1" | "h2" | "h3" | "h4" | "heading" => Ok(Self::Heading),
@@ -143,6 +144,7 @@ impl RenderRoot {
         &mut self.components
     }
 
+    /// Sets the y offset of the components
     pub fn set_scroll(&mut self, scroll: u16) {
         let mut y_offset = 0;
         for component in self.components.iter_mut() {
@@ -152,6 +154,7 @@ impl RenderRoot {
         }
     }
 
+    /// Transforms the content of the components to fit the given width
     pub fn transform(&mut self, width: u16) {
         for component in self.components_mut() {
             component.transform(width);
@@ -346,36 +349,24 @@ impl RenderComponent {
         match self.kind {
             RenderNode::Heading => self.height = 1,
             RenderNode::Task => {
-                const CHECKBOX: &str = "✅ ";
-                const UNCHECKED: &str = "❌ ";
-                let width = width as usize - 3;
+                let width = width as usize - 4;
                 let mut len = 0;
                 let mut lines = Vec::new();
                 let mut line = Vec::new();
-                let checked_str = match self.content[0][0].content.as_str() {
-                    "- [x] " => CHECKBOX,
-                    "- [ ] " => UNCHECKED,
-                    _ => "",
-                };
-                if checked_str == CHECKBOX || checked_str == UNCHECKED {
-                    let word = Word::new(checked_str.to_owned(), WordType::Normal);
-                    line.push(word);
-                    len += checked_str.len();
-                }
-                for word in self
-                    .content
-                    .iter()
-                    .flatten()
-                    .filter(|c| c.kind() != WordType::MetaInfo)
-                {
-                    if word.content.len() + len < width {
+                for word in self.content.iter().flatten() {
+                    if word.content.len() + len < width as usize && !line.is_empty() {
                         line.push(word.clone());
                         len += word.content.len() + 1;
                     } else {
+                        if line.is_empty() {
+                            line.push(word.clone());
+                            len += word.content.len() + 1;
+                            continue;
+                        }
                         lines.push(line);
                         len = word.content.len() + 1;
                         let mut word = word.clone();
-                        let content = format!("   {}", word.content.trim_start().to_owned());
+                        let content = word.content.trim_start().to_owned();
                         word.set_content(content);
                         line = vec![word];
                     }
