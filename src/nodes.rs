@@ -23,13 +23,13 @@ impl ParseRoot {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ParseNode {
-    kind: MdEnum,
+    kind: MdParseEnum,
     content: String,
     children: Vec<ParseNode>,
 }
 
 impl ParseNode {
-    pub fn new(kind: MdEnum, content: String) -> Self {
+    pub fn new(kind: MdParseEnum, content: String) -> Self {
         Self {
             kind,
             content,
@@ -37,7 +37,7 @@ impl ParseNode {
         }
     }
 
-    pub fn kind(&self) -> MdEnum {
+    pub fn kind(&self) -> MdParseEnum {
         self.kind
     }
 
@@ -75,7 +75,7 @@ impl ParseNode {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum MdEnum {
+pub enum MdParseEnum {
     Heading,
     Word,
     Task,
@@ -93,7 +93,6 @@ pub enum MdEnum {
     TableSeperator,
     TableRow,
     Digit,
-    VerticalSeperator,
     BlockSeperator,
     Sentence,
     Bold,
@@ -101,33 +100,28 @@ pub enum MdEnum {
     Strikethrough,
 }
 
-impl FromStr for MdEnum {
+impl FromStr for MdParseEnum {
     type Err = ();
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "h1" | "h2" | "h3" | "h4" => Ok(Self::Heading),
-            "heading" => Ok(Self::Heading),
+            "h1" | "h2" | "h3" | "h4" | "heading" => Ok(Self::Heading),
             "task" => Ok(Self::Task),
             "u_list" => Ok(Self::UnorderedList),
             "o_list" => Ok(Self::OrderedList),
             "code_block" => Ok(Self::CodeBlock),
             "programming_language" => Ok(Self::PLanguage),
-            "inline_code_word" => Ok(Self::Code),
-            "code_str" => Ok(Self::CodeStr),
+            "code" | "code_word" => Ok(Self::Code),
             "paragraph" => Ok(Self::Paragraph),
             "link" => Ok(Self::Link),
             "quote" => Ok(Self::Quote),
             "table" => Ok(Self::Table),
             "table_seperator" => Ok(Self::TableSeperator),
             "table_row" => Ok(Self::TableRow),
-            "v_seperator" => Ok(Self::VerticalSeperator),
             "block_sep" => Ok(Self::BlockSeperator),
-            "sentence" | "code_line" => Ok(Self::Sentence),
-            "normal" | "digit" => Ok(Self::Sentence),
-            "table_word" | "o_list_counter" => Ok(Self::Word),
+            "code_line" => Ok(Self::Sentence),
             "list_container" => Ok(Self::ListContainer),
-            "word" => Ok(Self::Word),
+            "table_word" | "o_list_counter" | "word" | "digit" => Ok(Self::Word),
             "bold" | "bold_word" => Ok(Self::Bold),
             "italic" | "italic_word" => Ok(Self::Italic),
             "strikethrough" | "strikethrough_word" => Ok(Self::Strikethrough),
@@ -196,32 +190,32 @@ pub enum WordType {
     Strikethrough,
 }
 
-impl From<MdEnum> for WordType {
-    fn from(value: MdEnum) -> Self {
+impl From<MdParseEnum> for WordType {
+    fn from(value: MdParseEnum) -> Self {
         match value {
-            MdEnum::Heading => todo!(),
-            MdEnum::Word => WordType::Normal,
-            MdEnum::Task => todo!(),
-            MdEnum::UnorderedList => todo!(),
-            MdEnum::ListContainer => todo!(),
-            MdEnum::OrderedList => todo!(),
-            MdEnum::CodeBlock => todo!(),
-            MdEnum::PLanguage => WordType::MetaInfo,
-            MdEnum::CodeStr => todo!(),
-            MdEnum::Code => WordType::Code,
-            MdEnum::Paragraph => WordType::Normal,
-            MdEnum::Link => todo!(),
-            MdEnum::Quote => todo!(),
-            MdEnum::Table => todo!(),
-            MdEnum::TableSeperator => todo!(),
-            MdEnum::TableRow => WordType::Normal,
-            MdEnum::Digit => WordType::Normal,
-            MdEnum::VerticalSeperator => todo!(),
-            MdEnum::BlockSeperator => WordType::MetaInfo,
-            MdEnum::Sentence => WordType::Normal,
-            MdEnum::Bold => WordType::Bold,
-            MdEnum::Italic => WordType::Italic,
-            MdEnum::Strikethrough => WordType::Strikethrough,
+            MdParseEnum::PLanguage | MdParseEnum::BlockSeperator => WordType::MetaInfo,
+            MdParseEnum::Code => WordType::Code,
+            MdParseEnum::Bold => WordType::Bold,
+            MdParseEnum::Italic => WordType::Italic,
+            MdParseEnum::Strikethrough => WordType::Strikethrough,
+
+            MdParseEnum::Paragraph
+            | MdParseEnum::TableRow
+            | MdParseEnum::Digit
+            | MdParseEnum::Sentence
+            | MdParseEnum::Word => WordType::Normal,
+
+            MdParseEnum::Heading
+            | MdParseEnum::Task
+            | MdParseEnum::UnorderedList
+            | MdParseEnum::ListContainer
+            | MdParseEnum::OrderedList
+            | MdParseEnum::CodeBlock
+            | MdParseEnum::CodeStr
+            | MdParseEnum::Link
+            | MdParseEnum::Quote
+            | MdParseEnum::Table
+            | MdParseEnum::TableSeperator => unreachable!(),
         }
     }
 }

@@ -1,5 +1,7 @@
 # MD-CLI
 
+---
+
 - [MD-CLI](#md-cli)
 
 A terminal markdown renderer

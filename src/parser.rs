@@ -8,7 +8,7 @@ use pest::{
 use pest_derive::Parser;
 
 use crate::nodes::{
-    MdEnum, ParseNode, ParseRoot, RenderComponent, RenderNode, RenderRoot, Word, WordType,
+    MdParseEnum, ParseNode, ParseRoot, RenderComponent, RenderNode, RenderRoot, Word, WordType,
 };
 
 #[derive(Parser)]
@@ -31,7 +31,7 @@ pub fn parse_markdown(file: &str) -> RenderRoot {
 fn parse_text(pair: Pair<'_, Rule>) -> ParseNode {
     let content = pair.as_str().replace('\n', " ");
     let rule = format!("{:?}", pair.as_rule());
-    let kind = MdEnum::from_str(&rule).expect("Infalliable. Change when enum is complete");
+    let kind = MdParseEnum::from_str(&rule).expect("Infalliable. Change when enum is complete");
     let mut component = ParseNode::new(kind, content);
     let children = parse_node_children(pair.into_inner());
     component.add_children(children);
@@ -58,7 +58,7 @@ fn node_to_component(root: ParseRoot) -> RenderRoot {
 
 fn parse_component(parse_node: ParseNode) -> RenderComponent {
     match parse_node.kind() {
-        MdEnum::Paragraph => {
+        MdParseEnum::Paragraph => {
             let leaf_nodes = get_leaf_nodes(parse_node);
             let mut words = Vec::new();
             for node in leaf_nodes {
@@ -68,7 +68,7 @@ fn parse_component(parse_node: ParseNode) -> RenderComponent {
             }
             RenderComponent::new(RenderNode::Paragraph, words)
         }
-        MdEnum::Heading => {
+        MdParseEnum::Heading => {
             let leaf_nodes = get_leaf_nodes(parse_node);
             let mut words = Vec::new();
             for node in leaf_nodes {
@@ -79,7 +79,7 @@ fn parse_component(parse_node: ParseNode) -> RenderComponent {
             RenderComponent::new(RenderNode::Heading, words)
         }
 
-        MdEnum::CodeBlock => {
+        MdParseEnum::CodeBlock => {
             let leaf_nodes = get_leaf_nodes(parse_node);
             let mut words = Vec::new();
             for node in leaf_nodes {
@@ -90,7 +90,7 @@ fn parse_component(parse_node: ParseNode) -> RenderComponent {
             RenderComponent::new_formatted(RenderNode::CodeBlock, words)
         }
 
-        MdEnum::ListContainer => {
+        MdParseEnum::ListContainer => {
             let mut words = Vec::new();
             for child in parse_node.children_owned() {
                 let leaf_nodes = get_leaf_nodes(child);
@@ -105,10 +105,10 @@ fn parse_component(parse_node: ParseNode) -> RenderComponent {
             RenderComponent::new_formatted(RenderNode::List, words)
         }
 
-        MdEnum::Table => {
+        MdParseEnum::Table => {
             let mut words = Vec::new();
             for row in parse_node.children_owned() {
-                if row.kind() == MdEnum::TableSeperator {
+                if row.kind() == MdParseEnum::TableSeperator {
                     continue;
                 }
                 let mut inner_words = Vec::new();
@@ -122,7 +122,7 @@ fn parse_component(parse_node: ParseNode) -> RenderComponent {
             RenderComponent::new_formatted(RenderNode::Table, words)
         }
 
-        MdEnum::BlockSeperator => RenderComponent::new(RenderNode::LineBreak, Vec::new()),
+        MdParseEnum::BlockSeperator => RenderComponent::new(RenderNode::LineBreak, Vec::new()),
         _ => todo!(),
     }
 }
