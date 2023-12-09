@@ -354,7 +354,7 @@ impl RenderComponent {
                 let mut lines = Vec::new();
                 let mut line = Vec::new();
                 for word in self.content.iter().flatten() {
-                    if word.content.len() + len < width as usize && !line.is_empty() {
+                    if word.content.len() + len < width && !line.is_empty() {
                         line.push(word.clone());
                         len += word.content.len() + 1;
                     } else {

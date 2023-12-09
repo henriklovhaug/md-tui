@@ -83,6 +83,7 @@ fn run_app<B: Backend>(
             markdown.transform(new_width);
             width = new_width;
         }
+        let height = terminal.size()?.height;
 
         markdown.set_scroll(app.vertical_scroll);
 
@@ -97,6 +98,10 @@ fn run_app<B: Backend>(
                     KeyCode::Char('q') => return Ok(()),
                     KeyCode::Char('j') => {
                         app.vertical_scroll += 1;
+                        app.vertical_scroll = cmp::min(
+                            app.vertical_scroll,
+                            markdown.height().saturating_sub(height / 2),
+                        );
                     }
                     KeyCode::Char('k') => {
                         app.vertical_scroll = app.vertical_scroll.saturating_sub(1);
@@ -105,9 +110,20 @@ fn run_app<B: Backend>(
                         app.vertical_scroll = 0;
                     }
                     KeyCode::Char('G') => {
-                        app.vertical_scroll = markdown.height().saturating_sub(1);
+                        app.vertical_scroll = markdown.height().saturating_sub(height / 2);
                     }
                     KeyCode::Char('r') => markdown.transform(new_width),
+
+                    KeyCode::Char('d') => {
+                        app.vertical_scroll += height / 2;
+                        app.vertical_scroll = cmp::min(
+                            app.vertical_scroll,
+                            markdown.height().saturating_sub(height / 2),
+                        );
+                    }
+                    KeyCode::Char('u') => {
+                        app.vertical_scroll = app.vertical_scroll.saturating_sub(height / 2);
+                    }
                     _ => {}
                 }
             }

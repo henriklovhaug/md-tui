@@ -60,20 +60,19 @@ impl Widget for RenderComponent {
             Clipping::None => self.height(),
         };
 
-        let meta_info = self.meta_info().to_owned();
+        let meta_info = self
+            .meta_info()
+            .to_owned()
+            .first()
+            .cloned()
+            .unwrap_or_else(|| Word::new("".to_string(), WordType::Normal));
 
         let area = Rect { height, y, ..area };
 
         match kind {
             RenderNode::Paragraph => render_paragraph(area, buf, self.content_owned(), clips),
             RenderNode::Heading => render_heading(area, buf, self.content_owned()),
-            RenderNode::Task => render_task(
-                area,
-                buf,
-                self.content_owned(),
-                clips,
-                &meta_info.first().unwrap(),
-            ),
+            RenderNode::Task => render_task(area, buf, self.content_owned(), clips, &meta_info),
             RenderNode::List => render_list(area, buf, self.content_owned(), clips),
             RenderNode::CodeBlock => render_code_block(area, buf, self.content_owned(), clips),
             RenderNode::LineBreak => (),
