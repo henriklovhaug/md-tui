@@ -33,8 +33,8 @@ code                 =  { "`" ~ code_word+ ~ "`" }
 programming_language =  { ASCII_ALPHA+ }
 code_line            =  { (char | " ")+ }
 normal               = _{ word+ }
-markdown_link        =  { " "* ~ "- [" ~ link_word+ ~ "]" ~ "(#" ~ link_data+ ~ ")" }
-external_link        =  { " "* ~ "- [" ~ link_word+ ~ "]" ~ "(" ~ link_data+ ~ ")" }
+markdown_link        =  { " "* ~ "[" ~ link_word+ ~ "]" ~ "(#" ~ link_data+ ~ ")" }
+external_link        =  { " "* ~ "[" ~ link_word+ ~ "]" ~ "(" ~ link_data+ ~ ")" }
 link                 = _{ (markdown_link | external_link) }
 table_word           =  { (table_char | code | link | " ")+ }
 italic               = _{ ("*" ~ (italic_word | NEWLINE)+ ~ "*") | ("_" ~ (italic_word | NEWLINE)+ ~ "_") }
@@ -46,13 +46,12 @@ o_list_counter       =  { digit+ ~ ". " }
 task_open                 =  { "- [ ] " }
 task_complete             =  { "- [x] " | "- [X] " }
 task_prefix               = _{ task_open | task_complete }
-link_prefix               =  { "- [" }
 quote_prefix              =  { ">" }
 code_block_prefix         =  { "```" }
 table_prefix              =  { "|" }
-list_prefix               =  { "-" | (NUMBER ~ ". ") }
+list_prefix               =  { (" "* ~ "-") | (NUMBER ~ ". ") }
 forbidden_sentence_prefic =  {
-    NEWLINE ~ (task_prefix | link_prefix | quote_prefix | code_block_prefix | table_prefix | list_prefix)
+    NEWLINE ~ (task_prefix | quote_prefix | code_block_prefix | table_prefix | list_prefix)
 }
 
 sentence = _{ (code | link | italic | bold | strikethrough | normal)+ }
@@ -60,7 +59,7 @@ sentence = _{ (code | link | italic | bold | strikethrough | normal)+ }
 table_row       = { "|" ~ (table_word | " " | "|")+ }
 table_seperator = { ("|"? ~ " "? ~ "-"+ ~ " "? ~ "|")+ }
 
-u_list =  { ("-" | "*") ~ " " ~ (sentence | " ")+ }
+u_list =  { " "* ~ ("-" | "*") ~ " " ~ (sentence | " ")+ }
 o_list =  { o_list_counter ~ (sentence | " ")+ }
 h1     = _{ "# " ~ (sentence | " ")+ }
 h2     = _{ "## " ~ (sentence | " ")+ }

@@ -178,7 +178,10 @@ fn render_list(area: Rect, buf: &mut Buffer, content: Vec<Vec<Word>>, clip: Clip
         .iter()
         .map(|c| -> ListItem<'_> {
             ListItem::new(Line::from(
-                c.iter().map(|i| style_word(i)).collect::<Vec<_>>(),
+                c.iter()
+                    .filter(|i| i.kind() != WordType::MetaInfo)
+                    .map(|i| style_word(i))
+                    .collect::<Vec<_>>(),
             ))
         })
         .collect();

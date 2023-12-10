@@ -129,7 +129,6 @@ impl From<Rule> for MdParseEnum {
             | Rule::comment
             | Rule::txt
             | Rule::task_prefix
-            | Rule::link_prefix
             | Rule::quote_prefix
             | Rule::code_block_prefix
             | Rule::table_prefix
