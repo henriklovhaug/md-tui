@@ -88,7 +88,7 @@ fn style_word(word: &Word) -> Span<'_> {
         WordType::MetaInfo => unreachable!(),
         WordType::Normal => Span::raw(word.content()),
         WordType::Code => Span::styled(word.content(), Style::default().fg(Color::Red)),
-        WordType::Link => todo!(),
+        WordType::Link => Span::styled(word.content(), Style::default().fg(Color::Blue)),
         WordType::Italic => {
             Span::styled(word.content(), Style::default().fg(Color::Green).italic())
         }

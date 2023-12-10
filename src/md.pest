@@ -55,7 +55,7 @@ forbidden_sentence_prefic =  {
     NEWLINE ~ (task_prefix | link_prefix | quote_prefix | code_block_prefix | table_prefix | list_prefix)
 }
 
-sentence = _{ (code | italic | bold | strikethrough | normal)+ }
+sentence = _{ (code | link | italic | bold | strikethrough | normal)+ }
 
 table_row       = { "|" ~ (table_word | " " | "|")+ }
 table_seperator = { ("|"? ~ " "? ~ "-"+ ~ " "? ~ "|")+ }
@@ -81,5 +81,5 @@ horizontal_sep = { "---"+ }
 comment = _{ "<!--" ~ (char | " ")+ ~ ">" }
 
 txt = {
-    (horizontal_sep | task | link | comment | table | quote | list_container | code_block | heading | paragraph | block_sep+)+
+    (horizontal_sep | task | comment | table | quote | list_container | code_block | heading | paragraph | block_sep+)+
 }

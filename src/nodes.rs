@@ -252,11 +252,11 @@ impl From<MdParseEnum> for WordType {
             MdParseEnum::Bold => WordType::Bold,
             MdParseEnum::Italic => WordType::Italic,
             MdParseEnum::Strikethrough => WordType::Strikethrough,
+            MdParseEnum::Link => WordType::Link,
 
             MdParseEnum::Paragraph
             | MdParseEnum::TableRow
             | MdParseEnum::Digit
-            | MdParseEnum::Link
             | MdParseEnum::Sentence
             | MdParseEnum::Word => WordType::Normal,
 
