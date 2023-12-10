@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use itertools::Itertools;
 use pest::{
     iterators::{Pair, Pairs},
@@ -30,9 +28,7 @@ pub fn parse_markdown(file: &str) -> RenderRoot {
 
 fn parse_text(pair: Pair<'_, Rule>) -> ParseNode {
     let content = pair.as_str().replace('\n', " ");
-    let rule = format!("{:?}", pair.as_rule());
-    let kind = MdParseEnum::from_str(&rule).expect("Infalliable. Change when enum is complete");
-    let mut component = ParseNode::new(kind, content);
+    let mut component = ParseNode::new(pair.as_rule().into(), content);
     let children = parse_node_children(pair.into_inner());
     component.add_children(children);
     component
@@ -73,7 +69,8 @@ fn parse_component(parse_node: ParseNode) -> RenderComponent {
             RenderComponent::new(RenderNode::Task, words)
         }
 
-        MdParseEnum::Paragraph => {
+        MdParseEnum::Paragraph | MdParseEnum::Heading | MdParseEnum::Link => {
+            let kind = parse_node.kind();
             let leaf_nodes = get_leaf_nodes(parse_node);
             let mut words = Vec::new();
             for node in leaf_nodes {
@@ -81,17 +78,12 @@ fn parse_component(parse_node: ParseNode) -> RenderComponent {
                 let content = node.content().to_owned();
                 words.push(Word::new(content, word_type));
             }
-            RenderComponent::new(RenderNode::Paragraph, words)
-        }
-        MdParseEnum::Heading => {
-            let leaf_nodes = get_leaf_nodes(parse_node);
-            let mut words = Vec::new();
-            for node in leaf_nodes {
-                let word_type = WordType::from(node.kind());
-                let content = node.content().to_owned();
-                words.push(Word::new(content, word_type));
+            match kind {
+                MdParseEnum::Paragraph => RenderComponent::new(RenderNode::Paragraph, words),
+                MdParseEnum::Heading => RenderComponent::new(RenderNode::Heading, words),
+                MdParseEnum::Link => RenderComponent::new(RenderNode::Link, words),
+                _ => unreachable!(),
             }
-            RenderComponent::new(RenderNode::Heading, words)
         }
 
         MdParseEnum::CodeBlock => {
@@ -138,7 +130,7 @@ fn parse_component(parse_node: ParseNode) -> RenderComponent {
         }
 
         MdParseEnum::BlockSeperator => RenderComponent::new(RenderNode::LineBreak, Vec::new()),
-        _ => todo!(),
+        _ => todo!("Not implemented for {:?}", parse_node.kind()),
     }
 }
 

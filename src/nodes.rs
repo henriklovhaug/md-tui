@@ -2,6 +2,8 @@ use std::str::FromStr;
 
 use ratatui::{buffer::Buffer, layout::Rect, widgets::Widget};
 
+use crate::parser::Rule;
+
 #[derive(Debug, Clone)]
 pub struct ParseRoot {
     children: Vec<ParseNode>,
@@ -74,6 +76,7 @@ pub enum MdParseEnum {
     Code,
     Paragraph,
     Link,
+    LinkData,
     Quote,
     Table,
     TableSeperator,
@@ -84,6 +87,56 @@ pub enum MdParseEnum {
     Bold,
     Italic,
     Strikethrough,
+    HorizontalSeperator,
+}
+
+impl From<Rule> for MdParseEnum {
+    fn from(value: Rule) -> Self {
+        match value {
+            Rule::word | Rule::table_word => Self::Word,
+            Rule::italic | Rule::italic_word => Self::Italic,
+            Rule::bold => Self::Bold,
+            Rule::bold_word => Self::Bold,
+            Rule::strikethrough_word => Self::Strikethrough,
+            Rule::code_word | Rule::code => Self::Code,
+            Rule::programming_language => Self::PLanguage,
+            Rule::link_word | Rule::markdown_link | Rule::external_link | Rule::link => Self::Link,
+            Rule::strikethrough => Self::Strikethrough,
+            Rule::o_list_counter => Self::Digit,
+            Rule::task_open => Self::TaskOpen,
+            Rule::task_complete => Self::TaskClosed,
+            Rule::code_line | Rule::sentence => Self::Sentence,
+            Rule::table_row => Self::TableRow,
+            Rule::table_seperator => Self::TableSeperator,
+            Rule::u_list => Self::UnorderedList,
+            Rule::o_list => Self::OrderedList,
+            Rule::h1 | Rule::h2 | Rule::h3 | Rule::h4 | Rule::heading => Self::Heading,
+            Rule::list_container => Self::ListContainer,
+            Rule::paragraph => Self::Paragraph,
+            Rule::code_block => Self::CodeBlock,
+            Rule::table => Self::Table,
+            Rule::quote => Self::Quote,
+            Rule::task => Self::Task,
+            Rule::block_sep => Self::BlockSeperator,
+            Rule::horizontal_sep => Self::HorizontalSeperator,
+            Rule::link_data => Self::LinkData,
+            Rule::norwegian_char
+            | Rule::char
+            | Rule::table_char
+            | Rule::link_char
+            | Rule::digit
+            | Rule::normal
+            | Rule::comment
+            | Rule::txt
+            | Rule::task_prefix
+            | Rule::link_prefix
+            | Rule::quote_prefix
+            | Rule::code_block_prefix
+            | Rule::table_prefix
+            | Rule::list_prefix
+            | Rule::forbidden_sentence_prefic => Self::Paragraph,
+        }
+    }
 }
 
 impl FromStr for MdParseEnum {
@@ -191,7 +244,9 @@ impl From<MdParseEnum> for WordType {
             MdParseEnum::PLanguage
             | MdParseEnum::BlockSeperator
             | MdParseEnum::TaskOpen
-            | MdParseEnum::TaskClosed => WordType::MetaInfo,
+            | MdParseEnum::TaskClosed
+            | MdParseEnum::LinkData
+            | MdParseEnum::HorizontalSeperator => WordType::MetaInfo,
 
             MdParseEnum::Code => WordType::Code,
             MdParseEnum::Bold => WordType::Bold,
@@ -201,6 +256,7 @@ impl From<MdParseEnum> for WordType {
             MdParseEnum::Paragraph
             | MdParseEnum::TableRow
             | MdParseEnum::Digit
+            | MdParseEnum::Link
             | MdParseEnum::Sentence
             | MdParseEnum::Word => WordType::Normal,
 
@@ -211,10 +267,9 @@ impl From<MdParseEnum> for WordType {
             | MdParseEnum::OrderedList
             | MdParseEnum::CodeBlock
             | MdParseEnum::CodeStr
-            | MdParseEnum::Link
             | MdParseEnum::Quote
             | MdParseEnum::Table
-            | MdParseEnum::TableSeperator => unreachable!(),
+            | MdParseEnum::TableSeperator => unreachable!("{:?}", value),
         }
     }
 }
@@ -249,6 +304,7 @@ impl Word {
 
 #[derive(Debug, Clone, Copy)]
 pub enum RenderNode {
+    Link,
     Paragraph,
     LineBreak,
     Heading,
@@ -408,6 +464,7 @@ impl RenderComponent {
                 self.height = height;
             }
             RenderNode::Quote => todo!(),
+            RenderNode::Link => self.height = 1,
         }
     }
 }
