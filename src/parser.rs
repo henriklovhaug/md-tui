@@ -69,7 +69,7 @@ fn parse_component(parse_node: ParseNode) -> RenderComponent {
             RenderComponent::new(RenderNode::Task, words)
         }
 
-        MdParseEnum::Paragraph | MdParseEnum::Heading | MdParseEnum::Link => {
+        MdParseEnum::Paragraph | MdParseEnum::Heading => {
             let kind = parse_node.kind();
             let leaf_nodes = get_leaf_nodes(parse_node);
             let mut words = Vec::new();
@@ -81,7 +81,6 @@ fn parse_component(parse_node: ParseNode) -> RenderComponent {
             match kind {
                 MdParseEnum::Paragraph => RenderComponent::new(RenderNode::Paragraph, words),
                 MdParseEnum::Heading => RenderComponent::new(RenderNode::Heading, words),
-                MdParseEnum::Link => RenderComponent::new(RenderNode::Link, words),
                 _ => unreachable!(),
             }
         }
