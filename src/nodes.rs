@@ -300,7 +300,6 @@ impl Word {
 
 #[derive(Debug, Clone, Copy)]
 pub enum RenderNode {
-    Link,
     Paragraph,
     LineBreak,
     Heading,
@@ -460,7 +459,6 @@ impl RenderComponent {
                 self.height = height;
             }
             RenderNode::Quote => todo!(),
-            RenderNode::Link => self.height = 1,
         }
     }
 }

@@ -21,7 +21,8 @@ A terminal markdown renderer
 A tab 2. le with some text and more `With some inline code` herea asklfj
 adskjfdksaljf _some italic_ sd sdkjf hdfj ~~noe strike erj lksajdf dskjf sad ljf
 asdljf asdlfj asdlfjlkasfd~~ sdkjfh sdkjfh asdjf sda 2. kjfhads jfh
-adskjfdksaljf adskjfh sd sdkjf hdfj asdfh sdkjfh sdkjfh asdjf sdakjfhads jfh
+adskjfdksaljf [Here is a link](#table) adskjfh sd sdkjf hdfj asdfh sdkjfh sdkjfh
+asdjf sdakjfhads jfh
 
 ## Table
 

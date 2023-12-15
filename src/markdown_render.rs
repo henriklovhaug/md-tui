@@ -78,7 +78,6 @@ impl Widget for RenderComponent {
             RenderNode::LineBreak => (),
             RenderNode::Table => render_table(area, buf, self.content_owned(), clips),
             RenderNode::Quote => todo!(),
-            RenderNode::Link => (),
         }
     }
 }
