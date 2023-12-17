@@ -19,7 +19,7 @@ use ratatui::{
     Frame, Terminal,
 };
 
-pub mod markdown_render;
+pub mod renderer;
 pub mod nodes;
 pub mod parser;
 
