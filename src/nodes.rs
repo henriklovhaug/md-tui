@@ -58,20 +58,19 @@ impl RenderRoot {
         }
     }
 
-    pub fn heading_offset(&mut self, heading: &str) -> u16 {
+    pub fn heading_offset(&self, heading: &str) -> u16 {
         let mut y_offset = 0;
         let heading = heading.split('-');
         for component in self.components.iter() {
-            if component.kind() == RenderNode::Heading {
-                if component
+            if component.kind() == RenderNode::Heading
+                && component
                     .content()
                     .iter()
                     .flatten()
                     .map(|c| c.content().trim().to_lowercase())
                     .eq(heading.clone())
-                {
-                    return y_offset;
-                }
+            {
+                return y_offset;
             }
             y_offset += component.height();
         }
@@ -82,13 +81,8 @@ impl RenderRoot {
         );
     }
 
-    pub fn selected<'a>(&'a self) -> &'a str {
-        let block = self
-            .components
-            .iter()
-            .filter(|c| c.is_focused())
-            .next()
-            .unwrap();
+    pub fn selected(&self) -> &str {
+        let block = self.components.iter().find(|c| c.is_focused()).unwrap();
         block.highlight_link().unwrap()
     }
 
@@ -364,13 +358,12 @@ impl RenderComponent {
         selection
     }
 
-    pub fn highlight_link<'a>(&'a self) -> Result<&'a str, String> {
+    pub fn highlight_link(&self) -> Result<&str, String> {
         Ok(self
             .meta_info()
             .iter()
             .filter(|c| c.kind() == WordType::LinkData)
-            .skip(self.focused_index)
-            .next()
+            .nth(self.focused_index)
             .ok_or("index out of bounds")?
             .content())
     }
