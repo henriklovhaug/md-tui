@@ -115,12 +115,12 @@ fn run_app<B: Backend>(
                     KeyCode::Char('q') => return Ok(()),
                     KeyCode::Char('j') => {
                         if app.selected {
-                            app.select_index += 1;
+                            app.select_index =
+                                cmp::min(app.select_index + 1, markdown.num_links() - 1);
                             markdown.select(app.select_index);
                         } else {
-                            app.vertical_scroll += 1;
                             app.vertical_scroll = cmp::min(
-                                app.vertical_scroll,
+                                app.vertical_scroll + 1,
                                 markdown.height().saturating_sub(height / 2),
                             );
                         }
@@ -153,13 +153,6 @@ fn run_app<B: Backend>(
                     }
                     KeyCode::Char('s') => {
                         markdown.select(app.select_index);
-                        // let _ = markdown
-                        //     .components()
-                        //     .iter()
-                        //     .nth(12)
-                        //     .unwrap()
-                        //     .get_selected()
-                        //     .unwrap();
                         app.selected = true;
                     }
                     KeyCode::Esc => {
