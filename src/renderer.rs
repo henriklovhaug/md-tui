@@ -84,7 +84,11 @@ impl Widget for RenderComponent {
 
 fn style_word(word: &Word) -> Span<'_> {
     match word.kind() {
-        WordType::MetaInfo => unreachable!(),
+        WordType::MetaInfo | WordType::LinkData => unreachable!(),
+        WordType::Selected => Span::styled(
+            word.content(),
+            Style::default().fg(Color::Red).bg(Color::Blue),
+        ),
         WordType::Normal => Span::raw(word.content()),
         WordType::Code => Span::styled(word.content(), Style::default().fg(Color::Red)),
         WordType::Link => Span::styled(word.content(), Style::default().fg(Color::Blue)),
@@ -144,7 +148,7 @@ fn render_paragraph(area: Rect, buf: &mut Buffer, content: Vec<Vec<Word>>, clip:
         .map(|c| {
             Line::from(
                 c.iter()
-                    .filter(|i| i.kind() != WordType::MetaInfo)
+                    .filter(|i| i.is_renderable())
                     .map(|i| style_word(i))
                     .collect::<Vec<_>>(),
             )
@@ -178,7 +182,7 @@ fn render_list(area: Rect, buf: &mut Buffer, content: Vec<Vec<Word>>, clip: Clip
         .map(|c| -> ListItem<'_> {
             ListItem::new(Line::from(
                 c.iter()
-                    .filter(|i| i.kind() != WordType::MetaInfo)
+                    .filter(|i| i.is_renderable())
                     .map(|i| style_word(i))
                     .collect::<Vec<_>>(),
             ))
@@ -194,7 +198,7 @@ fn render_list(area: Rect, buf: &mut Buffer, content: Vec<Vec<Word>>, clip: Clip
 fn render_code_block(area: Rect, buf: &mut Buffer, content: Vec<Vec<Word>>, clip: Clipping) {
     let mut content = content
         .iter()
-        .filter(|c| c.iter().any(|i| i.kind() != WordType::MetaInfo))
+        .filter(|c| c.iter().any(|i| i.is_renderable()))
         .map(|c| {
             Line::from(
                 c.iter()
@@ -264,11 +268,10 @@ fn render_table(area: Rect, buf: &mut Buffer, content: Vec<Vec<Word>>, clip: Cli
         Clipping::None => (),
     }
 
-    let table = Table::new(rows)
+    let table = Table::new(rows, &widths)
         .header(header.style(Style::default().fg(Color::Black)))
         .block(Block::default())
-        .column_spacing(1)
-        .widths(&widths);
+        .column_spacing(1);
 
     table.render(area, buf);
 }
@@ -321,7 +324,7 @@ fn render_task(
         .map(|c| {
             Line::from(
                 c.iter()
-                    .filter(|i| i.kind() != WordType::MetaInfo)
+                    .filter(|i| i.is_renderable())
                     .map(|i| style_word(i))
                     .collect::<Vec<_>>(),
             )

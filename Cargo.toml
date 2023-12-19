@@ -10,8 +10,9 @@ opt-level = 3
 strip = true
 
 [dependencies]
+better-panic = "0.3.0"
 crossterm = "0.27.0"
 itertools = "0.12.0"
 pest = "2.7.5"
 pest_derive = "2.7.5"
-ratatui = { version = "0.24.0", default-features = true, features = ["macros", "all-widgets"] }
+ratatui = { version = "0.25.0", default-features = true, features = ["macros", "all-widgets"] }

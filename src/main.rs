@@ -3,10 +3,12 @@ use std::{
     error::Error,
     fs::read_to_string,
     io::{self},
+    panic,
     time::{Duration, Instant},
 };
 
 use crossterm::{
+    cursor,
     event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
@@ -19,13 +21,21 @@ use ratatui::{
     Frame, Terminal,
 };
 
-pub mod renderer;
 pub mod nodes;
 pub mod parser;
+pub mod renderer;
 
 #[derive(Default)]
 struct App {
     pub vertical_scroll: u16,
+    pub selected: bool,
+    pub select_index: usize,
+}
+
+fn destruct_terminal() {
+    disable_raw_mode().unwrap();
+    execute!(io::stdout(), LeaveAlternateScreen, DisableMouseCapture).unwrap();
+    execute!(io::stdout(), cursor::Show).unwrap();
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -36,6 +46,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     //
     // parser::print_from_root(&markdown);
     // return Ok(());
+
+    // Set up panic handler. If not set up, the terminal will be left in a broken state
+    panic::set_hook(Box::new(|panic_info| {
+        destruct_terminal();
+        better_panic::Settings::auto().create_panic_handler()(panic_info);
+    }));
 
     // setup terminal
     enable_raw_mode()?;
@@ -98,14 +114,24 @@ fn run_app<B: Backend>(
                 match key.code {
                     KeyCode::Char('q') => return Ok(()),
                     KeyCode::Char('j') => {
-                        app.vertical_scroll += 1;
-                        app.vertical_scroll = cmp::min(
-                            app.vertical_scroll,
-                            markdown.height().saturating_sub(height / 2),
-                        );
+                        if app.selected {
+                            app.select_index += 1;
+                            markdown.select(app.select_index);
+                        } else {
+                            app.vertical_scroll += 1;
+                            app.vertical_scroll = cmp::min(
+                                app.vertical_scroll,
+                                markdown.height().saturating_sub(height / 2),
+                            );
+                        }
                     }
                     KeyCode::Char('k') => {
-                        app.vertical_scroll = app.vertical_scroll.saturating_sub(1);
+                        if app.selected {
+                            app.select_index = app.select_index.saturating_sub(1);
+                            markdown.select(app.select_index);
+                        } else {
+                            app.vertical_scroll = app.vertical_scroll.saturating_sub(1);
+                        }
                     }
                     KeyCode::Char('g') => {
                         app.vertical_scroll = 0;
@@ -124,6 +150,21 @@ fn run_app<B: Backend>(
                     }
                     KeyCode::Char('u') => {
                         app.vertical_scroll = app.vertical_scroll.saturating_sub(height / 2);
+                    }
+                    KeyCode::Char('s') => {
+                        markdown.select(app.select_index);
+                        // let _ = markdown
+                        //     .components()
+                        //     .iter()
+                        //     .nth(12)
+                        //     .unwrap()
+                        //     .get_selected()
+                        //     .unwrap();
+                        app.selected = true;
+                    }
+                    KeyCode::Esc => {
+                        app.selected = false;
+                        markdown.deselect();
                     }
                     _ => {}
                 }

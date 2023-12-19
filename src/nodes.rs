@@ -164,9 +164,7 @@ impl FromStr for MdParseEnum {
             "bold" | "bold_word" => Ok(Self::Bold),
             "italic" | "italic_word" => Ok(Self::Italic),
             "strikethrough" | "strikethrough_word" => Ok(Self::Strikethrough),
-            _e => {
-                Ok(Self::Paragraph)
-            }
+            _e => Ok(Self::Paragraph),
         }
     }
 }
@@ -174,11 +172,17 @@ impl FromStr for MdParseEnum {
 #[derive(Debug, Clone)]
 pub struct RenderRoot {
     components: Vec<RenderComponent>,
+    selected: usize,
+    is_focused: bool,
 }
 
 impl RenderRoot {
     pub fn new(components: Vec<RenderComponent>) -> Self {
-        Self { components }
+        Self {
+            components,
+            selected: 0,
+            is_focused: false,
+        }
     }
 
     pub fn components(&self) -> &Vec<RenderComponent> {
@@ -191,6 +195,27 @@ impl RenderRoot {
 
     pub fn components_mut(&mut self) -> &mut Vec<RenderComponent> {
         &mut self.components
+    }
+
+    pub fn select(&mut self, index: usize) {
+        self.deselect();
+        self.is_focused = true;
+        self.selected = index;
+        let mut count = 0;
+        for comp in self.components.iter_mut() {
+            if index - count < comp.num_links() {
+                comp.select(index - count).unwrap();
+                break;
+            }
+            count += comp.num_links();
+        }
+    }
+
+    pub fn deselect(&mut self) {
+        self.is_focused = false;
+        for comp in self.components.iter_mut() {
+            comp.deselect();
+        }
     }
 
     /// Sets the y offset of the components
@@ -225,7 +250,9 @@ impl Widget for RenderRoot {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WordType {
+    Selected,
     MetaInfo,
+    LinkData,
     Normal,
     Code,
     Link,
@@ -241,7 +268,6 @@ impl From<MdParseEnum> for WordType {
             | MdParseEnum::BlockSeperator
             | MdParseEnum::TaskOpen
             | MdParseEnum::TaskClosed
-            | MdParseEnum::LinkData
             | MdParseEnum::HorizontalSeperator => WordType::MetaInfo,
 
             MdParseEnum::Code => WordType::Code,
@@ -255,6 +281,8 @@ impl From<MdParseEnum> for WordType {
             | MdParseEnum::Digit
             | MdParseEnum::Sentence
             | MdParseEnum::Word => WordType::Normal,
+
+            MdParseEnum::LinkData => WordType::LinkData,
 
             MdParseEnum::Heading
             | MdParseEnum::Task
@@ -296,6 +324,14 @@ impl Word {
     pub fn kind(&self) -> WordType {
         self.word_type
     }
+
+    pub fn set_kind(&mut self, kind: WordType) {
+        self.word_type = kind;
+    }
+
+    pub fn is_renderable(&self) -> bool {
+        self.word_type != WordType::MetaInfo && self.word_type != WordType::LinkData
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -318,13 +354,15 @@ pub struct RenderComponent {
     height: u16,
     offset: u16,
     scroll_offset: u16,
+    focused: bool,
+    focused_index: usize,
 }
 
 impl RenderComponent {
     pub fn new(kind: RenderNode, content: Vec<Word>) -> Self {
         let meta_info: Vec<Word> = content
             .iter()
-            .filter(|c| c.kind() == WordType::MetaInfo)
+            .filter(|c| c.kind() == WordType::MetaInfo || c.kind() == WordType::LinkData)
             .cloned()
             .collect();
 
@@ -335,6 +373,8 @@ impl RenderComponent {
             height: 0,
             offset: 0,
             scroll_offset: 0,
+            focused: false,
+            focused_index: 0,
         }
     }
 
@@ -342,7 +382,7 @@ impl RenderComponent {
         let meta_info: Vec<Word> = content
             .iter()
             .flatten()
-            .filter(|c| c.kind() == WordType::MetaInfo)
+            .filter(|c| c.kind() == WordType::MetaInfo || c.kind() == WordType::LinkData)
             .cloned()
             .collect();
 
@@ -353,6 +393,8 @@ impl RenderComponent {
             content,
             offset: 0,
             scroll_offset: 0,
+            focused: false,
+            focused_index: 0,
         }
     }
 
@@ -394,6 +436,63 @@ impl RenderComponent {
 
     pub fn set_scroll_offset(&mut self, offset: u16) {
         self.scroll_offset = offset;
+    }
+
+    pub fn is_focused(&self) -> bool {
+        self.focused
+    }
+
+    pub fn deselect(&mut self) {
+        self.focused = false;
+        self.focused_index = 0;
+        self.content
+            .iter_mut()
+            .flatten()
+            .filter(|c| c.kind() == WordType::Selected)
+            .for_each(|c| {
+                c.set_kind(WordType::Link);
+            });
+    }
+
+    pub fn select(&mut self, index: usize) -> Result<(), String> {
+        self.focused = true;
+
+        if index >= self.num_links() {
+            return Err(format!(
+                "Index out of bounds: {} >= {}",
+                index,
+                self.num_links()
+            ));
+        }
+        self.focused_index = index;
+        let mut selection: Vec<Vec<&mut Word>> = Vec::new();
+        let mut iter = self.content.iter_mut().flatten().peekable();
+        while let Some(e) = iter.peek() {
+            if e.kind() == WordType::Link {
+                selection.push(
+                    iter.by_ref()
+                        .take_while(|c| c.kind() == WordType::Link)
+                        .collect(),
+                );
+            } else {
+                iter.next();
+            }
+        }
+        selection
+            .get_mut(index)
+            .ok_or("index out of bounds")?
+            .iter_mut()
+            .for_each(|c| {
+                c.set_kind(WordType::Selected);
+            });
+        Ok(())
+    }
+
+    pub fn num_links(&self) -> usize {
+        self.meta_info
+            .iter()
+            .filter(|c| c.kind() == WordType::LinkData)
+            .count()
     }
 
     pub fn transform(&mut self, width: u16) {
