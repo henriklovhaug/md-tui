@@ -292,7 +292,7 @@ impl From<Rule> for MdParseEnum {
             | Rule::code_block_prefix
             | Rule::table_prefix
             | Rule::list_prefix
-            | Rule::forbidden_sentence_prefic => Self::Paragraph,
+            | Rule::forbidden_sentence_prefix => Self::Paragraph,
         }
     }
 }

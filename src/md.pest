@@ -20,7 +20,7 @@ link_char      = _{ ASCII_ALPHANUMERIC | norwegian_char | "{" | "}" | "/" | ":" 
 digit          = _{ '0'..'9' }
 
 // Words
-word               = { !forbidden_sentence_prefic ~ NEWLINE? ~ " "* ~ char+ ~ " "? }
+word               = { !forbidden_sentence_prefix ~ NEWLINE? ~ " "* ~ char+ ~ " "? }
 italic_word        = { char+ ~ " "? }
 bold_word          = { char+ ~ " "? }
 strikethrough_word = { char+ ~ " "? }
@@ -50,7 +50,7 @@ quote_prefix              =  { ">" }
 code_block_prefix         =  { "```" }
 table_prefix              =  { "|" }
 list_prefix               =  { (" "* ~ "-") | (NUMBER ~ ". ") }
-forbidden_sentence_prefic =  {
+forbidden_sentence_prefix =  {
     NEWLINE ~ (task_prefix | quote_prefix | code_block_prefix | table_prefix | list_prefix)
 }
 

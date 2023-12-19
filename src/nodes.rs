@@ -130,7 +130,9 @@ impl From<MdParseEnum> for WordType {
             | MdParseEnum::CodeStr
             | MdParseEnum::Quote
             | MdParseEnum::Table
-            | MdParseEnum::TableSeperator => unreachable!("{:?}", value),
+            | MdParseEnum::TableSeperator => {
+                unreachable!("Edit this or pest file to fix for value: {:?}", value)
+            }
         }
     }
 }
