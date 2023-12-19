@@ -159,6 +159,15 @@ fn run_app<B: Backend>(
                         app.selected = false;
                         markdown.deselect();
                     }
+                    KeyCode::Enter => {
+                        if !app.selected {
+                            continue;
+                        }
+                        let heading = markdown.selected().to_owned();
+                        app.vertical_scroll = markdown.heading_offset(&heading);
+                        markdown.deselect();
+                        app.selected = false;
+                    }
                     _ => {}
                 }
             }

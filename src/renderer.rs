@@ -60,6 +60,7 @@ impl Widget for RenderComponent {
             Clipping::None => self.height(),
         };
 
+        // Just used for task and TODO code block
         let meta_info = self
             .meta_info()
             .to_owned()
@@ -106,14 +107,13 @@ fn style_word(word: &Word) -> Span<'_> {
 }
 
 fn render_heading(area: Rect, buf: &mut Buffer, content: Vec<Vec<Word>>) {
-    let content = content
-        .first()
-        .unwrap()
+    let content: Vec<Span<'_>> = content
         .iter()
-        .map(|c| Line::styled(c.content(), Style::default().fg(Color::Black)))
-        .collect::<Vec<_>>();
+        .flatten()
+        .map(|c| Span::styled(c.content(), Style::default().fg(Color::Black)))
+        .collect();
 
-    let paragraph = Paragraph::new(content)
+    let paragraph = Paragraph::new(Line::from(content))
         .block(Block::default().style(Style::default().bg(Color::Blue)))
         .alignment(Alignment::Center);
 

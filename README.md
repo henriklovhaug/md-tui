@@ -1,11 +1,10 @@
 # MD-CLI
 
 <!--toc:start-->
-
 - [MD-CLI](#md-cli)
   - [Table](#table)
+  - [A ordered list](#a-ordered-list)
   - [Title a long way down](#title-a-long-way-down)
-
 <!--toc:end-->
 
 - first
@@ -37,6 +36,8 @@ public static main void() {
     //TODO
 }
 ```
+
+## A ordered list
 
 1. first with more Lorem ipsum dolor sit amet, qui minim labore adipisicing
 2. second `With code`

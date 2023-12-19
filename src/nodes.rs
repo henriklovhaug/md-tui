@@ -5,7 +5,6 @@ use crate::parser::MdParseEnum;
 #[derive(Debug, Clone)]
 pub struct RenderRoot {
     components: Vec<RenderComponent>,
-    selected: usize,
     is_focused: bool,
 }
 
@@ -13,7 +12,6 @@ impl RenderRoot {
     pub fn new(components: Vec<RenderComponent>) -> Self {
         Self {
             components,
-            selected: 0,
             is_focused: false,
         }
     }
@@ -33,11 +31,10 @@ impl RenderRoot {
     pub fn select(&mut self, index: usize) {
         self.deselect();
         self.is_focused = true;
-        self.selected = index;
         let mut count = 0;
         for comp in self.components.iter_mut() {
             if index - count < comp.num_links() {
-                comp.select(index - count).unwrap();
+                comp.visually_select(index - count).unwrap();
                 break;
             }
             count += comp.num_links();
@@ -59,6 +56,40 @@ impl RenderRoot {
             component.set_scroll_offset(scroll);
             y_offset += component.height();
         }
+    }
+
+    pub fn heading_offset(&mut self, heading: &str) -> u16 {
+        let mut y_offset = 0;
+        let heading = heading.split('-');
+        for component in self.components.iter() {
+            if component.kind() == RenderNode::Heading {
+                if component
+                    .content()
+                    .iter()
+                    .flatten()
+                    .map(|c| c.content().trim().to_lowercase())
+                    .eq(heading.clone())
+                {
+                    return y_offset;
+                }
+            }
+            y_offset += component.height();
+        }
+        panic!(
+            "Heading not found: {}, current height: {}",
+            heading.clone().collect::<Vec<_>>().join("-"),
+            y_offset
+        );
+    }
+
+    pub fn selected<'a>(&'a self) -> &'a str {
+        let block = self
+            .components
+            .iter()
+            .filter(|c| c.is_focused())
+            .next()
+            .unwrap();
+        block.highlight_link().unwrap()
     }
 
     /// Transforms the content of the components to fit the given width
@@ -173,7 +204,7 @@ impl Word {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RenderNode {
     Paragraph,
     LineBreak,
@@ -293,8 +324,9 @@ impl RenderComponent {
             });
     }
 
-    pub fn select(&mut self, index: usize) -> Result<(), String> {
+    pub fn visually_select(&mut self, index: usize) -> Result<(), String> {
         self.focused = true;
+        self.focused_index = index;
 
         if index >= self.num_links() {
             return Err(format!(
@@ -303,7 +335,19 @@ impl RenderComponent {
                 self.num_links()
             ));
         }
-        self.focused_index = index;
+
+        // Transform nth link to selected
+        self.link_words_mut()
+            .get_mut(index)
+            .ok_or("index out of bounds")?
+            .iter_mut()
+            .for_each(|c| {
+                c.set_kind(WordType::Selected);
+            });
+        Ok(())
+    }
+
+    fn link_words_mut(&mut self) -> Vec<Vec<&mut Word>> {
         let mut selection: Vec<Vec<&mut Word>> = Vec::new();
         let mut iter = self.content.iter_mut().flatten().peekable();
         while let Some(e) = iter.peek() {
@@ -318,13 +362,17 @@ impl RenderComponent {
             }
         }
         selection
-            .get_mut(index)
+    }
+
+    pub fn highlight_link<'a>(&'a self) -> Result<&'a str, String> {
+        Ok(self
+            .meta_info()
+            .iter()
+            .filter(|c| c.kind() == WordType::LinkData)
+            .skip(self.focused_index)
+            .next()
             .ok_or("index out of bounds")?
-            .iter_mut()
-            .for_each(|c| {
-                c.set_kind(WordType::Selected);
-            });
-        Ok(())
+            .content())
     }
 
     pub fn num_links(&self) -> usize {
