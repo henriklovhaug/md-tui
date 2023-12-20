@@ -28,17 +28,18 @@ impl RenderRoot {
         &mut self.components
     }
 
-    pub fn select(&mut self, index: usize) {
+    pub fn select(&mut self, index: usize) -> u16 {
         self.deselect();
         self.is_focused = true;
         let mut count = 0;
         for comp in self.components.iter_mut() {
             if index - count < comp.num_links() {
                 comp.visually_select(index - count).unwrap();
-                break;
+                return comp.y_offset();
             }
             count += comp.num_links();
         }
+        panic!("Index out of bounds: {} >= {}", index, count);
     }
 
     pub fn deselect(&mut self) {
