@@ -78,7 +78,7 @@ impl Widget for RenderComponent {
             RenderNode::CodeBlock => render_code_block(area, buf, self.content_owned(), clips),
             RenderNode::LineBreak => (),
             RenderNode::Table => render_table(area, buf, self.content_owned(), clips),
-            RenderNode::Quote => todo!(),
+            RenderNode::Quote => render_quote(area, buf, self.content_owned()),
         }
     }
 }
@@ -104,6 +104,24 @@ fn style_word(word: &Word) -> Span<'_> {
                 .add_modifier(Modifier::CROSSED_OUT),
         ),
     }
+}
+
+fn render_quote(area: Rect, buf: &mut Buffer, content: Vec<Vec<Word>>) {
+    let content: Vec<Span<'_>> = content
+        .iter()
+        .flatten()
+        .map(|c| Span::from(c.content()))
+        .collect();
+
+    let paragraph = Paragraph::new(Line::from(content))
+        .block(Block::default().style(Style::default().bg(Color::Rgb(48, 48, 48))));
+
+    let area = Rect {
+        width: cmp::min(area.width, 80),
+        ..area
+    };
+
+    paragraph.render(area, buf);
 }
 
 fn render_heading(area: Rect, buf: &mut Buffer, content: Vec<Vec<Word>>) {

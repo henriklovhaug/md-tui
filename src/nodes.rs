@@ -438,7 +438,7 @@ impl RenderComponent {
                 let height = self.content.len() as u16;
                 self.height = height;
             }
-            RenderNode::Quote => todo!(),
+            RenderNode::Quote => self.height = 1,
         }
     }
 }
