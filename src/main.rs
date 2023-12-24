@@ -118,7 +118,7 @@ fn run_app<B: Backend>(
                             app.select_index =
                                 cmp::min(app.select_index + 1, markdown.num_links() - 1);
                             app.vertical_scroll =
-                                markdown.select(app.select_index).saturating_sub(height / 2);
+                                markdown.select(app.select_index).saturating_sub(height / 3);
                         } else {
                             app.vertical_scroll = cmp::min(
                                 app.vertical_scroll + 1,
@@ -130,7 +130,7 @@ fn run_app<B: Backend>(
                         if app.selected {
                             app.select_index = app.select_index.saturating_sub(1);
                             app.vertical_scroll =
-                                markdown.select(app.select_index).saturating_sub(height / 2);
+                                markdown.select(app.select_index).saturating_sub(height / 3);
                         } else {
                             app.vertical_scroll = app.vertical_scroll.saturating_sub(1);
                         }
