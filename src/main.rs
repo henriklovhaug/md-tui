@@ -155,7 +155,7 @@ fn run_app<B: Backend>(
                     }
                     KeyCode::Char('s') => {
                         app.vertical_scroll =
-                            markdown.select(app.select_index).saturating_sub(height / 2);
+                            markdown.select(app.select_index).saturating_sub(height / 3);
                         app.selected = true;
                     }
                     KeyCode::Esc => {
@@ -166,8 +166,15 @@ fn run_app<B: Backend>(
                         if !app.selected {
                             continue;
                         }
-                        let heading = markdown.selected().to_owned();
-                        app.vertical_scroll = markdown.heading_offset(&heading);
+                        let heading = markdown.selected();
+                        match LinkType::from(heading) {
+                            LinkType::Internal(heading) => {
+                                app.vertical_scroll = markdown.heading_offset(heading);
+                            }
+                            LinkType::External(url) => {
+                                let _ = open::that(url);
+                            }
+                        }
                         markdown.deselect();
                         app.selected = false;
                     }
@@ -189,4 +196,18 @@ fn ui(f: &mut Frame, lines: RenderRoot) {
         ..size
     };
     f.render_widget(lines, area);
+}
+
+enum LinkType<'a> {
+    Internal(&'a str),
+    External(&'a str),
+}
+
+impl<'a> From<&'a str> for LinkType<'a> {
+    fn from(s: &'a str) -> Self {
+        if s.starts_with("http") {
+            return Self::External(s);
+        }
+        Self::Internal(s)
+    }
 }
