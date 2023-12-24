@@ -231,6 +231,8 @@ impl RenderComponent {
             .cloned()
             .collect();
 
+        let content = content.into_iter().filter(|c| c.is_renderable()).collect();
+
         Self {
             kind,
             content: vec![content],
@@ -412,7 +414,10 @@ impl RenderComponent {
                         len += word.content.len() + 1;
                     } else {
                         if line.is_empty() {
-                            line.push(word.clone());
+                            let mut word_2 = word.clone();
+                            let content = word.content.trim_start().to_owned();
+                            word_2.set_content(content);
+                            line.push(word_2);
                             len += word.content.len() + 1;
                             continue;
                         }

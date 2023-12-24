@@ -216,7 +216,6 @@ fn render_list(area: Rect, buf: &mut Buffer, content: Vec<Vec<Word>>, clip: Clip
 fn render_code_block(area: Rect, buf: &mut Buffer, content: Vec<Vec<Word>>, clip: Clipping) {
     let mut content = content
         .iter()
-        .filter(|c| c.iter().any(|i| i.is_renderable()))
         .map(|c| {
             Line::from(
                 c.iter()
