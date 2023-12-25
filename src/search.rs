@@ -1,6 +1,5 @@
 use strsim::damerau_levenshtein;
 
-
 pub fn find_with_backoff(query: &str, text: &str) -> Vec<usize> {
     let precision = 0;
     let mut result = find(query, text, precision);
@@ -29,7 +28,8 @@ pub fn find(query: &str, text: &str, precision: usize) -> Vec<usize> {
 fn char_windows(src: &str, win_size: usize) -> impl Iterator<Item = &'_ str> {
     src.char_indices().flat_map(move |(from, _)| {
         src[from..]
-            .char_indices().nth(win_size - 1)
+            .char_indices()
+            .nth(win_size - 1)
             .map(|(to, c)| &src[from..from + to + c.len_utf8()])
     })
 }
