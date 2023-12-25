@@ -163,14 +163,7 @@ fn render_paragraph(area: Rect, buf: &mut Buffer, content: Vec<Vec<Word>>, clip:
 
     let lines = content
         .iter()
-        .map(|c| {
-            Line::from(
-                c.iter()
-                    .filter(|i| i.is_renderable())
-                    .map(|i| style_word(i))
-                    .collect::<Vec<_>>(),
-            )
-        })
+        .map(|c| Line::from(c.iter().map(|i| style_word(i)).collect::<Vec<_>>()))
         .collect::<Vec<_>>();
 
     let paragraph = Paragraph::new(lines);
@@ -199,10 +192,7 @@ fn render_list(area: Rect, buf: &mut Buffer, content: Vec<Vec<Word>>, clip: Clip
         .iter()
         .map(|c| -> ListItem<'_> {
             ListItem::new(Line::from(
-                c.iter()
-                    .filter(|i| i.is_renderable())
-                    .map(|i| style_word(i))
-                    .collect::<Vec<_>>(),
+                c.iter().map(|i| style_word(i)).collect::<Vec<_>>(),
             ))
         })
         .collect();
@@ -338,14 +328,7 @@ fn render_task(
 
     let lines = content
         .iter()
-        .map(|c| {
-            Line::from(
-                c.iter()
-                    .filter(|i| i.is_renderable())
-                    .map(|i| style_word(i))
-                    .collect::<Vec<_>>(),
-            )
-        })
+        .map(|c| Line::from(c.iter().map(|i| style_word(i)).collect::<Vec<_>>()))
         .collect::<Vec<_>>();
 
     let paragraph = Paragraph::new(lines);

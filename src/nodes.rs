@@ -253,6 +253,11 @@ impl RenderComponent {
             .cloned()
             .collect();
 
+        let content = content
+            .into_iter()
+            .map(|c| c.into_iter().filter(|c| c.is_renderable()).collect())
+            .collect::<Vec<Vec<Word>>>();
+
         Self {
             kind,
             height: content.len() as u16,

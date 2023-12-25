@@ -24,6 +24,7 @@ use ratatui::{
 pub mod nodes;
 pub mod parser;
 pub mod renderer;
+pub mod search;
 
 #[derive(Default)]
 struct App {
