@@ -5,7 +5,7 @@ use ratatui::{
     layout::{Alignment, Constraint, Rect},
     style::{Color, Modifier, Style, Stylize},
     text::{Line, Span},
-    widgets::{Block, Cell, List, ListItem, Paragraph, Row, Table, Widget, Wrap},
+    widgets::{Block, Cell, List, ListItem, Paragraph, Row, Table, Widget},
 };
 
 use crate::nodes::{RenderComponent, RenderNode, Word, WordType};
@@ -228,6 +228,8 @@ fn render_code_block(area: Rect, buf: &mut Buffer, content: Vec<Vec<Word>>, clip
         Clipping::None => (),
     }
 
+    content.drain(0..1);
+
     let area = Rect {
         x: area.x + 1,
         width: cmp::min(area.width - 2, 80),
@@ -235,8 +237,7 @@ fn render_code_block(area: Rect, buf: &mut Buffer, content: Vec<Vec<Word>>, clip
     };
 
     let paragraph = Paragraph::new(content)
-        .block(Block::default().style(Style::default().bg(Color::Rgb(48, 48, 48))))
-        .wrap(Wrap { trim: false });
+        .block(Block::default().style(Style::default().bg(Color::Rgb(48, 48, 48))));
 
     paragraph.render(area, buf);
 }
