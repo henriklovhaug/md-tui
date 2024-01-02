@@ -2,6 +2,7 @@
 name = "md-cli"
 version = "0.1.0"
 edition = "2021"
+authors = ["Henrik Tøn Løvhaug"]
 
 [profile.release]
 lto = true

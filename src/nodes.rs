@@ -82,6 +82,20 @@ impl RenderRoot {
         );
     }
 
+    /// Return the content of the components, where each element a line
+    pub fn content(&self) -> Vec<&str> {
+        self.components()
+            .iter()
+            .flat_map(|c| {
+                c.content()
+                    .iter()
+                    .flatten()
+                    .map(|c| c.content())
+                    .collect::<Vec<_>>()
+            })
+            .collect::<Vec<_>>()
+    }
+
     pub fn selected(&self) -> &str {
         let block = self.components.iter().find(|c| c.is_focused()).unwrap();
         block.highlight_link().unwrap()
@@ -167,11 +181,16 @@ impl From<MdParseEnum> for WordType {
 pub struct Word {
     content: String,
     word_type: WordType,
+    previous_type: Option<WordType>,
 }
 
 impl Word {
     pub fn new(content: String, word_type: WordType) -> Self {
-        Self { content, word_type }
+        Self {
+            content,
+            word_type,
+            previous_type: None,
+        }
     }
 
     pub fn content(&self) -> &str {
@@ -191,7 +210,13 @@ impl Word {
     }
 
     pub fn set_kind(&mut self, kind: WordType) {
+        self.previous_type = Some(self.word_type);
         self.word_type = kind;
+    }
+
+    pub fn clear_kind(&mut self) {
+        self.word_type = self.previous_type.unwrap_or(self.word_type);
+        self.previous_type = None;
     }
 
     pub fn is_renderable(&self) -> bool {
@@ -322,7 +347,7 @@ impl RenderComponent {
             .flatten()
             .filter(|c| c.kind() == WordType::Selected)
             .for_each(|c| {
-                c.set_kind(WordType::Link);
+                c.clear_kind();
             });
     }
 
@@ -347,6 +372,26 @@ impl RenderComponent {
                 c.set_kind(WordType::Selected);
             });
         Ok(())
+    }
+
+    pub fn mark_word(&mut self, line_number: usize, word_type: WordType) -> Result<(), String> {
+        if index >= self.num_links() {
+            return Err(format!(
+                "Index out of bounds: {} >= {}",
+                index,
+                self.num_links()
+            ));
+        }
+
+        // Transform nth link to selected
+        self.link_words_mut()
+            .get_mut(index)
+            .ok_or("index out of bounds")?
+            .iter_mut()
+            .for_each(|c| {
+                c.set_kind(word_type);
+            });
+        Ok(()
     }
 
     fn link_words_mut(&mut self) -> Vec<Vec<&mut Word>> {

@@ -18,19 +18,35 @@ use parser::parse_markdown;
 use ratatui::{
     backend::{Backend, CrosstermBackend},
     layout::Rect,
+    widgets::Clear,
     Frame, Terminal,
 };
+use searchbox::SearchBox;
 
 pub mod nodes;
 pub mod parser;
 pub mod renderer;
 pub mod search;
+pub mod searchbox;
 
-#[derive(Default)]
+#[derive(Debug, Clone, Copy, PartialEq)]
+enum Mode {
+    View,
+    Search,
+}
+
+impl Default for Mode {
+    fn default() -> Self {
+        Self::View
+    }
+}
+
+#[derive(Default, Clone, Copy)]
 struct App {
     pub vertical_scroll: u16,
     pub selected: bool,
     pub select_index: usize,
+    pub mode: Mode,
 }
 
 fn destruct_terminal() {
@@ -95,6 +111,8 @@ fn run_app<B: Backend>(
     let mut width = cmp::min(terminal.size()?.width, 80);
     markdown.transform(width);
 
+    let mut search_box = SearchBox::default();
+
     loop {
         let new_width = cmp::min(terminal.size()?.width, 80);
         if new_width != width {
@@ -105,81 +123,37 @@ fn run_app<B: Backend>(
 
         markdown.set_scroll(app.vertical_scroll);
 
-        terminal.draw(|f| ui(f, markdown.clone()))?;
+        terminal.draw(|f| {
+            render_markdown(f, app, markdown.clone());
+            if app.mode == Mode::Search {
+                let (search_height, search_width) = search_box.dimensions();
+                let search_area = Rect {
+                    x: height / 2,
+                    y: height / 2,
+                    width: search_width,
+                    height: search_height,
+                };
+                f.render_widget(Clear, search_area);
+                f.render_widget(search_box.clone(), search_area);
+            }
+        })?;
 
         let timeout = tick_rate
             .checked_sub(last_tick.elapsed())
             .unwrap_or_else(|| Duration::from_secs(0));
         if event::poll(timeout)? {
             if let Event::Key(key) = event::read()? {
-                match key.code {
-                    KeyCode::Char('q') => return Ok(()),
-                    KeyCode::Char('j') => {
-                        if app.selected {
-                            app.select_index =
-                                cmp::min(app.select_index + 1, markdown.num_links() - 1);
-                            app.vertical_scroll =
-                                markdown.select(app.select_index).saturating_sub(height / 3);
-                        } else {
-                            app.vertical_scroll = cmp::min(
-                                app.vertical_scroll + 1,
-                                markdown.height().saturating_sub(height / 2),
-                            );
-                        }
+                match handle_keyboard_input(
+                    key.code,
+                    &mut app,
+                    &mut markdown,
+                    &mut search_box,
+                    height,
+                ) {
+                    KeyBoardAction::Continue => {}
+                    KeyBoardAction::Exit => {
+                        return Ok(());
                     }
-                    KeyCode::Char('k') => {
-                        if app.selected {
-                            app.select_index = app.select_index.saturating_sub(1);
-                            app.vertical_scroll =
-                                markdown.select(app.select_index).saturating_sub(height / 3);
-                        } else {
-                            app.vertical_scroll = app.vertical_scroll.saturating_sub(1);
-                        }
-                    }
-                    KeyCode::Char('g') => {
-                        app.vertical_scroll = 0;
-                    }
-                    KeyCode::Char('G') => {
-                        app.vertical_scroll = markdown.height().saturating_sub(height / 2);
-                    }
-                    KeyCode::Char('r') => markdown.transform(new_width),
-
-                    KeyCode::Char('d') => {
-                        app.vertical_scroll += height / 2;
-                        app.vertical_scroll = cmp::min(
-                            app.vertical_scroll,
-                            markdown.height().saturating_sub(height / 2),
-                        );
-                    }
-                    KeyCode::Char('u') => {
-                        app.vertical_scroll = app.vertical_scroll.saturating_sub(height / 2);
-                    }
-                    KeyCode::Char('s') => {
-                        app.vertical_scroll =
-                            markdown.select(app.select_index).saturating_sub(height / 3);
-                        app.selected = true;
-                    }
-                    KeyCode::Esc => {
-                        app.selected = false;
-                        markdown.deselect();
-                    }
-                    KeyCode::Enter => {
-                        if !app.selected {
-                            continue;
-                        }
-                        let heading = markdown.selected();
-                        match LinkType::from(heading) {
-                            LinkType::Internal(heading) => {
-                                app.vertical_scroll = markdown.heading_offset(heading);
-                            }
-                            LinkType::External(url) => {
-                                let _ = open::that(url);
-                            }
-                        }
-                        markdown.deselect();
-                        app.selected = false;
-                    }
-                    _ => {}
                 }
             }
         }
@@ -189,14 +163,122 @@ fn run_app<B: Backend>(
     }
 }
 
-fn ui(f: &mut Frame, lines: RenderRoot) {
+enum KeyBoardAction {
+    Continue,
+    Exit,
+}
+
+fn handle_keyboard_input(
+    key: KeyCode,
+    app: &mut App,
+    markdown: &mut RenderRoot,
+    search_box: &mut SearchBox,
+    height: u16,
+) -> KeyBoardAction {
+    match app.mode {
+        Mode::View => match key {
+            KeyCode::Char('q') => return KeyBoardAction::Exit,
+            KeyCode::Char('j') => {
+                if app.selected {
+                    app.select_index = cmp::min(app.select_index + 1, markdown.num_links() - 1);
+                    app.vertical_scroll =
+                        markdown.select(app.select_index).saturating_sub(height / 3);
+                } else {
+                    app.vertical_scroll = cmp::min(
+                        app.vertical_scroll + 1,
+                        markdown.height().saturating_sub(height / 2),
+                    );
+                }
+            }
+            KeyCode::Char('k') => {
+                if app.selected {
+                    app.select_index = app.select_index.saturating_sub(1);
+                    app.vertical_scroll =
+                        markdown.select(app.select_index).saturating_sub(height / 3);
+                } else {
+                    app.vertical_scroll = app.vertical_scroll.saturating_sub(1);
+                }
+            }
+            KeyCode::Char('g') => {
+                app.vertical_scroll = 0;
+            }
+            KeyCode::Char('G') => {
+                app.vertical_scroll = markdown.height().saturating_sub(height / 2);
+            }
+
+            KeyCode::Char('d') => {
+                app.vertical_scroll += height / 2;
+                app.vertical_scroll = cmp::min(
+                    app.vertical_scroll,
+                    markdown.height().saturating_sub(height / 2),
+                );
+            }
+            KeyCode::Char('u') => {
+                app.vertical_scroll = app.vertical_scroll.saturating_sub(height / 2);
+            }
+            KeyCode::Char('s') => {
+                app.vertical_scroll = markdown.select(app.select_index).saturating_sub(height / 3);
+                app.selected = true;
+            }
+            KeyCode::Esc => {
+                app.selected = false;
+                markdown.deselect();
+            }
+            KeyCode::Enter => {
+                if !app.selected {
+                    return KeyBoardAction::Continue;
+                }
+                let heading = markdown.selected();
+                match LinkType::from(heading) {
+                    LinkType::Internal(heading) => {
+                        app.vertical_scroll = markdown.heading_offset(heading);
+                    }
+                    LinkType::External(url) => {
+                        let _ = open::that(url);
+                    }
+                }
+                markdown.deselect();
+                app.selected = false;
+            }
+            KeyCode::Char('/') => {
+                app.mode = Mode::Search;
+            }
+            _ => {}
+        },
+        Mode::Search => match key {
+            KeyCode::Esc => {
+                search_box.clear();
+                app.mode = Mode::View;
+            }
+            // KeyCode::Enter => {
+            //     let query = search_box.consume();
+            //     let result = search::search(&query, markdown);
+            //     if let Some(result) = result {
+            //         app.vertical_scroll = result.saturating_sub(height / 3);
+            //         app.selected = true;
+            //     }
+            //     app.mode = Mode::View;
+            // }
+            KeyCode::Char(c) => {
+                search_box.insert(c);
+            }
+            KeyCode::Backspace => {
+                search_box.delete();
+            }
+            _ => {}
+        },
+    }
+    return KeyBoardAction::Continue;
+}
+
+fn render_markdown(f: &mut Frame, _app: App, markdown: RenderRoot) {
     let size = f.size();
     let area = Rect {
         x: 2,
         width: size.width - 2,
         ..size
     };
-    f.render_widget(lines, area);
+    f.render_widget(markdown, area);
 }
 
 enum LinkType<'a> {

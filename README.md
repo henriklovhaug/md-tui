@@ -7,8 +7,6 @@
   - [A ordered list](#a-ordered-list)
   - [Title a long way down](#title-a-long-way-down)
 
-;qa
-
 <!--toc:end-->
 
 - first
