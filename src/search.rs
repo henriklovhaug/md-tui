@@ -41,10 +41,11 @@ pub fn line_match(query: &str, text: Vec<&str>, precision: usize) -> Vec<usize> 
 
 pub fn find_line_match_and_index(
     query: &str,
-    line: Vec<&str>,
+    lines: Vec<&str>,
     precision: usize,
 ) -> Vec<(usize, usize)> {
-    line.iter()
+    lines
+        .iter()
         .enumerate()
         .flat_map(|(i, line)| {
             find(query, line, precision)

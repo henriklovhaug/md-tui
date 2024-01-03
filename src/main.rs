@@ -7,6 +7,7 @@ use std::{
     time::{Duration, Instant},
 };
 
+use boxes::{errorbox::ErrorBox, searchbox::SearchBox};
 use crossterm::{
     cursor,
     event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
@@ -21,18 +22,19 @@ use ratatui::{
     widgets::Clear,
     Frame, Terminal,
 };
-use searchbox::SearchBox;
+use search::find_line_match_and_index;
 
+pub mod boxes;
 pub mod nodes;
 pub mod parser;
 pub mod renderer;
 pub mod search;
-pub mod searchbox;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 enum Mode {
     View,
     Search,
+    Error,
 }
 
 impl Default for Mode {
@@ -61,7 +63,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     // markdown.transform(80);
     // markdown.set_scroll(0);
     //
-    // parser::print_from_root(&markdown);
+    // // parser::print_from_root(&markdown);
+    // dbg!("{:?}", markdown.content());
     // return Ok(());
 
     // Set up panic handler. If not set up, the terminal will be left in a broken state
@@ -112,6 +115,7 @@ fn run_app<B: Backend>(
     markdown.transform(width);
 
     let mut search_box = SearchBox::default();
+    let mut error_box = ErrorBox::default();
 
     loop {
         let new_width = cmp::min(terminal.size()?.width, 80);
@@ -135,6 +139,16 @@ fn run_app<B: Backend>(
                 };
                 f.render_widget(Clear, search_area);
                 f.render_widget(search_box.clone(), search_area);
+            } else if app.mode == Mode::Error {
+                let (error_height, error_width) = error_box.dimensions();
+                let error_area = Rect {
+                    x: height / 2,
+                    y: height / 2,
+                    width: error_width,
+                    height: error_height,
+                };
+                f.render_widget(Clear, error_area);
+                f.render_widget(error_box.clone(), error_area);
             }
         })?;
 
@@ -148,6 +162,7 @@ fn run_app<B: Backend>(
                     &mut app,
                     &mut markdown,
                     &mut search_box,
+                    &mut error_box,
                     height,
                 ) {
                     KeyBoardAction::Continue => {}
@@ -173,6 +188,7 @@ fn handle_keyboard_input(
     app: &mut App,
     markdown: &mut RenderRoot,
     search_box: &mut SearchBox,
+    error_box: &mut ErrorBox,
     height: u16,
 ) -> KeyBoardAction {
     match app.mode {
@@ -250,15 +266,25 @@ fn handle_keyboard_input(
                 search_box.clear();
                 app.mode = Mode::View;
             }
-            // KeyCode::Enter => {
-            //     let query = search_box.consume();
-            //     let result = search::search(&query, markdown);
-            //     if let Some(result) = result {
-            //         app.vertical_scroll = result.saturating_sub(height / 3);
-            //         app.selected = true;
-            //     }
-            //     app.mode = Mode::View;
-            // }
+            KeyCode::Enter => {
+                let query = search_box.consume();
+                let lines = markdown.content();
+                let search =
+                    find_line_match_and_index(&query, lines.iter().map(|s| &**s).collect(), 0);
+                if search.is_empty() {
+                    error_box.set_message(format!("No results for {}", query));
+                    app.mode = Mode::Error;
+                    return KeyBoardAction::Continue;
+                }
+                markdown
+                    .mark_word(
+                        search.first().unwrap().0,
+                        search.first().unwrap().1,
+                        query.len(),
+                    )
+                    .unwrap();
+                app.mode = Mode::View;
+            }
             KeyCode::Char(c) => {
                 search_box.insert(c);
             }
@@ -267,8 +293,15 @@ fn handle_keyboard_input(
             }
             _ => {}
         },
+        Mode::Error => match key {
+            KeyCode::Char('q') => return KeyBoardAction::Exit,
+            KeyCode::Enter | KeyCode::Esc => {
+                app.mode = Mode::View;
+            }
+            _ => {}
+        },
     }
-    return KeyBoardAction::Continue;
+    KeyBoardAction::Continue
 }
 
 fn render_markdown(f: &mut Frame, _app: App, markdown: RenderRoot) {

@@ -1,6 +1,5 @@
-use ratatui::{buffer::Buffer, layout::Rect, widgets::Widget};
-
 use crate::parser::MdParseEnum;
+use ratatui::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 #[derive(Debug, Clone)]
 pub struct RenderRoot {
@@ -83,22 +82,35 @@ impl RenderRoot {
     }
 
     /// Return the content of the components, where each element a line
-    pub fn content(&self) -> Vec<&str> {
+    pub fn content(&self) -> Vec<String> {
         self.components()
             .iter()
-            .flat_map(|c| {
-                c.content()
-                    .iter()
-                    .flatten()
-                    .map(|c| c.content())
-                    .collect::<Vec<_>>()
-            })
-            .collect::<Vec<_>>()
+            .flat_map(|c| c.content_as_lines())
+            .collect()
     }
 
     pub fn selected(&self) -> &str {
         let block = self.components.iter().find(|c| c.is_focused()).unwrap();
         block.highlight_link().unwrap()
+    }
+
+    fn get_component_from_height_mut(&mut self, height: u16) -> Option<&mut RenderComponent> {
+        let mut y_offset = 0;
+        for component in self.components.iter_mut() {
+            if y_offset <= height && height < y_offset + component.height() {
+                return Some(component);
+            }
+            y_offset += component.height();
+        }
+        None
+    }
+
+    pub fn mark_word(&mut self, height: usize, index: usize, length: usize) -> Result<(), String> {
+        let component = self
+            .get_component_from_height_mut(height as u16)
+            .ok_or("index out of bounds")?;
+        let height = height - component.y_offset() as usize;
+        component.mark_word(height, index, length)
     }
 
     /// Transforms the content of the components to fit the given width
@@ -303,6 +315,13 @@ impl RenderComponent {
         &self.content
     }
 
+    pub fn content_as_lines(&self) -> Vec<String> {
+        self.content
+            .iter()
+            .map(|c| c.iter().map(|c| c.content()).collect::<Vec<_>>().join(""))
+            .collect()
+    }
+
     pub fn content_mut(&mut self) -> &mut Vec<Vec<Word>> {
         &mut self.content
     }
@@ -374,24 +393,24 @@ impl RenderComponent {
         Ok(())
     }
 
-    pub fn mark_word(&mut self, line_number: usize, word_type: WordType) -> Result<(), String> {
-        if index >= self.num_links() {
-            return Err(format!(
-                "Index out of bounds: {} >= {}",
-                index,
-                self.num_links()
-            ));
-        }
-
-        // Transform nth link to selected
-        self.link_words_mut()
-            .get_mut(index)
-            .ok_or("index out of bounds")?
-            .iter_mut()
-            .for_each(|c| {
-                c.set_kind(word_type);
+    pub fn mark_word(&mut self, height: usize, index: usize, length: usize) -> Result<(), String> {
+        let line = self.content.get_mut(height).ok_or("index out of bounds")?;
+        let mut skip_while = 0;
+        let mut take_while = 0;
+        line.iter_mut()
+            .by_ref()
+            .skip_while(|c| {
+                skip_while += c.content().len();
+                skip_while < index + c.content().len() / 2
+            })
+            .take_while(|k| {
+                take_while += k.content().len();
+                take_while <= length + k.content().len()
+            })
+            .for_each(|word| {
+                word.set_kind(WordType::Selected);
             });
-        Ok(()
+        Ok(())
     }
 
     fn link_words_mut(&mut self) -> Vec<Vec<&mut Word>> {

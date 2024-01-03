@@ -1,3 +1,9 @@
+use ratatui::{
+    buffer::Buffer,
+    layout::Rect,
+    widgets::{Block, Borders, Paragraph, Widget},
+};
+
 #[derive(Debug, Clone)]
 pub struct SearchBox {
     pub text: String,
@@ -47,5 +53,12 @@ impl SearchBox {
 impl Default for SearchBox {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+impl Widget for SearchBox {
+    fn render(self, area: Rect, buf: &mut Buffer) {
+        let paragraph = Paragraph::new(self.text).block(Block::default().borders(Borders::ALL));
+        paragraph.render(area, buf);
     }
 }

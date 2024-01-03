@@ -5,13 +5,10 @@ use ratatui::{
     layout::{Alignment, Constraint, Rect},
     style::{Color, Modifier, Style, Stylize},
     text::{Line, Span},
-    widgets::{Block, Borders, Cell, List, ListItem, Paragraph, Row, Table, Widget},
+    widgets::{Block, Cell, List, ListItem, Paragraph, Row, Table, Widget},
 };
 
-use crate::{
-    nodes::{RenderComponent, RenderNode, Word, WordType},
-    searchbox::SearchBox,
-};
+use crate::nodes::{RenderComponent, RenderNode, Word, WordType};
 
 fn clips_upper_bound(_area: Rect, component: &RenderComponent) -> bool {
     component.scroll_offset() > component.y_offset()
@@ -29,13 +26,6 @@ enum Clipping {
     Upper,
     Lower,
     None,
-}
-
-impl Widget for SearchBox {
-    fn render(self, area: Rect, buf: &mut Buffer) {
-        let paragraph = Paragraph::new(self.text).block(Block::default().borders(Borders::ALL));
-        paragraph.render(area, buf);
-    }
 }
 
 impl Widget for RenderComponent {
