@@ -454,6 +454,15 @@ impl RenderComponent {
                 self.content.iter().len();
             }
             RenderNode::CodeBlock => {
+                let content = self
+                    .content
+                    .iter()
+                    .filter(|c| c.iter().any(|x| x.kind() != WordType::MetaInfo))
+                    .cloned()
+                    .collect::<Vec<_>>();
+
+                self.content = content;
+
                 let height = self
                     .content
                     .iter()

@@ -63,8 +63,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     // markdown.transform(80);
     // markdown.set_scroll(0);
     //
-    // // parser::print_from_root(&markdown);
-    // dbg!("{:?}", markdown.content());
+    // parser::print_from_root(&markdown);
+    // // dbg!("{:?}", markdown.content());
     // return Ok(());
 
     // Set up panic handler. If not set up, the terminal will be left in a broken state

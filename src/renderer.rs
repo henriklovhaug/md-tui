@@ -228,11 +228,6 @@ fn render_code_block(area: Rect, buf: &mut Buffer, content: Vec<Vec<Word>>, clip
         Clipping::None => (),
     }
 
-    if content.is_empty() {
-        return;
-    }
-    content.drain(0..1);
-
     let area = Rect {
         x: area.x + 1,
         width: cmp::min(area.width - 2, 80),
