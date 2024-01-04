@@ -26,8 +26,8 @@ use search::find_line_match_and_index;
 
 pub mod boxes;
 pub mod nodes;
+pub mod pages;
 pub mod parser;
-pub mod renderer;
 pub mod search;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -35,6 +35,7 @@ enum Mode {
     View,
     Search,
     Error,
+    FileTree,
 }
 
 impl Default for Mode {
@@ -229,6 +230,11 @@ fn handle_keyboard_input(
                     markdown.height().saturating_sub(height / 2),
                 );
             }
+            KeyCode::Char('n') => {
+                let new_file = read_to_string("test.md").unwrap();
+                *markdown = parse_markdown(&new_file);
+                markdown.transform(80);
+            }
             KeyCode::Char('u') => {
                 app.vertical_scroll = app.vertical_scroll.saturating_sub(height / 2);
             }
@@ -300,6 +306,7 @@ fn handle_keyboard_input(
             }
             _ => {}
         },
+        Mode::FileTree => todo!(),
     }
     KeyBoardAction::Continue
 }
