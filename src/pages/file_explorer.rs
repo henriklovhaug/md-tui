@@ -2,7 +2,7 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::{Alignment, Rect};
 use ratatui::style::Stylize;
 use ratatui::text::Text;
-use ratatui::widgets::Widget;
+use ratatui::widgets::{HighlightSpacing, Widget};
 use ratatui::{
     style::{Color, Modifier, Style},
     widgets::{Block, List, ListItem, ListState, StatefulWidget},
@@ -144,8 +144,9 @@ impl Widget for FileTree {
                     .fg(Color::LightGreen)
                     .add_modifier(Modifier::BOLD),
             )
-            .highlight_symbol("| ")
-            .repeat_highlight_symbol(true);
+            .highlight_symbol("\u{02503} ")
+            .repeat_highlight_symbol(true)
+            .highlight_spacing(HighlightSpacing::Always);
         StatefulWidget::render(items, area, buf, &mut state);
     }
 }
