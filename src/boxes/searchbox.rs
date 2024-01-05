@@ -23,7 +23,7 @@ impl SearchBox {
     }
 
     pub fn insert(&mut self, c: char) {
-        self.text.extend(c.to_string().chars());
+        self.text.push_str(&c.to_string());
         self.cursor += 1;
         self.height = self.cursor as u16 / (self.width - 1) + 3;
     }
