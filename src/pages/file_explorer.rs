@@ -1,8 +1,11 @@
+use ratatui::buffer::Buffer;
+use ratatui::layout::{Alignment, Rect};
+use ratatui::style::Stylize;
 use ratatui::widgets::Widget;
 use ratatui::{
     style::{Color, Modifier, Style},
     text::Line,
-    widgets::{Block, Borders, List, ListItem, ListState, StatefulWidget},
+    widgets::{Block, List, ListItem, ListState, StatefulWidget},
 };
 
 #[derive(Debug, Clone, Default)]
@@ -102,36 +105,8 @@ impl FileTree {
     }
 }
 
-impl StatefulWidget for FileTree {
-    type State = ListState;
-
-    fn render(
-        self,
-        area: ratatui::prelude::Rect,
-        buf: &mut ratatui::prelude::Buffer,
-        state: &mut Self::State,
-    ) {
-        let items = self
-            .files
-            .iter()
-            .map(|f| ListItem::from(Line::from(f.name.clone())))
-            .collect::<Vec<_>>();
-
-        let items = List::new(items)
-            .block(Block::default().borders(Borders::ALL).title("List"))
-            .highlight_style(
-                Style::default()
-                    .bg(Color::LightGreen)
-                    .add_modifier(Modifier::BOLD),
-            )
-            .highlight_symbol(">> ");
-
-        StatefulWidget::render(items, area, buf, state);
-    }
-}
-
 impl Widget for FileTree {
-    fn render(self, area: ratatui::prelude::Rect, buf: &mut ratatui::prelude::Buffer) {
+    fn render(self, area: Rect, buf: &mut Buffer) {
         let items = self
             .files
             .iter()
@@ -139,7 +114,12 @@ impl Widget for FileTree {
             .collect::<Vec<_>>();
 
         let items = List::new(items)
-            .block(Block::default().borders(Borders::ALL).title("List"))
+            .block(
+                Block::default()
+                    .title("MD-CLI")
+                    .add_modifier(Modifier::BOLD)
+                    .title_alignment(Alignment::Center),
+            )
             .highlight_style(
                 Style::default()
                     .bg(Color::LightGreen)

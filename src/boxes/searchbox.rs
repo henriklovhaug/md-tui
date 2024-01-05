@@ -1,7 +1,7 @@
 use ratatui::{
     buffer::Buffer,
     layout::Rect,
-    widgets::{Block, Borders, Paragraph, Widget},
+    widgets::{Block, Borders, Paragraph, Widget, Wrap},
 };
 
 #[derive(Debug, Clone)]
@@ -23,8 +23,9 @@ impl SearchBox {
     }
 
     pub fn insert(&mut self, c: char) {
-        self.text.insert(self.cursor, c);
+        self.text.extend(c.to_string().chars());
         self.cursor += 1;
+        self.height = self.cursor as u16 / (self.width - 1) + 3;
     }
 
     pub fn delete(&mut self) {
@@ -32,6 +33,7 @@ impl SearchBox {
             self.text.remove(self.cursor - 1);
             self.cursor -= 1;
         }
+        self.height = self.cursor as u16 / (self.width - 1) + 3;
     }
 
     pub fn clear(&mut self) {
@@ -58,7 +60,9 @@ impl Default for SearchBox {
 
 impl Widget for SearchBox {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let paragraph = Paragraph::new(self.text).block(Block::default().borders(Borders::ALL));
+        let paragraph = Paragraph::new(self.text)
+            .block(Block::default().borders(Borders::ALL))
+            .wrap(Wrap { trim: true });
         paragraph.render(area, buf);
     }
 }

@@ -4,6 +4,10 @@ version = "0.1.0"
 edition = "2021"
 authors = ["Henrik Tøn Løvhaug"]
 
+[[bin]]
+name = "md-cli"
+path = "src/main.rs"
+
 [profile.release]
 lto = true
 codegen-units = 1

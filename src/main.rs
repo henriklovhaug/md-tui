@@ -217,7 +217,7 @@ fn handle_keyboard_input(
     file_tree: &mut FileTree,
     height: u16,
 ) -> KeyBoardAction {
-    if key == KeyCode::Char('q') {
+    if key == KeyCode::Char('q') && app.boxes != Boxes::Search {
         return KeyBoardAction::Exit;
     }
     match app.mode {
