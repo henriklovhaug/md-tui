@@ -1,10 +1,10 @@
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Alignment, Rect};
 use ratatui::style::Stylize;
+use ratatui::text::Text;
 use ratatui::widgets::Widget;
 use ratatui::{
     style::{Color, Modifier, Style},
-    text::Line,
     widgets::{Block, List, ListItem, ListState, StatefulWidget},
 };
 
@@ -12,11 +12,16 @@ use ratatui::{
 pub struct MdFile {
     pub path: String,
     pub name: String,
+    pub selected: bool,
 }
 
 impl MdFile {
     pub fn new(path: String, name: String) -> Self {
-        Self { path, name }
+        Self {
+            path,
+            name,
+            selected: false,
+        }
     }
 
     pub fn path(&self) -> &str {
@@ -25,6 +30,18 @@ impl MdFile {
 
     pub fn name(&self) -> &str {
         &self.name
+    }
+}
+
+impl Into<ListItem<'_>> for MdFile {
+    fn into(self) -> ListItem<'static> {
+        let mut text = Text::default();
+        text.extend([
+            self.name.to_owned().blue(),
+            self.path.to_owned().italic().gray(),
+            "\n".into(),
+        ]);
+        ListItem::new(text)
     }
 }
 
@@ -107,11 +124,13 @@ impl FileTree {
 
 impl Widget for FileTree {
     fn render(self, area: Rect, buf: &mut Buffer) {
+        let mut state = self.state().to_owned();
+
         let items = self
             .files
-            .iter()
-            .map(|f| ListItem::from(Line::from(f.name.clone())))
-            .collect::<Vec<_>>();
+            .into_iter()
+            .map(|f| f.into())
+            .collect::<Vec<ListItem>>();
 
         let items = List::new(items)
             .block(
@@ -122,11 +141,11 @@ impl Widget for FileTree {
             )
             .highlight_style(
                 Style::default()
-                    .bg(Color::LightGreen)
+                    .fg(Color::LightGreen)
                     .add_modifier(Modifier::BOLD),
             )
-            .highlight_symbol(">> ");
-        let mut state = self.state().to_owned();
+            .highlight_symbol("| ")
+            .repeat_highlight_symbol(true);
         StatefulWidget::render(items, area, buf, &mut state);
     }
 }
