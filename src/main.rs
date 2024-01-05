@@ -15,6 +15,7 @@ use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use nodes::RenderRoot;
+use pages::file_explorer::{FileTree, MdFile};
 use parser::parse_markdown;
 use ratatui::{
     backend::{Backend, CrosstermBackend},
@@ -33,14 +34,25 @@ pub mod search;
 #[derive(Debug, Clone, Copy, PartialEq)]
 enum Mode {
     View,
-    Search,
-    Error,
     FileTree,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+enum Boxes {
+    Error,
+    Search,
+    None,
 }
 
 impl Default for Mode {
     fn default() -> Self {
-        Self::View
+        Self::FileTree
+    }
+}
+
+impl Default for Boxes {
+    fn default() -> Self {
+        Self::None
     }
 }
 
@@ -50,6 +62,7 @@ struct App {
     pub selected: bool,
     pub select_index: usize,
     pub mode: Mode,
+    pub boxes: Boxes,
 }
 
 fn destruct_terminal() {
@@ -118,6 +131,8 @@ fn run_app<B: Backend>(
     let mut search_box = SearchBox::default();
     let mut error_box = ErrorBox::default();
 
+    let mut file_tree = find_md_files()?;
+
     loop {
         let new_width = cmp::min(terminal.size()?.width, 80);
         if new_width != width {
@@ -129,8 +144,15 @@ fn run_app<B: Backend>(
         markdown.set_scroll(app.vertical_scroll);
 
         terminal.draw(|f| {
-            render_markdown(f, app, markdown.clone());
-            if app.mode == Mode::Search {
+            match app.mode {
+                Mode::View => {
+                    render_markdown(f, app, markdown.clone());
+                }
+                Mode::FileTree => {
+                    render_file_tree(f, app, file_tree.clone());
+                }
+            };
+            if app.boxes == Boxes::Search {
                 let (search_height, search_width) = search_box.dimensions();
                 let search_area = Rect {
                     x: height / 2,
@@ -140,7 +162,7 @@ fn run_app<B: Backend>(
                 };
                 f.render_widget(Clear, search_area);
                 f.render_widget(search_box.clone(), search_area);
-            } else if app.mode == Mode::Error {
+            } else if app.boxes == Boxes::Error {
                 let (error_height, error_width) = error_box.dimensions();
                 let error_area = Rect {
                     x: height / 2,
@@ -156,6 +178,7 @@ fn run_app<B: Backend>(
         let timeout = tick_rate
             .checked_sub(last_tick.elapsed())
             .unwrap_or_else(|| Duration::from_secs(0));
+
         if event::poll(timeout)? {
             if let Event::Key(key) = event::read()? {
                 match handle_keyboard_input(
@@ -164,6 +187,7 @@ fn run_app<B: Backend>(
                     &mut markdown,
                     &mut search_box,
                     &mut error_box,
+                    &mut file_tree,
                     height,
                 ) {
                     KeyBoardAction::Continue => {}
@@ -190,10 +214,115 @@ fn handle_keyboard_input(
     markdown: &mut RenderRoot,
     search_box: &mut SearchBox,
     error_box: &mut ErrorBox,
+    file_tree: &mut FileTree,
     height: u16,
 ) -> KeyBoardAction {
+    if key == KeyCode::Char('q') {
+        return KeyBoardAction::Exit;
+    }
     match app.mode {
-        Mode::View => match key {
+        Mode::View => keyboard_mode_view(key, app, markdown, search_box, error_box, height),
+        Mode::FileTree => {
+            keyboard_mode_file_tree(key, app, markdown, search_box, error_box, file_tree, height)
+        }
+    }
+}
+
+fn keyboard_mode_file_tree(
+    key: KeyCode,
+    app: &mut App,
+    markdown: &mut RenderRoot,
+    _search_box: &mut SearchBox,
+    error_box: &mut ErrorBox,
+    file_tree: &mut FileTree,
+    _height: u16,
+) -> KeyBoardAction {
+    match app.boxes {
+        Boxes::Error => match key {
+            KeyCode::Enter | KeyCode::Esc => {
+                app.boxes = Boxes::None;
+            }
+            _ => {}
+        },
+        Boxes::Search => todo!(),
+        Boxes::None => match key {
+            KeyCode::Char('j') => {
+                file_tree.next();
+            }
+            KeyCode::Char('k') => {
+                file_tree.previous();
+            }
+            KeyCode::Enter => {
+                let file = if let Some(file) = file_tree.selected() {
+                    file
+                } else {
+                    error_box.set_message("No file selected".to_string());
+                    app.boxes = Boxes::Error;
+                    return KeyBoardAction::Continue;
+                };
+                let text = read_to_string(file.path()).unwrap();
+                *markdown = parse_markdown(&text);
+                markdown.transform(80);
+                app.mode = Mode::View;
+            }
+            KeyCode::Esc => {
+                file_tree.unselect();
+            }
+            _ => {}
+        },
+    }
+
+    KeyBoardAction::Continue
+}
+
+fn keyboard_mode_view(
+    key: KeyCode,
+    app: &mut App,
+    markdown: &mut RenderRoot,
+    search_box: &mut SearchBox,
+    error_box: &mut ErrorBox,
+    height: u16,
+) -> KeyBoardAction {
+    match app.boxes {
+        Boxes::Error => match key {
+            KeyCode::Enter | KeyCode::Esc => {
+                app.boxes = Boxes::None;
+            }
+            _ => {}
+        },
+        Boxes::Search => match key {
+            KeyCode::Esc => {
+                search_box.clear();
+                app.boxes = Boxes::None;
+            }
+            KeyCode::Enter => {
+                let query = search_box.consume();
+                let lines = markdown.content();
+                let search =
+                    find_line_match_and_index(&query, lines.iter().map(|s| &**s).collect(), 0);
+                if search.is_empty() {
+                    error_box.set_message(format!("No results for {}", query));
+                    app.boxes = Boxes::Error;
+                    return KeyBoardAction::Continue;
+                }
+                markdown
+                    .mark_word(
+                        search.first().unwrap().0,
+                        search.first().unwrap().1,
+                        query.len(),
+                    )
+                    .unwrap();
+                app.boxes = Boxes::None;
+            }
+            KeyCode::Char(c) => {
+                search_box.insert(c);
+            }
+            KeyCode::Backspace => {
+                search_box.delete();
+            }
+            _ => {}
+        },
+        Boxes::None => match key {
             KeyCode::Char('q') => return KeyBoardAction::Exit,
             KeyCode::Char('j') => {
                 if app.selected {
@@ -242,6 +371,12 @@ fn handle_keyboard_input(
                 app.vertical_scroll = markdown.select(app.select_index).saturating_sub(height / 3);
                 app.selected = true;
             }
+            KeyCode::Char('f') | KeyCode::Char('/') => {
+                app.boxes = Boxes::Search;
+            }
+            KeyCode::Char('t') => {
+                app.mode = Mode::FileTree;
+            }
             KeyCode::Esc => {
                 app.selected = false;
                 markdown.deselect();
@@ -262,53 +397,20 @@ fn handle_keyboard_input(
                 markdown.deselect();
                 app.selected = false;
             }
-            KeyCode::Char('/') => {
-                app.mode = Mode::Search;
-            }
             _ => {}
         },
-        Mode::Search => match key {
-            KeyCode::Esc => {
-                search_box.clear();
-                app.mode = Mode::View;
-            }
-            KeyCode::Enter => {
-                let query = search_box.consume();
-                let lines = markdown.content();
-                let search =
-                    find_line_match_and_index(&query, lines.iter().map(|s| &**s).collect(), 0);
-                if search.is_empty() {
-                    error_box.set_message(format!("No results for {}", query));
-                    app.mode = Mode::Error;
-                    return KeyBoardAction::Continue;
-                }
-                markdown
-                    .mark_word(
-                        search.first().unwrap().0,
-                        search.first().unwrap().1,
-                        query.len(),
-                    )
-                    .unwrap();
-                app.mode = Mode::View;
-            }
-            KeyCode::Char(c) => {
-                search_box.insert(c);
-            }
-            KeyCode::Backspace => {
-                search_box.delete();
-            }
-            _ => {}
-        },
-        Mode::Error => match key {
-            KeyCode::Char('q') => return KeyBoardAction::Exit,
-            KeyCode::Enter | KeyCode::Esc => {
-                app.mode = Mode::View;
-            }
-            _ => {}
-        },
-        Mode::FileTree => todo!(),
     }
     KeyBoardAction::Continue
+}
+
+fn render_file_tree(f: &mut Frame, _app: App, file_tree: FileTree) {
+    let size = f.size();
+    let area = Rect {
+        x: 2,
+        width: size.width - 2,
+        ..size
+    };
+    f.render_widget(file_tree, area);
 }
 
 fn render_markdown(f: &mut Frame, _app: App, markdown: RenderRoot) {
@@ -319,6 +421,25 @@ fn render_markdown(f: &mut Frame, _app: App, markdown: RenderRoot) {
         ..size
     };
     f.render_widget(markdown, area);
+}
+
+fn find_md_files() -> Result<FileTree, io::Error> {
+    let mut tree = FileTree::new();
+    let mut stack = vec![std::path::PathBuf::from(".")];
+    while let Some(path) = stack.pop() {
+        for entry in std::fs::read_dir(path)? {
+            let entry = entry?;
+            let path = entry.path();
+            if path.is_dir() {
+                stack.push(path);
+            } else if path.extension().unwrap_or_default() == "md" {
+                let name = path.file_name().unwrap().to_str().unwrap().to_string();
+                let path = path.to_str().unwrap().to_string();
+                tree.add_file(MdFile::new(path, name));
+            }
+        }
+    }
+    Ok(tree)
 }
 
 enum LinkType<'a> {
