@@ -33,13 +33,12 @@ impl MdFile {
     }
 }
 
-impl Into<ListItem<'_>> for MdFile {
-    fn into(self) -> ListItem<'static> {
+impl From<MdFile> for ListItem<'_> {
+    fn from(val: MdFile) -> Self {
         let mut text = Text::default();
         text.extend([
-            self.name.to_owned().blue(),
-            self.path.to_owned().italic().gray(),
-            "\n".into(),
+            val.name.to_owned().blue(),
+            val.path.to_owned().italic().gray(),
         ]);
         ListItem::new(text)
     }
@@ -69,10 +68,10 @@ impl FileTree {
     pub fn next(&mut self) {
         let i = match self.list_state.selected() {
             Some(i) => {
-                if i >= self.files.len() - 1 {
+                if i >= self.files.len() {
                     0
                 } else {
-                    i + 1
+                    i + 2
                 }
             }
             None => 0,
@@ -84,9 +83,9 @@ impl FileTree {
         let i = match self.list_state.selected() {
             Some(i) => {
                 if i == 0 {
-                    self.files.len() - 1
+                    self.files.len() + 1
                 } else {
-                    i - 1
+                    i - 2
                 }
             }
             None => 0,
@@ -130,6 +129,14 @@ impl Widget for FileTree {
             .files
             .into_iter()
             .map(|f| f.into())
+            .collect::<Vec<ListItem>>();
+
+        let spacers = vec![Text::raw("\n"); items.len()];
+
+        let items = items
+            .into_iter()
+            .zip(spacers)
+            .flat_map(|(i, s)| vec![i, ListItem::new(s)])
             .collect::<Vec<ListItem>>();
 
         let items = List::new(items)

@@ -3,6 +3,8 @@ norwegian_char = _{ "æ" | "ø" | "å" | "Æ" | "Ø" | "Å" }
 char           = _{
     ASCII_ALPHANUMERIC
   | norwegian_char
+  | "%"
+  | "'"
   | "("
   | ")"
   | "{"
@@ -15,8 +17,8 @@ char           = _{
   | ","
   | "|"
 }
-table_char     = _{ ASCII_ALPHANUMERIC | norwegian_char | "(" | ")" | "{" | "}" | "/" | ":" | ";" | "-" | "." | "," }
-link_char      = _{ ASCII_ALPHANUMERIC | norwegian_char | "{" | "}" | "/" | ":" | ";" | "-" | "." | "," | "-" }
+table_char     = _{ ASCII_ALPHANUMERIC | norwegian_char | "%" | "'" | "(" | ")" | "{" | "}" | "/" | ":" | ";" | "-" | "." | "," }
+link_char      = _{ ASCII_ALPHANUMERIC | norwegian_char | "|" | "{" | "}" | "/" | ":" | ";" | "-" | "." | "," | "-" }
 digit          = _{ '0'..'9' }
 indent         =  { " "* }
 
