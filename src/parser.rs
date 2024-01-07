@@ -282,6 +282,7 @@ impl From<Rule> for MdParseEnum {
             Rule::link_data => Self::LinkData,
             Rule::norwegian_char
             | Rule::char
+            | Rule::p_char
             | Rule::table_char
             | Rule::link_char
             | Rule::digit
@@ -294,6 +295,10 @@ impl From<Rule> for MdParseEnum {
             | Rule::table_prefix
             | Rule::list_prefix
             | Rule::forbidden_sentence_prefix => Self::Paragraph,
+            Rule::bold_prefix
+            | Rule::italic_prefix
+            | Rule::heading_prefix
+            | Rule::forbidden_p_char => todo!(),
         }
     }
 }
