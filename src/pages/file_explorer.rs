@@ -83,7 +83,11 @@ impl FileTree {
         let i = match self.list_state.selected() {
             Some(i) => {
                 if i == 0 {
-                    self.files.len() + 1
+                    if self.files.len() % 2 == 0 {
+                        self.files.len()
+                    } else {
+                        self.files.len() + 1
+                    }
                 } else {
                     i - 2
                 }
