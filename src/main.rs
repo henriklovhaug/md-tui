@@ -81,7 +81,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     // // dbg!("{:?}", markdown.content());
     // return Ok(());
 
-    // Set up panic handler. If not set up, the terminal will be left in a broken state
+    // Set up panic handler. If not set up, the terminal will be left in a broken state if a panic
+    // occurs
     panic::set_hook(Box::new(|panic_info| {
         destruct_terminal();
         better_panic::Settings::auto().create_panic_handler()(panic_info);
