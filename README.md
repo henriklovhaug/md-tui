@@ -4,7 +4,9 @@
 
 - [MD-CLI](#md-cli)
   - [Table](#table)
-  - [A ordered list](#a-ordered-list)
+  - [Lists](#lists)
+    - [A ordered list](#a-ordered-list)
+    - [Unordered list](#unordered-list)
   - [Title a long way down](#title-a-long-way-down)
 
 <!--toc:end-->

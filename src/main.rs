@@ -65,6 +65,20 @@ struct App {
     pub boxes: Boxes,
 }
 
+enum LinkType<'a> {
+    Internal(&'a str),
+    External(&'a str),
+}
+
+impl<'a> From<&'a str> for LinkType<'a> {
+    fn from(s: &'a str) -> Self {
+        if s.starts_with("http") {
+            return Self::External(s);
+        }
+        Self::Internal(s)
+    }
+}
+
 fn destruct_terminal() {
     disable_raw_mode().unwrap();
     execute!(io::stdout(), LeaveAlternateScreen, DisableMouseCapture).unwrap();
@@ -441,18 +455,4 @@ fn find_md_files() -> Result<FileTree, io::Error> {
         }
     }
     Ok(tree)
-}
-
-enum LinkType<'a> {
-    Internal(&'a str),
-    External(&'a str),
-}
-
-impl<'a> From<&'a str> for LinkType<'a> {
-    fn from(s: &'a str) -> Self {
-        if s.starts_with("http") {
-            return Self::External(s);
-        }
-        Self::Internal(s)
-    }
 }

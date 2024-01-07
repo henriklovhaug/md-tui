@@ -99,7 +99,7 @@ impl FileTree {
 
     pub fn selected(&self) -> Option<&MdFile> {
         match self.list_state.selected() {
-            Some(i) => self.files.get(i),
+            Some(i) => self.files.get(i / 2),
             None => None,
         }
     }

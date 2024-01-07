@@ -1,7 +1,7 @@
 // Characters
-norwegian_char   = _{ "æ" | "ø" | "å" | "Æ" | "Ø" | "Å" }
-p_char           = _{ (!(NEWLINE | " ") ~ ANY)+ }
-char             = _{
+norwegian_char = _{ "æ" | "ø" | "å" | "Æ" | "Ø" | "Å" }
+p_char         = _{ (!(NEWLINE | " ") ~ ANY)+ }
+char           = _{
     ASCII_ALPHANUMERIC
   | norwegian_char
   | "%"
@@ -18,7 +18,7 @@ char             = _{
   | ","
   | "|"
 }
-table_char       = _{
+table_char     = _{
     ASCII_ALPHANUMERIC
   | norwegian_char
   | "%"
@@ -34,12 +34,14 @@ table_char       = _{
   | "."
   | ","
 }
-link_char        = _{ ASCII_ALPHANUMERIC | norwegian_char | "|" | "{" | "}" | "/" | ":" | ";" | "-" | "." | "," | "-" }
-digit            = _{ '0'..'9' }
-indent           =  { " "* }
+link_char      = _{ ASCII_ALPHANUMERIC | norwegian_char | "|" | "{" | "}" | "/" | ":" | ";" | "-" | "." | "," | "-" }
+digit          = _{ '0'..'9' }
+indent         =  { " "* }
 
 // Words
-word               = { !(forbidden_sentence_prefix | bold | italic | strikethrough | code | link) ~ NEWLINE? ~ " "* ~ p_char+ ~ " "? }
+word               = {
+    !(forbidden_sentence_prefix | bold | italic | strikethrough | code | link) ~ NEWLINE? ~ " "* ~ p_char+ ~ " "?
+}
 italic_word        = { char+ ~ " "? }
 bold_word          = { char+ ~ " "? }
 strikethrough_word = { char+ ~ " "? }
@@ -72,7 +74,7 @@ list_prefix       =  { (" "* ~ "-") | (NUMBER ~ ". ") }
 heading_prefix    =  { "#" }
 
 forbidden_sentence_prefix = {
-    NEWLINE ~ (task_prefix | quote_prefix | code_block_prefix | table_prefix | list_prefix | heading_prefix | NEWLINE)
+    NEWLINE ~ (task_prefix | quote_prefix | code_block_prefix | table_prefix | list_prefix | heading_prefix)
 }
 
 sentence = _{ (code | link | italic | bold | strikethrough | normal)+ }
