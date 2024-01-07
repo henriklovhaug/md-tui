@@ -449,6 +449,5 @@ fn find_md_files() -> Result<FileTree, io::Error> {
         }
     }
     tree.sort();
-    println!("{}", tree.len());
     Ok(tree)
 }

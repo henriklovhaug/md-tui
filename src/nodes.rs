@@ -71,8 +71,7 @@ impl RenderRoot {
                         c.content()
                             .trim()
                             .to_lowercase()
-                            .replace("(", "")
-                            .replace(")", "")
+                            .replace(['(', ')'], "")
                     })
                     .eq(heading.clone())
             {
