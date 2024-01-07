@@ -65,6 +65,14 @@ impl FileTree {
         }
     }
 
+    pub fn sort(&mut self) {
+        self.files.sort_unstable_by(|a, b| a.name.cmp(&b.name));
+    }
+
+    pub fn len(&self) -> usize {
+        self.files.len()
+    }
+
     pub fn next(&mut self) {
         let i = match self.list_state.selected() {
             Some(i) => {

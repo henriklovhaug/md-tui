@@ -338,7 +338,6 @@ fn keyboard_mode_view(
             _ => {}
         },
         Boxes::None => match key {
-            KeyCode::Char('q') => return KeyBoardAction::Exit,
             KeyCode::Char('j') => {
                 if app.selected {
                     app.select_index = cmp::min(app.select_index + 1, markdown.num_links() - 1);
@@ -373,11 +372,6 @@ fn keyboard_mode_view(
                     app.vertical_scroll,
                     markdown.height().saturating_sub(height / 2),
                 );
-            }
-            KeyCode::Char('n') => {
-                let new_file = read_to_string("test.md").unwrap();
-                *markdown = parse_markdown(&new_file);
-                markdown.transform(80);
             }
             KeyCode::Char('u') => {
                 app.vertical_scroll = app.vertical_scroll.saturating_sub(height / 2);
@@ -454,5 +448,7 @@ fn find_md_files() -> Result<FileTree, io::Error> {
             }
         }
     }
+    tree.sort();
+    println!("{}", tree.len());
     Ok(tree)
 }

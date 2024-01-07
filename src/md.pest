@@ -46,8 +46,8 @@ italic_word        = { char+ ~ " "? }
 bold_word          = { char+ ~ " "? }
 strikethrough_word = { char+ ~ " "? }
 code_word          = { char+ ~ " "? }
-link_word          = { (link_char | " ")+ }
-link_data          = { (link_char | " ")+ }
+link_word          = { (link_char | " " | "(" | ")")+ }
+link_data          = { (link_char)+ }
 
 // Lines
 code                 =  { "`" ~ code_word+ ~ "`" }

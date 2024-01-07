@@ -22,4 +22,4 @@ open = "5.0.1"
 pest = "2.7.6"
 pest_derive = "2.7.6"
 ratatui = { version = "0.25.0", default-features = true, features = ["macros", "all-widgets"] }
-strsim = "0.10.0"
+strsim = "0.10.1"
