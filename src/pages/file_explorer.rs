@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Alignment, Rect};
 use ratatui::style::Stylize;
@@ -7,6 +8,12 @@ use ratatui::{
     style::{Color, Modifier, Style},
     widgets::{Block, List, ListItem, ListState, StatefulWidget},
 };
+
+#[derive(Debug, Clone)]
+enum MdFileComponent {
+    File(MdFile),
+    Spacer,
+}
 
 #[derive(Debug, Clone, Default)]
 pub struct MdFile {
@@ -39,15 +46,23 @@ impl From<MdFile> for ListItem<'_> {
         text.extend([
             val.name.to_owned().blue(),
             val.path.to_owned().italic().gray(),
-            "".into(),
         ]);
         ListItem::new(text)
     }
 }
 
+impl From<MdFileComponent> for ListItem<'_> {
+    fn from(value: MdFileComponent) -> Self {
+        match value {
+            MdFileComponent::File(f) => f.into(),
+            MdFileComponent::Spacer => ListItem::new(Text::raw("")),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Default)]
 pub struct FileTree {
-    files: Vec<MdFile>,
+    files: Vec<MdFileComponent>,
     list_state: ListState,
 }
 
@@ -59,15 +74,24 @@ impl FileTree {
         }
     }
 
-    pub fn with_items(files: Vec<MdFile>) -> Self {
-        Self {
-            files,
-            list_state: ListState::default(),
-        }
-    }
-
     pub fn sort(&mut self) {
-        self.files.sort_unstable_by(|a, b| a.name.cmp(&b.name));
+        let filtered = self
+            .files
+            .iter()
+            .filter_map(|c| match c {
+                MdFileComponent::File(f) => Some(f),
+                MdFileComponent::Spacer => None,
+            })
+            .sorted_by(|a, b| a.name.cmp(&b.name))
+            .collect::<Vec<_>>();
+        let spacers = vec![MdFileComponent::Spacer; filtered.len()];
+
+        self.files = filtered
+            .into_iter()
+            .zip(spacers.into_iter())
+            .map(|(f, s)| vec![MdFileComponent::File(f.to_owned()), s])
+            .flatten()
+            .collect::<Vec<_>>();
     }
 
     pub fn next(&mut self) {
@@ -76,7 +100,7 @@ impl FileTree {
                 if i >= self.files.len() {
                     0
                 } else {
-                    i + 1
+                    i + 2
                 }
             }
             None => 0,
@@ -88,9 +112,9 @@ impl FileTree {
         let i = match self.list_state.selected() {
             Some(i) => {
                 if i == 0 {
-                    self.files.len() - 1
+                    self.files.len()
                 } else {
-                    i - 1
+                    i.saturating_sub(2)
                 }
             }
             None => 0,
@@ -104,17 +128,27 @@ impl FileTree {
 
     pub fn selected(&self) -> Option<&MdFile> {
         match self.list_state.selected() {
-            Some(i) => self.files.get(i / 2),
+            Some(i) => self.files.get(i).and_then(|f| match f {
+                MdFileComponent::File(f) => Some(f),
+                MdFileComponent::Spacer => None,
+            }),
             None => None,
         }
     }
 
     pub fn add_file(&mut self, file: MdFile) {
-        self.files.push(file);
+        self.files.push(MdFileComponent::File(file));
+        self.files.push(MdFileComponent::Spacer);
     }
 
-    pub fn files(&self) -> &Vec<MdFile> {
-        &self.files
+    pub fn files(&self) -> Vec<&MdFile> {
+        self.files
+            .iter()
+            .filter_map(|f| match f {
+                MdFileComponent::File(f) => Some(f),
+                MdFileComponent::Spacer => None,
+            })
+            .collect::<Vec<&MdFile>>()
     }
 
     pub fn state(&self) -> &ListState {
