@@ -75,7 +75,7 @@ impl FileTree {
     }
 
     pub fn sort(&mut self) {
-        let filtered = self
+        let filtered: Vec<&MdFile> = self
             .files
             .iter()
             .filter_map(|c| match c {
@@ -83,14 +83,14 @@ impl FileTree {
                 MdFileComponent::Spacer => None,
             })
             .sorted_by(|a, b| a.name.cmp(&b.name))
-            .collect::<Vec<_>>();
+            .collect();
+
         let spacers = vec![MdFileComponent::Spacer; filtered.len()];
 
         self.files = filtered
             .into_iter()
-            .zip(spacers.into_iter())
-            .map(|(f, s)| vec![MdFileComponent::File(f.to_owned()), s])
-            .flatten()
+            .zip(spacers)
+            .flat_map(|(f, s)| vec![MdFileComponent::File(f.to_owned()), s])
             .collect::<Vec<_>>();
     }
 

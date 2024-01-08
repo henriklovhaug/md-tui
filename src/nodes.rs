@@ -67,12 +67,7 @@ impl RenderRoot {
                     .content()
                     .iter()
                     .flatten()
-                    .map(|c| {
-                        c.content()
-                            .trim()
-                            .to_lowercase()
-                            .replace(['(', ')'], "")
-                    })
+                    .map(|c| c.content().trim().to_lowercase().replace(['(', ')'], ""))
                     .eq(heading.clone())
             {
                 return y_offset;
