@@ -280,8 +280,8 @@ impl From<Rule> for MdParseEnum {
             Rule::block_sep => Self::BlockSeperator,
             Rule::horizontal_sep => Self::HorizontalSeperator,
             Rule::link_data => Self::LinkData,
+
             Rule::norwegian_char
-            | Rule::char
             | Rule::p_char
             | Rule::table_char
             | Rule::link_char
@@ -295,7 +295,14 @@ impl From<Rule> for MdParseEnum {
             | Rule::table_prefix
             | Rule::list_prefix
             | Rule::forbidden_sentence_prefix => Self::Paragraph,
-            Rule::heading_prefix => todo!(),
+
+            Rule::heading_prefix
+            | Rule::c_char
+            | Rule::i_char
+            | Rule::b_char
+            | Rule::s_char
+            | Rule::comment_char
+            | Rule::c_line_char => todo!(),
         }
     }
 }

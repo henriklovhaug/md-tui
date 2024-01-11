@@ -24,7 +24,7 @@ A terminal markdown renderer
 
 > this is quote
 
-A tab 2. le with some text and more `With some inline code` herea asklfj
+A tab 2. le * with some text and more `With some inline code` herea asklfj
 adskjfdksaljf _some italic_ sd sdkjf hdfj ~~noe strike erj lksajdf dskjf sad ljf
 asdljf asdlfj asdlfjlkasfd~~ sdkjfh [some link](https://google.com) just after
 link asdjf sda 2. kjfhads jfh adskjfdksaljf [Here is a link](#table) adskjfh sd

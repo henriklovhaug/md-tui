@@ -137,7 +137,7 @@ fn run_app<B: Backend>(
 ) -> io::Result<()> {
     let mut last_tick = Instant::now();
 
-    let text = read_to_string("README.md")?;
+    let text = "# temp";
 
     let mut markdown = parse_markdown(&text);
     let mut width = cmp::min(terminal.size()?.width, 80);
@@ -448,6 +448,6 @@ fn find_md_files() -> Result<FileTree, io::Error> {
             }
         }
     }
-    tree.sort();
+    tree.sort_2();
     Ok(tree)
 }

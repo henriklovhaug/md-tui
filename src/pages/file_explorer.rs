@@ -82,7 +82,7 @@ impl FileTree {
                 MdFileComponent::File(f) => Some(f),
                 MdFileComponent::Spacer => None,
             })
-            .sorted_by(|a, b| a.name.cmp(&b.name))
+            .sorted_unstable_by(|a, b| a.name.cmp(&b.name))
             .collect();
 
         let spacers = vec![MdFileComponent::Spacer; filtered.len()];
@@ -92,6 +92,30 @@ impl FileTree {
             .zip(spacers)
             .flat_map(|(f, s)| vec![MdFileComponent::File(f.to_owned()), s])
             .collect::<Vec<_>>();
+    }
+
+    pub fn sort_2(&mut self) {
+        // Separate files and spacers into two vectors
+        let (mut files, mut spacers): (Vec<_>, Vec<_>) = self
+            .files
+            .drain(..)
+            .partition(|c| matches!(c, MdFileComponent::File(_)));
+
+        // Sort the files in-place by name
+        files.sort_unstable_by(|a, b| match (a, b) {
+            (MdFileComponent::File(fa), MdFileComponent::File(fb)) => fb.name.cmp(&fa.name),
+            _ => unreachable!(), // This case should not happen
+        });
+
+        // Interleave files and spacers
+        let mut result = Vec::with_capacity(files.len() + spacers.len());
+        while let (Some(file), Some(spacer)) = (files.pop(), spacers.pop()) {
+            result.push(file);
+            result.push(spacer);
+        }
+
+        // Update self.files with the sorted and interleaved result
+        self.files = result;
     }
 
     pub fn next(&mut self) {
