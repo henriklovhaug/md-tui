@@ -136,6 +136,15 @@ fn parse_component(parse_node: ParseNode) -> RenderComponent {
 
 fn get_leaf_nodes(node: ParseNode) -> Vec<ParseNode> {
     let mut leaf_nodes = Vec::new();
+    if (node.kind() == MdParseEnum::Code
+        || node.kind() == MdParseEnum::Italic
+        || node.kind() == MdParseEnum::Strikethrough
+        || node.kind() == MdParseEnum::Bold)
+        && node.content().starts_with(" ")
+    {
+        let comp = ParseNode::new(MdParseEnum::Word, " ".to_owned());
+        leaf_nodes.push(comp);
+    }
     if node.children().is_empty() {
         leaf_nodes.push(node);
     } else {
@@ -219,6 +228,10 @@ impl ParseNode {
 
     pub fn children_owned(self) -> Vec<ParseNode> {
         self.children
+    }
+
+    pub fn children_mut(&mut self) -> &mut Vec<ParseNode> {
+        &mut self.children
     }
 }
 

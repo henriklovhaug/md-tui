@@ -48,9 +48,9 @@ markdown_link        =  { indent ~ "[" ~ link_word+ ~ "]" ~ "(#" ~ link_data+ ~ 
 external_link        =  { indent ~ "[" ~ link_word+ ~ "]" ~ "(" ~ link_data+ ~ ")" }
 link                 = _{ NEWLINE? ~ (markdown_link | external_link) }
 table_word           =  { (table_char | code | link | " ")+ }
-italic               = _{ ("*" ~ (italic_word | NEWLINE)+ ~ "*") | ("_" ~ (italic_word | NEWLINE)+ ~ "_") }
-bold                 = _{ "**" ~ (bold_word | NEWLINE)+ ~ "**" }
-strikethrough        = _{ "~~" ~ (strikethrough_word | NEWLINE)+ ~ "~~" }
+italic               =  { NEWLINE? ~ ("*" ~ (italic_word | NEWLINE)+ ~ "*") | ("_" ~ (italic_word | NEWLINE)+ ~ "_") }
+bold                 =  { NEWLINE? ~ "**" ~ (bold_word | NEWLINE)+ ~ "**" }
+strikethrough        =  { NEWLINE? ~ "~~" ~ (strikethrough_word | NEWLINE)+ ~ "~~" }
 o_list_counter       =  { digit+ ~ ". " }
 
 // Prefixes

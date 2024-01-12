@@ -194,14 +194,17 @@ pub struct Word {
     content: String,
     word_type: WordType,
     previous_type: Option<WordType>,
+    has_leading_space: bool,
 }
 
 impl Word {
     pub fn new(content: String, word_type: WordType) -> Self {
+        let has_leading_space = content.starts_with(' ');
         Self {
             content,
             word_type,
             previous_type: None,
+            has_leading_space,
         }
     }
 
@@ -480,16 +483,40 @@ impl RenderComponent {
                 let mut lines = Vec::new();
                 let mut line = Vec::new();
                 let mut last_kind = WordType::Normal;
-                for word in self.content.iter().flatten() {
+                let mut last_word = Word::new("".to_owned(), WordType::Normal);
+                let mut iter = self.content.iter().flatten().peekable();
+                while let Some(word) = iter.next() {
+                    if word.content() == " " {
+                        continue;
+                    }
+                    let word = if let Some(next) = iter.peek() {
+                        if next.content() == " " {
+                            let mut word = word.clone();
+                            word.set_content(format!("{} ", word.content()));
+                            word
+                        } else {
+                            word.clone()
+                        }
+                    } else {
+                        word.clone()
+                    };
+
                     if word.content.len() + len < width && !line.is_empty() {
                         if word.kind() == WordType::Normal
                             && !word.content.starts_with(' ')
                             && last_kind != WordType::Normal
+                            && word.has_leading_space
+                            && !last_word.content.ends_with(' ')
                         {
-                            line.push(Word::new(" ".to_owned(), WordType::Normal));
+                            let mut word_2 = word.clone();
+                            let content = format!(" {}", word.content.trim_start());
+                            word_2.set_content(content);
+                            len += word_2.content.len() + 1;
+                            line.push(word_2);
+                        } else {
+                            len += word.content.len() + 1;
+                            line.push(word.clone());
                         }
-                        line.push(word.clone());
-                        len += word.content.len() + 1;
                     } else {
                         if line.is_empty() {
                             let mut word_2 = word.clone();
@@ -507,6 +534,7 @@ impl RenderComponent {
                         line = vec![word];
                     }
                     last_kind = word.kind();
+                    last_word = word;
                 }
                 if !line.is_empty() {
                     lines.push(line);
