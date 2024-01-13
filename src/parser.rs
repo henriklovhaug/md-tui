@@ -99,8 +99,8 @@ fn parse_component(parse_node: ParseNode) -> RenderComponent {
 
         MdParseEnum::ListContainer => {
             let mut words = Vec::new();
-            let kind = parse_node.children().first().unwrap().kind();
             for child in parse_node.children_owned() {
+                let kind = child.kind();
                 let leaf_nodes = get_leaf_nodes(child);
                 let mut inner_words = Vec::new();
                 for node in leaf_nodes {
@@ -145,7 +145,7 @@ fn get_leaf_nodes(node: ParseNode) -> Vec<ParseNode> {
         || node.kind() == MdParseEnum::Italic
         || node.kind() == MdParseEnum::Strikethrough
         || node.kind() == MdParseEnum::Bold)
-        && node.content().starts_with(" ")
+        && node.content().starts_with(' ')
     {
         let comp = ParseNode::new(MdParseEnum::Word, " ".to_owned());
         leaf_nodes.push(comp);

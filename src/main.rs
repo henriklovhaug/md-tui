@@ -139,7 +139,7 @@ fn run_app<B: Backend>(
 
     let text = "# temp";
 
-    let mut markdown = parse_markdown(&text);
+    let mut markdown = parse_markdown(text);
     let mut width = cmp::min(terminal.size()?.width, 80);
     markdown.transform(width);
 

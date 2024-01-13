@@ -166,9 +166,10 @@ impl From<MdParseEnum> for WordType {
             MdParseEnum::Strikethrough => WordType::Strikethrough,
             MdParseEnum::Link => WordType::Link,
 
+            MdParseEnum::Digit => WordType::White,
+
             MdParseEnum::Paragraph
             | MdParseEnum::TableRow
-            | MdParseEnum::Digit
             | MdParseEnum::Sentence
             | MdParseEnum::Word => WordType::Normal,
 
@@ -483,7 +484,6 @@ impl RenderComponent {
                 let mut len = 0;
                 let mut lines = Vec::new();
                 let mut line = Vec::new();
-                let mut last_kind = WordType::Normal;
                 let mut last_word = Word::new("".to_owned(), WordType::Normal);
                 let mut iter = self.content.iter().flatten().peekable();
                 while let Some(word) = iter.next() {
@@ -505,7 +505,7 @@ impl RenderComponent {
                     if word.content.len() + len < width && !line.is_empty() {
                         if word.kind() == WordType::Normal
                             && !word.content.starts_with(' ')
-                            && last_kind != WordType::Normal
+                            && last_word.kind() != WordType::Normal
                             && word.has_leading_space
                             && !last_word.content.ends_with(' ')
                         {
@@ -534,7 +534,6 @@ impl RenderComponent {
                         word.set_content(content);
                         line = vec![word];
                     }
-                    last_kind = word.kind();
                     last_word = word;
                 }
                 if !line.is_empty() {
