@@ -148,6 +148,7 @@ pub enum WordType {
     Italic,
     Bold,
     Strikethrough,
+    White,
 }
 
 impl From<MdParseEnum> for WordType {

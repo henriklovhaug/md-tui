@@ -103,6 +103,7 @@ fn style_word(word: &Word) -> Span<'_> {
                 .fg(Color::Green)
                 .add_modifier(Modifier::CROSSED_OUT),
         ),
+        WordType::White => Span::styled(word.content(), Style::default().fg(Color::White)),
     }
 }
 
@@ -110,7 +111,7 @@ fn render_quote(area: Rect, buf: &mut Buffer, content: Vec<Vec<Word>>) {
     let content: Vec<Span<'_>> = content
         .iter()
         .flatten()
-        .map(|c| Span::from(c.content()))
+        .map(|c| Span::from(c.content()).fg(Color::White))
         .collect();
 
     let paragraph = Paragraph::new(Line::from(content))
@@ -197,9 +198,7 @@ fn render_list(area: Rect, buf: &mut Buffer, content: Vec<Vec<Word>>, clip: Clip
         })
         .collect();
 
-    let list = List::new(content)
-        .highlight_symbol("*")
-        .repeat_highlight_symbol(true);
+    let list = List::new(content);
     list.render(area, buf);
 }
 

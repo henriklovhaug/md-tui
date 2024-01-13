@@ -99,6 +99,7 @@ fn parse_component(parse_node: ParseNode) -> RenderComponent {
 
         MdParseEnum::ListContainer => {
             let mut words = Vec::new();
+            let kind = parse_node.children().first().unwrap().kind();
             for child in parse_node.children_owned() {
                 let leaf_nodes = get_leaf_nodes(child);
                 let mut inner_words = Vec::new();
@@ -106,6 +107,10 @@ fn parse_component(parse_node: ParseNode) -> RenderComponent {
                     let word_type = WordType::from(node.kind());
                     let content = node.content().to_owned();
                     inner_words.push(Word::new(content, word_type));
+                }
+                if kind == MdParseEnum::UnorderedList {
+                    let list_symbol = Word::new("• ".to_owned(), WordType::White);
+                    inner_words.insert(1, list_symbol);
                 }
                 words.push(inner_words);
             }
@@ -283,7 +288,9 @@ impl From<Rule> for MdParseEnum {
             Rule::table_seperator => Self::TableSeperator,
             Rule::u_list => Self::UnorderedList,
             Rule::o_list => Self::OrderedList,
-            Rule::h1 | Rule::h2 | Rule::h3 | Rule::h4 | Rule::heading => Self::Heading,
+            Rule::h1 | Rule::h2 | Rule::h3 | Rule::h4 | Rule::h5 | Rule::h6 | Rule::heading => {
+                Self::Heading
+            }
             Rule::list_container => Self::ListContainer,
             Rule::paragraph => Self::Paragraph,
             Rule::code_block => Self::CodeBlock,

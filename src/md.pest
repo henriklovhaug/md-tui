@@ -7,26 +7,11 @@ b_char         = _{ (!(NEWLINE | " " | "**") ~ ANY)+ }
 s_char         = _{ (!(NEWLINE | " " | "~~") ~ ANY)+ }
 c_line_char    = _{ (!(NEWLINE | "```") ~ ANY)+ }
 comment_char   = _{ (!(NEWLINE | "-->") ~ ANY)+ }
+table_char     = _{ (!(NEWLINE | "|") ~ ANY)+ }
 
-table_char = _{
-    ASCII_ALPHANUMERIC
-  | norwegian_char
-  | "%"
-  | "'"
-  | "("
-  | ")"
-  | "{"
-  | "}"
-  | "/"
-  | ":"
-  | ";"
-  | "-"
-  | "."
-  | ","
-}
-link_char  = _{ ASCII_ALPHANUMERIC | norwegian_char | "#" | "_" | "|" | "{" | "}" | "/" | ":" | ";" | "-" | "." | "," | "-" }
-digit      = _{ '0'..'9' }
-indent     =  { " "* }
+link_char = _{ ASCII_ALPHANUMERIC | norwegian_char | "#" | "_" | "|" | "{" | "}" | "/" | ":" | ";" | "-" | "." | "," | "-" }
+digit     = _{ '0'..'9' }
+indent    =  { " "* }
 
 // Words
 word               = {
@@ -48,7 +33,7 @@ markdown_link        =  { indent ~ "[" ~ link_word+ ~ "]" ~ "(#" ~ link_data+ ~ 
 external_link        =  { indent ~ "[" ~ link_word+ ~ "]" ~ "(" ~ link_data+ ~ ")" }
 link                 = _{ NEWLINE? ~ (markdown_link | external_link) }
 table_word           =  { (table_char | code | link | " ")+ }
-italic               =  { NEWLINE? ~ ("*" ~ (italic_word | NEWLINE)+ ~ "*") | ("_" ~ (italic_word | NEWLINE)+ ~ "_") }
+italic               =  { NEWLINE? ~ (("*" ~ (italic_word | NEWLINE)+ ~ "*") | ("_" ~ (italic_word | NEWLINE)+ ~ "_")) }
 bold                 =  { NEWLINE? ~ "**" ~ (bold_word | NEWLINE)+ ~ "**" }
 strikethrough        =  { NEWLINE? ~ "~~" ~ (strikethrough_word | NEWLINE)+ ~ "~~" }
 o_list_counter       =  { digit+ ~ ". " }
@@ -78,14 +63,16 @@ h1     = _{ "# " ~ (sentence | " ")+ }
 h2     = _{ "## " ~ (sentence | " ")+ }
 h3     = _{ "### " ~ (sentence | " ")+ }
 h4     = _{ "#### " ~ (sentence | " ")+ }
+h5     = _{ "##### " ~ (sentence | " ")+ }
+h6     = _{ "###### " ~ (sentence | " ")+ }
 
 // Blocks
-heading        = { (h1 | h2 | h3 | h4) }
+heading        = { (h1 | h2 | h3 | h4 | h5 | h6) }
 list_container = { (NEWLINE? ~ (u_list | o_list))+ }
 paragraph      = { sentence+ }
 code_block     = { "```" ~ (programming_language | NEWLINE) ~ (code_line | NEWLINE)+ ~ "```" }
 table          = { (NEWLINE? ~ (table_seperator | table_row))+ }
-quote          = { ">" ~ (sentence | " ")+ }
+quote          = { NEWLINE? ~ ">" ~ (sentence | " ")+ }
 task           = { NEWLINE? ~ task_prefix ~ sentence }
 block_sep      = { NEWLINE }
 horizontal_sep = { "---"+ }
