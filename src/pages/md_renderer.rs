@@ -104,6 +104,7 @@ fn style_word(word: &Word) -> Span<'_> {
                 .add_modifier(Modifier::CROSSED_OUT),
         ),
         WordType::White => Span::styled(word.content(), Style::default().fg(Color::White)),
+        WordType::ListMarker => Span::styled(word.content(), Style::default().fg(Color::White)),
     }
 }
 

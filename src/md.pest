@@ -22,15 +22,15 @@ bold_word          = { b_char+ ~ " "? }
 strikethrough_word = { s_char+ ~ " "? }
 code_word          = { c_char+ ~ " "? }
 link_word          = { (link_char | " " | "(" | ")")+ }
-link_data          = { (link_char)+ }
+link_data          = { (link_char | "@")+ }
 
 // Lines
 code                 =  { NEWLINE? ~ "`" ~ code_word+ ~ "`" }
 programming_language =  { ASCII_ALPHA+ }
 code_line            =  { (c_line_char | " ")+ }
 normal               = _{ word+ }
-markdown_link        =  { indent ~ "[" ~ link_word+ ~ "]" ~ "(#" ~ link_data+ ~ ")" }
-external_link        =  { indent ~ "[" ~ link_word+ ~ "]" ~ "(" ~ link_data+ ~ ")" }
+markdown_link        =  { "[" ~ link_word+ ~ "]" ~ "(#" ~ link_data+ ~ ")" }
+external_link        =  { "[" ~ link_word+ ~ "]" ~ "(" ~ link_data+ ~ ")" }
 link                 = _{ NEWLINE? ~ (markdown_link | external_link) }
 table_word           =  { (table_char | code | link | " ")+ }
 italic               =  { NEWLINE? ~ (("*" ~ (italic_word | NEWLINE)+ ~ "*") | ("_" ~ (italic_word | NEWLINE)+ ~ "_")) }

@@ -105,11 +105,19 @@ fn parse_component(parse_node: ParseNode) -> RenderComponent {
                 let mut inner_words = Vec::new();
                 for node in leaf_nodes {
                     let word_type = WordType::from(node.kind());
-                    let content = node.content().to_owned();
+                    let content = if node.kind() != MdParseEnum::Indent {
+                        node.content()
+                            .chars()
+                            .dedup_by(|x, y| *x == ' ' && *y == ' ')
+                            .collect()
+                    } else {
+                        node.content().to_owned()
+                    };
+                    // let content = node.content().to_owned();
                     inner_words.push(Word::new(content, word_type));
                 }
                 if kind == MdParseEnum::UnorderedList {
-                    let list_symbol = Word::new("• ".to_owned(), WordType::White);
+                    let list_symbol = Word::new("• ".to_owned(), WordType::ListMarker);
                     inner_words.insert(1, list_symbol);
                 }
                 words.push(inner_words);
@@ -173,6 +181,9 @@ fn print_component(component: &RenderComponent, _depth: usize) {
         component.height(),
         component.y_offset()
     );
+    component.meta_info().iter().for_each(|w| {
+        println!("Meta: {}, kind: {:?}", w.content(), w.kind());
+    });
     component.content().iter().for_each(|w| {
         w.iter().for_each(|w| {
             println!("Content: {}, kind: {:?}", w.content(), w.kind());
@@ -268,12 +279,14 @@ pub enum MdParseEnum {
     Italic,
     Strikethrough,
     HorizontalSeperator,
+    Indent,
 }
 
 impl From<Rule> for MdParseEnum {
     fn from(value: Rule) -> Self {
         match value {
-            Rule::word | Rule::table_word | Rule::indent => Self::Word,
+            Rule::word | Rule::table_word => Self::Word,
+            Rule::indent => Self::Indent,
             Rule::italic | Rule::italic_word => Self::Italic,
             Rule::bold | Rule::bold_word => Self::Bold,
             Rule::strikethrough | Rule::strikethrough_word => Self::Strikethrough,

@@ -1,3 +1,5 @@
+use std::usize;
+
 use crate::parser::MdParseEnum;
 use ratatui::{buffer::Buffer, layout::Rect, widgets::Widget};
 
@@ -149,6 +151,7 @@ pub enum WordType {
     Bold,
     Strikethrough,
     White,
+    ListMarker,
 }
 
 impl From<MdParseEnum> for WordType {
@@ -158,6 +161,7 @@ impl From<MdParseEnum> for WordType {
             | MdParseEnum::BlockSeperator
             | MdParseEnum::TaskOpen
             | MdParseEnum::TaskClosed
+            | MdParseEnum::Indent
             | MdParseEnum::HorizontalSeperator => WordType::MetaInfo,
 
             MdParseEnum::Code => WordType::Code,
@@ -166,7 +170,7 @@ impl From<MdParseEnum> for WordType {
             MdParseEnum::Strikethrough => WordType::Strikethrough,
             MdParseEnum::Link => WordType::Link,
 
-            MdParseEnum::Digit => WordType::White,
+            MdParseEnum::Digit => WordType::ListMarker,
 
             MdParseEnum::Paragraph
             | MdParseEnum::TableRow
@@ -456,7 +460,38 @@ impl RenderComponent {
         match self.kind {
             RenderNode::Heading => self.height = 1,
             RenderNode::List => {
-                self.content.iter().len();
+                let mut len = 0;
+                let mut lines = Vec::new();
+                let mut line = Vec::new();
+                // let mut last_word = Word::new("".to_owned(), WordType::Normal);
+                let mut iter = self.content.iter().flatten().peekable();
+                let mut meta_iter = self.meta_info.iter().filter(|c| c.content().trim() == "");
+                let mut meta = meta_iter.next().unwrap();
+                let width = width as usize;
+                while let Some(word) = iter.next() {
+                    if word.content().len() + len < width && word.kind() != WordType::ListMarker {
+                        len += word.content().len() + 1;
+                        line.push(word.clone());
+                    } else {
+                        lines.push(line);
+                        len = word.content.len() + 1;
+                        let mut word = word.clone();
+                        let content = word.content.trim_start().to_owned();
+                        word.set_content(content);
+                        let filler = Word::new(meta.content().to_owned(), WordType::Normal);
+                        if word.kind() == WordType::ListMarker {
+                            meta = if let Some(m) = meta_iter.next() {
+                                m
+                            } else {
+                                meta
+                            };
+                        }
+                        line = vec![filler, word];
+                    }
+                }
+                lines.push(line);
+                self.height = lines.len() as u16;
+                self.content = lines;
             }
             RenderNode::CodeBlock => {
                 let content = self
@@ -468,11 +503,7 @@ impl RenderComponent {
 
                 self.content = content;
 
-                let height = self
-                    .content
-                    .iter()
-                    .filter(|c| c.iter().any(|x| x.kind() != WordType::MetaInfo))
-                    .count() as u16;
+                let height = self.content.len() as u16;
                 self.height = height;
             }
             RenderNode::Paragraph | RenderNode::Task => {
