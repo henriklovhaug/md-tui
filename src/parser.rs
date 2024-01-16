@@ -105,15 +105,24 @@ fn parse_component(parse_node: ParseNode) -> RenderComponent {
                 let mut inner_words = Vec::new();
                 for node in leaf_nodes {
                     let word_type = WordType::from(node.kind());
-                    let content = if node.kind() != MdParseEnum::Indent {
-                        node.content()
+
+                    let content = match node.kind() {
+                        MdParseEnum::Indent => node.content().to_owned(),
+                        MdParseEnum::Digit => format!("{} ", node.content()),
+                        _ => node
+                            .content()
                             .chars()
                             .dedup_by(|x, y| *x == ' ' && *y == ' ')
-                            .collect()
-                    } else {
-                        node.content().to_owned()
+                            .collect(),
                     };
-                    // let content = node.content().to_owned();
+                    // let content = if node.kind() != MdParseEnum::Indent {
+                    //     node.content()
+                    //         .chars()
+                    //         .dedup_by(|x, y| *x == ' ' && *y == ' ')
+                    //         .collect()
+                    // } else {
+                    //     node.content().to_owned()
+                    // };
                     inner_words.push(Word::new(content, word_type));
                 }
                 if kind == MdParseEnum::UnorderedList {
@@ -293,7 +302,7 @@ impl From<Rule> for MdParseEnum {
             Rule::code_word | Rule::code => Self::Code,
             Rule::programming_language => Self::PLanguage,
             Rule::link_word | Rule::markdown_link | Rule::external_link | Rule::link => Self::Link,
-            Rule::o_list_counter => Self::Digit,
+            Rule::o_list_counter | Rule::digit => Self::Digit,
             Rule::task_open => Self::TaskOpen,
             Rule::task_complete => Self::TaskClosed,
             Rule::code_line | Rule::sentence => Self::Sentence,
@@ -318,7 +327,6 @@ impl From<Rule> for MdParseEnum {
             | Rule::p_char
             | Rule::table_char
             | Rule::link_char
-            | Rule::digit
             | Rule::normal
             | Rule::comment
             | Rule::txt

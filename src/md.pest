@@ -10,7 +10,7 @@ comment_char   = _{ (!(NEWLINE | "-->") ~ ANY)+ }
 table_char     = _{ (!(NEWLINE | "|") ~ ANY)+ }
 
 link_char = _{ ASCII_ALPHANUMERIC | norwegian_char | "#" | "_" | "|" | "{" | "}" | "/" | ":" | ";" | "-" | "." | "," | "-" }
-digit     = _{ '0'..'9' }
+digit     =  { '0'..'9' }
 indent    =  { " "* }
 
 // Words
@@ -36,7 +36,7 @@ table_word           =  { (table_char | code | link | " ")+ }
 italic               =  { NEWLINE? ~ (("*" ~ (italic_word | NEWLINE)+ ~ "*") | ("_" ~ (italic_word | NEWLINE)+ ~ "_")) }
 bold                 =  { NEWLINE? ~ "**" ~ (bold_word | NEWLINE)+ ~ "**" }
 strikethrough        =  { NEWLINE? ~ "~~" ~ (strikethrough_word | NEWLINE)+ ~ "~~" }
-o_list_counter       =  { digit+ ~ ". " }
+o_list_counter       = _{ digit+ ~ ". " }
 
 // Prefixes
 task_open         =  { "- [ ] " }

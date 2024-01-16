@@ -463,30 +463,31 @@ impl RenderComponent {
                 let mut len = 0;
                 let mut lines = Vec::new();
                 let mut line = Vec::new();
-                // let mut last_word = Word::new("".to_owned(), WordType::Normal);
-                let mut iter = self.content.iter().flatten().peekable();
                 let mut meta_iter = self.meta_info.iter().filter(|c| c.content().trim() == "");
-                let mut meta = meta_iter.next().unwrap();
-                let width = width as usize;
-                while let Some(word) = iter.next() {
-                    if word.content().len() + len < width && word.kind() != WordType::ListMarker {
+                let mut indent = 0;
+                for word in self.content.iter_mut().flatten() {
+                    if word.content().len() + len < width as usize
+                        && word.kind() != WordType::ListMarker
+                    {
                         len += word.content().len() + 1;
                         line.push(word.clone());
                     } else {
+                        let filler_content = if word.kind() == WordType::ListMarker {
+                            indent = if let Some(meta) = meta_iter.next() {
+                                meta.content().len()
+                            } else {
+                                0
+                            };
+                            " ".repeat(indent)
+                        } else {
+                            " ".repeat(indent + 2)
+                        };
                         lines.push(line);
                         len = word.content.len() + 1;
-                        let mut word = word.clone();
                         let content = word.content.trim_start().to_owned();
                         word.set_content(content);
-                        let filler = Word::new(meta.content().to_owned(), WordType::Normal);
-                        if word.kind() == WordType::ListMarker {
-                            meta = if let Some(m) = meta_iter.next() {
-                                m
-                            } else {
-                                meta
-                            };
-                        }
-                        line = vec![filler, word];
+                        let filler = Word::new(filler_content, WordType::Normal);
+                        line = vec![filler, word.to_owned()];
                     }
                 }
                 lines.push(line);

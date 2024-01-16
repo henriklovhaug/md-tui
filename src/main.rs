@@ -86,7 +86,7 @@ fn destruct_terminal() {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    // let text = read_to_string("README.md")?;
+    // let text = read_to_string("./md_tests/test.md")?;
     // let mut markdown = parse_markdown(&text);
     // markdown.transform(80);
     // markdown.set_scroll(0);
