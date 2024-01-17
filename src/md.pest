@@ -10,7 +10,7 @@ comment_char   = _{ (!(NEWLINE | "-->") ~ ANY)+ }
 table_char     = _{ (!(NEWLINE | "|") ~ ANY)+ }
 
 link_char = _{ ASCII_ALPHANUMERIC | norwegian_char | "#" | "_" | "|" | "{" | "}" | "/" | ":" | ";" | "-" | "." | "," | "-" }
-digit     =  { '0'..'9' }
+digit     = _{ '0'..'9' }
 indent    =  { " "* }
 
 // Words
@@ -23,20 +23,6 @@ strikethrough_word = { s_char+ ~ " "? }
 code_word          = { c_char+ ~ " "? }
 link_word          = { (link_char | " " | "(" | ")")+ }
 link_data          = { (link_char | "@")+ }
-
-// Lines
-code                 =  { NEWLINE? ~ "`" ~ code_word+ ~ "`" }
-programming_language =  { ASCII_ALPHA+ }
-code_line            =  { (c_line_char | " ")+ }
-normal               = _{ word+ }
-markdown_link        =  { "[" ~ link_word+ ~ "]" ~ "(#" ~ link_data+ ~ ")" }
-external_link        =  { "[" ~ link_word+ ~ "]" ~ "(" ~ link_data+ ~ ")" }
-link                 = _{ NEWLINE? ~ (markdown_link | external_link) }
-table_word           =  { (table_char | code | link | " ")+ }
-italic               =  { NEWLINE? ~ (("*" ~ (italic_word | NEWLINE)+ ~ "*") | ("_" ~ (italic_word | NEWLINE)+ ~ "_")) }
-bold                 =  { NEWLINE? ~ "**" ~ (bold_word | NEWLINE)+ ~ "**" }
-strikethrough        =  { NEWLINE? ~ "~~" ~ (strikethrough_word | NEWLINE)+ ~ "~~" }
-o_list_counter       = _{ digit+ ~ ". " }
 
 // Prefixes
 task_open         =  { "- [ ] " }
@@ -51,6 +37,20 @@ heading_prefix    =  { "#" }
 forbidden_sentence_prefix = {
     NEWLINE ~ (task_prefix | quote_prefix | code_block_prefix | table_prefix | list_prefix | heading_prefix)
 }
+
+// Lines
+code                 =  { NEWLINE? ~ "`" ~ code_word+ ~ "`" }
+programming_language =  { ASCII_ALPHA+ }
+code_line            =  { (c_line_char | " ")+ }
+normal               = _{ word+ }
+markdown_link        =  { "[" ~ link_word+ ~ "]" ~ "(#" ~ link_data+ ~ ")" }
+external_link        =  { "[" ~ link_word+ ~ "]" ~ "(" ~ link_data+ ~ ")" }
+link                 = _{ NEWLINE? ~ (markdown_link | external_link) }
+table_word           =  { (table_char | code | link | " ")+ }
+italic               =  { NEWLINE? ~ (("*" ~ (italic_word | NEWLINE)+ ~ "*") | ("_" ~ (italic_word | NEWLINE)+ ~ "_")) }
+bold                 =  { NEWLINE? ~ "**" ~ (bold_word | NEWLINE)+ ~ "**" }
+strikethrough        =  { NEWLINE? ~ "~~" ~ (strikethrough_word | NEWLINE)+ ~ "~~" }
+o_list_counter       =  { digit+ ~ ". " }
 
 sentence = _{ (code | link | italic | bold | strikethrough | normal)+ }
 

@@ -7,7 +7,7 @@ use pest::{
 };
 use pest_derive::Parser;
 
-use crate::nodes::{RenderComponent, RenderNode, RenderRoot, Word, WordType};
+use crate::nodes::{MetaData, RenderComponent, RenderNode, RenderRoot, Word, WordType};
 
 #[derive(Parser)]
 #[grammar = "md.pest"]
@@ -108,26 +108,26 @@ fn parse_component(parse_node: ParseNode) -> RenderComponent {
 
                     let content = match node.kind() {
                         MdParseEnum::Indent => node.content().to_owned(),
-                        MdParseEnum::Digit => format!("{} ", node.content()),
                         _ => node
                             .content()
                             .chars()
                             .dedup_by(|x, y| *x == ' ' && *y == ' ')
                             .collect(),
                     };
-                    // let content = if node.kind() != MdParseEnum::Indent {
-                    //     node.content()
-                    //         .chars()
-                    //         .dedup_by(|x, y| *x == ' ' && *y == ' ')
-                    //         .collect()
-                    // } else {
-                    //     node.content().to_owned()
-                    // };
                     inner_words.push(Word::new(content, word_type));
                 }
                 if kind == MdParseEnum::UnorderedList {
+                    inner_words.push(Word::new(
+                        "X".to_owned(),
+                        WordType::MetaInfo(MetaData::UList),
+                    ));
                     let list_symbol = Word::new("• ".to_owned(), WordType::ListMarker);
                     inner_words.insert(1, list_symbol);
+                } else if kind == MdParseEnum::OrderedList {
+                    inner_words.push(Word::new(
+                        "X".to_owned(),
+                        WordType::MetaInfo(MetaData::OList),
+                    ));
                 }
                 words.push(inner_words);
             }

@@ -76,16 +76,16 @@ impl Widget for RenderComponent {
             RenderNode::Task => render_task(area, buf, self.content_owned(), clips, &meta_info),
             RenderNode::List => render_list(area, buf, self.content_owned(), clips),
             RenderNode::CodeBlock => render_code_block(area, buf, self.content_owned(), clips),
-            RenderNode::LineBreak => (),
             RenderNode::Table => render_table(area, buf, self.content_owned(), clips),
             RenderNode::Quote => render_quote(area, buf, self.content_owned()),
+            RenderNode::LineBreak => (),
         }
     }
 }
 
 fn style_word(word: &Word) -> Span<'_> {
     match word.kind() {
-        WordType::MetaInfo | WordType::LinkData => unreachable!(),
+        WordType::MetaInfo(_) | WordType::LinkData => unreachable!(),
         WordType::Selected => Span::styled(
             word.content(),
             Style::default().fg(Color::Green).bg(Color::DarkGray),

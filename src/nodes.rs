@@ -140,9 +140,17 @@ impl Widget for RenderRoot {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MetaData {
+    UList,
+    OList,
+    PLanguage,
+    Other,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WordType {
+    MetaInfo(MetaData),
     Selected,
-    MetaInfo,
     LinkData,
     Normal,
     Code,
@@ -162,7 +170,7 @@ impl From<MdParseEnum> for WordType {
             | MdParseEnum::TaskOpen
             | MdParseEnum::TaskClosed
             | MdParseEnum::Indent
-            | MdParseEnum::HorizontalSeperator => WordType::MetaInfo,
+            | MdParseEnum::HorizontalSeperator => WordType::MetaInfo(MetaData::Other),
 
             MdParseEnum::Code => WordType::Code,
             MdParseEnum::Bold => WordType::Bold,
@@ -241,7 +249,10 @@ impl Word {
     }
 
     pub fn is_renderable(&self) -> bool {
-        self.word_type != WordType::MetaInfo && self.word_type != WordType::LinkData
+        match self.kind() {
+            WordType::MetaInfo(_) | WordType::LinkData => false,
+            _ => true,
+        }
     }
 }
 
@@ -273,7 +284,7 @@ impl RenderComponent {
     pub fn new(kind: RenderNode, content: Vec<Word>) -> Self {
         let meta_info: Vec<Word> = content
             .iter()
-            .filter(|c| c.kind() == WordType::MetaInfo || c.kind() == WordType::LinkData)
+            .filter(|c| !c.is_renderable())
             .cloned()
             .collect();
 
@@ -295,7 +306,7 @@ impl RenderComponent {
         let meta_info: Vec<Word> = content
             .iter()
             .flatten()
-            .filter(|c| c.kind() == WordType::MetaInfo || c.kind() == WordType::LinkData)
+            .filter(|c| !c.is_renderable())
             .cloned()
             .collect();
 
@@ -463,8 +474,16 @@ impl RenderComponent {
                 let mut len = 0;
                 let mut lines = Vec::new();
                 let mut line = Vec::new();
-                let mut meta_iter = self.meta_info.iter().filter(|c| c.content().trim() == "");
+                let indent_iter = self.meta_info.iter().filter(|c| c.content().trim() == "");
+                let list_type_iter = self.meta_info.iter().filter(|c| match c.kind() {
+                    WordType::MetaInfo(MetaData::OList) | WordType::MetaInfo(MetaData::UList) => {
+                        true
+                    }
+                    _ => false,
+                });
+                let mut zip_iter = indent_iter.zip(list_type_iter);
                 let mut indent = 0;
+                let mut extra_indent = 0;
                 for word in self.content.iter_mut().flatten() {
                     if word.content().len() + len < width as usize
                         && word.kind() != WordType::ListMarker
@@ -473,14 +492,19 @@ impl RenderComponent {
                         line.push(word.clone());
                     } else {
                         let filler_content = if word.kind() == WordType::ListMarker {
-                            indent = if let Some(meta) = meta_iter.next() {
+                            indent = if let Some((meta, list_type)) = zip_iter.next() {
+                                if list_type.kind() == WordType::MetaInfo(MetaData::OList) {
+                                    extra_indent = 1;
+                                } else {
+                                    extra_indent = 0;
+                                }
                                 meta.content().len()
                             } else {
                                 0
                             };
                             " ".repeat(indent)
                         } else {
-                            " ".repeat(indent + 2)
+                            " ".repeat(indent + 2 + extra_indent)
                         };
                         lines.push(line);
                         len = word.content.len() + 1;
@@ -498,7 +522,7 @@ impl RenderComponent {
                 let content = self
                     .content
                     .iter()
-                    .filter(|c| c.iter().any(|x| x.kind() != WordType::MetaInfo))
+                    .filter(|c| c.iter().any(|x| !x.is_renderable()))
                     .cloned()
                     .collect::<Vec<_>>();
 
