@@ -299,7 +299,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "md-cli"
+name = "md-tui"
 version = "0.1.0"
 dependencies = [
  "better-panic",

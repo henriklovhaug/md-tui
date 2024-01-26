@@ -75,8 +75,15 @@ fn parse_component(parse_node: ParseNode) -> RenderComponent {
             let mut words = Vec::new();
             for node in leaf_nodes {
                 let word_type = WordType::from(node.kind());
-                let content = node.content().to_owned();
-                words.push(Word::new(content, word_type));
+                let mut content = node.content().to_owned();
+                if content.ends_with(' ') {
+                    content.pop();
+                    words.push(Word::new(content, word_type));
+                    let comp = Word::new(" ".to_owned(), word_type);
+                    words.push(comp);
+                } else {
+                    words.push(Word::new(content, word_type));
+                }
             }
             match kind {
                 MdParseEnum::Paragraph => RenderComponent::new(RenderNode::Paragraph, words),
