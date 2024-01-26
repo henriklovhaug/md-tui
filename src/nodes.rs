@@ -250,10 +250,7 @@ impl Word {
     }
 
     pub fn is_renderable(&self) -> bool {
-        match self.kind() {
-            WordType::MetaInfo(_) | WordType::LinkData => false,
-            _ => true,
-        }
+        !matches!(self.kind(), WordType::MetaInfo(_) | WordType::LinkData)
     }
 }
 
@@ -479,12 +476,13 @@ impl RenderComponent {
                 let mut lines = Vec::new();
                 let mut line = Vec::new();
                 let indent_iter = self.meta_info.iter().filter(|c| c.content().trim() == "");
-                let list_type_iter = self.meta_info.iter().filter(|c| match c.kind() {
-                    WordType::MetaInfo(MetaData::OList) | WordType::MetaInfo(MetaData::UList) => {
-                        true
-                    }
-                    _ => false,
+                let list_type_iter = self.meta_info.iter().filter(|c| {
+                    matches!(
+                        c.kind(),
+                        WordType::MetaInfo(MetaData::OList) | WordType::MetaInfo(MetaData::UList)
+                    )
                 });
+
                 let mut zip_iter = indent_iter.zip(list_type_iter);
                 let mut indent = 0;
                 let mut extra_indent = 0;
@@ -544,8 +542,8 @@ impl RenderComponent {
                 let mut len = 0;
                 let mut lines = Vec::new();
                 let mut line = Vec::new();
-                let mut iter = self.content.iter().flatten();
-                while let Some(word) = iter.next() {
+                let iter = self.content.iter().flatten();
+                for word in iter {
                     if word.content.len() + len < width && !line.is_empty() {
                         len += word.content.len();
                         line.push(word.clone());
