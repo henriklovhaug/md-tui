@@ -524,7 +524,7 @@ impl RenderComponent {
                 let content = self
                     .content
                     .iter()
-                    .filter(|c| c.iter().any(|x| !x.is_renderable()))
+                    .filter(|c| c.iter().any(|x| x.is_renderable()))
                     .cloned()
                     .collect::<Vec<_>>();
 
