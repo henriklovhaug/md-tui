@@ -278,7 +278,14 @@ fn keyboard_mode_file_tree(
                     app.boxes = Boxes::Error;
                     return KeyBoardAction::Continue;
                 };
-                let text = read_to_string(file.path()).unwrap();
+                let text = if let Ok(file) = read_to_string(file.path()) {
+                    app.vertical_scroll = 0;
+                    file
+                } else {
+                    error_box.set_message(format!("Could not open file {}", file.path()));
+                    app.boxes = Boxes::Error;
+                    return KeyBoardAction::Continue;
+                };
                 *markdown = parse_markdown(&text);
                 markdown.transform(80);
                 app.mode = Mode::View;
@@ -415,6 +422,7 @@ fn keyboard_mode_view(
                         // Remove the first character, which is a '/'
                         let url = &url[1..];
                         let text = if let Ok(file) = read_to_string(url) {
+                            app.vertical_scroll = 0;
                             file
                         } else {
                             error_box.set_message(format!("Could not open file {}", url));
