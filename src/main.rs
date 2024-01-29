@@ -68,12 +68,15 @@ struct App {
 enum LinkType<'a> {
     Internal(&'a str),
     External(&'a str),
+    MarkdownFile(&'a str),
 }
 
 impl<'a> From<&'a str> for LinkType<'a> {
     fn from(s: &'a str) -> Self {
         if s.starts_with("http") {
             return Self::External(s);
+        } else if s.starts_with('/') {
+            return Self::MarkdownFile(s);
         }
         Self::Internal(s)
     }
@@ -397,10 +400,30 @@ fn keyboard_mode_view(
                 let heading = markdown.selected();
                 match LinkType::from(heading) {
                     LinkType::Internal(heading) => {
-                        app.vertical_scroll = markdown.heading_offset(heading);
+                        app.vertical_scroll = if let Ok(index) = markdown.heading_offset(heading) {
+                            index
+                        } else {
+                            error_box.set_message(format!("Could not find heading {}", heading));
+                            app.boxes = Boxes::Error;
+                            return KeyBoardAction::Continue;
+                        };
                     }
                     LinkType::External(url) => {
                         let _ = open::that(url);
+                    }
+                    LinkType::MarkdownFile(url) => {
+                        // Remove the first character, which is a '/'
+                        let url = &url[1..];
+                        let text = if let Ok(file) = read_to_string(url) {
+                            file
+                        } else {
+                            error_box.set_message(format!("Could not open file {}", url));
+                            app.boxes = Boxes::Error;
+                            return KeyBoardAction::Continue;
+                        };
+                        *markdown = parse_markdown(&text);
+                        markdown.transform(80);
+                        app.mode = Mode::View;
                     }
                 }
                 markdown.deselect();

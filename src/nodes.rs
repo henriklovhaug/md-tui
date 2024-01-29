@@ -60,7 +60,7 @@ impl RenderRoot {
         }
     }
 
-    pub fn heading_offset(&self, heading: &str) -> u16 {
+    pub fn heading_offset(&self, heading: &str) -> Result<u16, String> {
         let mut y_offset = 0;
         let heading = heading.split('-');
         for component in self.components.iter() {
@@ -73,15 +73,14 @@ impl RenderRoot {
                     .map(|c| c.content().trim().to_lowercase().replace(['(', ')'], ""))
                     .eq(heading.clone())
             {
-                return y_offset;
+                return Ok(y_offset);
             }
             y_offset += component.height();
         }
-        panic!(
-            "Heading not found: {}, current height: {}",
-            heading.clone().collect::<Vec<_>>().join("-"),
-            y_offset
-        );
+        Err(format!(
+            "Heading not found: {}",
+            heading.collect::<Vec<_>>().join("-")
+        ))
     }
 
     /// Return the content of the components, where each element a line
