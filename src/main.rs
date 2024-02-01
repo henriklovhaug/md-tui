@@ -65,6 +65,15 @@ struct App {
     pub boxes: Boxes,
 }
 
+impl App {
+    fn reset(&mut self) {
+        self.vertical_scroll = 0;
+        self.selected = false;
+        self.select_index = 0;
+        self.boxes = Boxes::None;
+    }
+}
+
 enum LinkType<'a> {
     Internal(&'a str),
     External(&'a str),
@@ -279,7 +288,7 @@ fn keyboard_mode_file_tree(
                     return KeyBoardAction::Continue;
                 };
                 let text = if let Ok(file) = read_to_string(file.path()) {
-                    app.vertical_scroll = 0;
+                    app.reset();
                     file
                 } else {
                     error_box.set_message(format!("Could not open file {}", file.path()));
