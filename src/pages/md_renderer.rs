@@ -270,7 +270,8 @@ fn render_table(area: Rect, buf: &mut Buffer, content: Vec<Vec<Word>>, clip: Cli
             rows.drain(0..offset);
         }
         Clipping::Lower => {
-            rows.drain(area.height as usize..);
+            let drain_area = cmp::min(area.height, rows.len() as u16);
+            rows.drain(drain_area as usize..);
         }
         Clipping::None => (),
     }
