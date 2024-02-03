@@ -258,6 +258,7 @@ fn render_table(area: Rect, buf: &mut Buffer, content: Vec<Vec<Word>>, clip: Cli
 
     let mut rows = moved_content
         .iter()
+        .skip(1)
         .map(|c| Row::new(c.iter().map(|i| style_word(i)).collect::<Vec<_>>()))
         .collect::<Vec<_>>();
 

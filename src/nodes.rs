@@ -208,17 +208,14 @@ pub struct Word {
     content: String,
     word_type: WordType,
     previous_type: Option<WordType>,
-    has_leading_space: bool,
 }
 
 impl Word {
     pub fn new(content: String, word_type: WordType) -> Self {
-        let has_leading_space = content.starts_with(' ');
         Self {
-            content,
             word_type,
             previous_type: None,
-            has_leading_space,
+            content,
         }
     }
 
