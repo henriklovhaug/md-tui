@@ -276,11 +276,6 @@ fn render_table(area: Rect, buf: &mut Buffer, content: Vec<Vec<Word>>, clip: Cli
         Clipping::None => (),
     }
 
-    let area = Rect {
-        width: cmp::min(area.width - 2, 80),
-        ..area
-    };
-
     let table = Table::new(rows, &widths)
         .header(header.style(Style::default().fg(Color::Black)))
         .block(Block::default())
