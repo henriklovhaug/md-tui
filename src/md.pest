@@ -1,6 +1,6 @@
 // Characters
 norwegian_char = _{ "æ" | "ø" | "å" | "Æ" | "Ø" | "Å" }
-p_char         = _{ (!(NEWLINE | " ") ~ ANY)+ }
+p_char         = _{ (!(NEWLINE | code | italic | bold | strikethrough | " ") ~ ANY)+ }
 c_char         = _{ (!(NEWLINE | " " | "`") ~ ANY)+ }
 i_char         = _{ (!(NEWLINE | " " | "_" | "*") ~ ANY)+ }
 b_char         = _{ (!(NEWLINE | " " | "**") ~ ANY)+ }
