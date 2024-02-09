@@ -489,11 +489,7 @@ impl RenderComponent {
                 let mut zip_iter = indent_iter.zip(list_type_iter);
                 let mut indent = 0;
                 let mut extra_indent = 0;
-                for word in self
-                    .content
-                    .iter_mut()
-                    .flatten()
-                {
+                for word in self.content.iter_mut().flatten() {
                     if word.content().len() + len < width as usize
                         && word.kind() != WordType::ListMarker
                     {
@@ -525,10 +521,7 @@ impl RenderComponent {
                 }
                 lines.push(line);
                 // Remove empty lines
-                lines = lines
-                    .into_iter()
-                    .filter(|l| l.iter().any(|c| c.content() != ""))
-                    .collect();
+                lines.retain(|l| l.iter().any(|c| c.content() != ""));
                 self.height = lines.len() as u16;
                 self.content = lines;
             }

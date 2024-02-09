@@ -217,7 +217,10 @@ pub struct ParseRoot {
 
 impl ParseRoot {
     pub fn new(file_name: String, children: Vec<ParseNode>) -> Self {
-        Self { file_name, children }
+        Self {
+            file_name,
+            children,
+        }
     }
 
     pub fn children(&self) -> &Vec<ParseNode> {

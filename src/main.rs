@@ -4,7 +4,6 @@ use std::{
     fs::read_to_string,
     io::{self},
     panic,
-    process::exit,
     time::{Duration, Instant},
 };
 
