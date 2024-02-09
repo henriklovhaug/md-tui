@@ -13,7 +13,7 @@ use crate::nodes::{MetaData, RenderComponent, RenderNode, RenderRoot, Word, Word
 #[grammar = "md.pest"]
 pub struct MdParser;
 
-pub fn parse_markdown(file: &str) -> RenderRoot {
+pub fn parse_markdown(name: &str, file: &str) -> RenderRoot {
     let root: Pairs<'_, Rule> =
         MdParser::parse(Rule::txt, file).unwrap_or_else(|e| panic!("{}", e));
 
@@ -21,7 +21,7 @@ pub fn parse_markdown(file: &str) -> RenderRoot {
 
     let children = parse_text(root_pair).children_owned();
     let children = children.iter().dedup().cloned().collect();
-    let parse_root = ParseRoot::new(children);
+    let parse_root = ParseRoot::new(name.to_owned(), children);
 
     node_to_component(parse_root)
 }
@@ -44,12 +44,13 @@ fn parse_node_children(pair: Pairs<'_, Rule>) -> Vec<ParseNode> {
 
 fn node_to_component(root: ParseRoot) -> RenderRoot {
     let mut children = Vec::new();
+    let name = root.file_name().to_owned();
     for component in root.children_owned() {
         let comp = parse_component(component);
         children.push(comp);
     }
 
-    RenderRoot::new(children)
+    RenderRoot::new(name, children)
 }
 
 fn parse_component(parse_node: ParseNode) -> RenderComponent {
@@ -210,12 +211,13 @@ fn print_component(component: &RenderComponent, _depth: usize) {
 
 #[derive(Debug, Clone)]
 pub struct ParseRoot {
+    file_name: String,
     children: Vec<ParseNode>,
 }
 
 impl ParseRoot {
-    pub fn new(children: Vec<ParseNode>) -> Self {
-        Self { children }
+    pub fn new(file_name: String, children: Vec<ParseNode>) -> Self {
+        Self { file_name, children }
     }
 
     pub fn children(&self) -> &Vec<ParseNode> {
@@ -224,6 +226,10 @@ impl ParseRoot {
 
     pub fn children_owned(self) -> Vec<ParseNode> {
         self.children
+    }
+
+    pub fn file_name(&self) -> &str {
+        &self.file_name
     }
 }
 

@@ -18,6 +18,7 @@ Using cargo: `cargo install --git https://github.com/henriklovhaug/md-cli`
 | ---------- | ---------------------------------------------------------------------- |
 | `j`        | Scroll down                                                            |
 | `k`        | Scroll up                                                              |
+| `r`        | Reload file                                                            |
 | `f` or `/` | Search                                                                 |
 | `s`        | Enter select link mode                                                 |
 | `Enter`    | Select. Depending on which mode it can: open file, select link, search |

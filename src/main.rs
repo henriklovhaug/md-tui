@@ -4,6 +4,7 @@ use std::{
     fs::read_to_string,
     io::{self},
     panic,
+    process::exit,
     time::{Duration, Instant},
 };
 
@@ -150,8 +151,9 @@ fn run_app<B: Backend>(
     let mut last_tick = Instant::now();
 
     let text = "# temp";
+    let name = "temp";
 
-    let mut markdown = parse_markdown(text);
+    let mut markdown = parse_markdown(name, text);
     let mut width = cmp::min(terminal.size()?.width, 80);
     markdown.transform(width);
 
@@ -295,7 +297,7 @@ fn keyboard_mode_file_tree(
                     app.boxes = Boxes::Error;
                     return KeyBoardAction::Continue;
                 };
-                *markdown = parse_markdown(&text);
+                *markdown = parse_markdown(file.path(), &text);
                 markdown.transform(80);
                 app.mode = Mode::View;
             }
@@ -405,6 +407,19 @@ fn keyboard_mode_view(
             KeyCode::Char('t') => {
                 app.mode = Mode::FileTree;
             }
+            KeyCode::Char('r') => {
+                let text = if let Ok(file) = read_to_string(markdown.file_name()) {
+                    app.vertical_scroll = 0;
+                    file
+                } else {
+                    error_box.set_message(format!("Could not open file {}", markdown.file_name()));
+                    app.boxes = Boxes::Error;
+                    return KeyBoardAction::Continue;
+                };
+                *markdown = parse_markdown(markdown.file_name(), text.as_ref());
+                markdown.transform(80);
+                app.mode = Mode::View;
+            }
             KeyCode::Esc => {
                 app.selected = false;
                 markdown.deselect();
@@ -438,7 +453,7 @@ fn keyboard_mode_view(
                             app.boxes = Boxes::Error;
                             return KeyBoardAction::Continue;
                         };
-                        *markdown = parse_markdown(&text);
+                        *markdown = parse_markdown(url, &text);
                         markdown.transform(80);
                         app.mode = Mode::View;
                     }

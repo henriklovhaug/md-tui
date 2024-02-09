@@ -6,13 +6,15 @@ use ratatui::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 #[derive(Debug, Clone)]
 pub struct RenderRoot {
+    file_name: String,
     components: Vec<RenderComponent>,
     is_focused: bool,
 }
 
 impl RenderRoot {
-    pub fn new(components: Vec<RenderComponent>) -> Self {
+    pub fn new(file_name: String, components: Vec<RenderComponent>) -> Self {
         Self {
+            file_name,
             components,
             is_focused: false,
         }
@@ -28,6 +30,10 @@ impl RenderRoot {
 
     pub fn components_mut(&mut self) -> &mut Vec<RenderComponent> {
         &mut self.components
+    }
+
+    pub fn file_name(&self) -> &str {
+        &self.file_name
     }
 
     pub fn select(&mut self, index: usize) -> u16 {
