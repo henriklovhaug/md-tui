@@ -298,6 +298,7 @@ fn keyboard_mode_file_tree(
                 *markdown = parse_markdown(&text);
                 markdown.transform(80);
                 app.mode = Mode::View;
+                app.select_index = 0;
             }
             KeyCode::Esc => {
                 file_tree.unselect();
@@ -420,7 +421,7 @@ fn keyboard_mode_view(
                             index
                         } else {
                             error_box.set_message(format!("Could not find heading {}", heading));
-                            app.boxes = Boxes::Error;
+                            app.reset();
                             return KeyBoardAction::Continue;
                         };
                     }
@@ -440,7 +441,7 @@ fn keyboard_mode_view(
                         };
                         *markdown = parse_markdown(&text);
                         markdown.transform(80);
-                        app.mode = Mode::View;
+                        app.reset();
                     }
                 }
                 markdown.deselect();
