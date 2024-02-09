@@ -1,6 +1,6 @@
 // Characters
 norwegian_char = _{ "æ" | "ø" | "å" | "Æ" | "Ø" | "Å" }
-p_char         = _{ (!(NEWLINE | " ") ~ ANY)+ }
+p_char         = _{ (!(NEWLINE | code | italic | bold | strikethrough | " ") ~ ANY)+ }
 c_char         = _{ (!(NEWLINE | " " | "`") ~ ANY)+ }
 i_char         = _{ (!(NEWLINE | " " | "_" | "*") ~ ANY)+ }
 b_char         = _{ (!(NEWLINE | " " | "**") ~ ANY)+ }
@@ -43,9 +43,9 @@ code                 =  { NEWLINE? ~ " "* ~ "`" ~ code_word+ ~ "`" }
 programming_language =  { ASCII_ALPHA+ }
 code_line            =  { (c_line_char | " ")+ }
 normal               = _{ word+ }
-markdown_link        =  { "[" ~ link_word+ ~ "]" ~ "(#" ~ link_data+ ~ ")" }
-external_link        =  { "[" ~ link_word+ ~ "]" ~ "(" ~ link_data+ ~ ")" }
-link                 = _{ NEWLINE? ~ (markdown_link | external_link) }
+markdown_link        = _{ "[" ~ link_word+ ~ "]" ~ "(#" ~ link_data+ ~ ")" }
+external_link        = _{ "[" ~ link_word+ ~ "]" ~ "(" ~ link_data+ ~ ")" }
+link                 =  { NEWLINE? ~ (markdown_link | external_link) }
 table_word           =  { (table_char | code | link | " ")+ }
 italic               =  { NEWLINE? ~ " "* ~ (("*" ~ (italic_word | NEWLINE)+ ~ "*") | ("_" ~ (italic_word | NEWLINE)+ ~ "_")) }
 bold                 =  { NEWLINE? ~ " "* ~ "**" ~ (bold_word | NEWLINE)+ ~ "**" }

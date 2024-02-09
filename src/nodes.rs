@@ -1,6 +1,7 @@
 use std::usize;
 
 use crate::parser::MdParseEnum;
+use itertools::Itertools;
 use ratatui::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 #[derive(Debug, Clone)]
@@ -482,7 +483,11 @@ impl RenderComponent {
                 let mut zip_iter = indent_iter.zip(list_type_iter);
                 let mut indent = 0;
                 let mut extra_indent = 0;
-                for word in self.content.iter_mut().flatten() {
+                for word in self
+                    .content
+                    .iter_mut()
+                    .flatten()
+                {
                     if word.content().len() + len < width as usize
                         && word.kind() != WordType::ListMarker
                     {
@@ -513,6 +518,11 @@ impl RenderComponent {
                     }
                 }
                 lines.push(line);
+                // Remove empty lines
+                lines = lines
+                    .into_iter()
+                    .filter(|l| l.iter().any(|c| c.content() != ""))
+                    .collect();
                 self.height = lines.len() as u16;
                 self.content = lines;
             }
@@ -538,7 +548,11 @@ impl RenderComponent {
                 let mut len = 0;
                 let mut lines = Vec::new();
                 let mut line = Vec::new();
-                let iter = self.content.iter().flatten();
+                let iter = self
+                    .content
+                    .iter()
+                    .flatten()
+                    .dedup_by(|a, b| a.content() == " " && b.content() == " ");
                 for word in iter {
                     if word.content.len() + len < width {
                         len += word.content.len();

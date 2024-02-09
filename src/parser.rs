@@ -168,7 +168,8 @@ fn get_leaf_nodes(node: ParseNode) -> Vec<ParseNode> {
     if (node.kind() == MdParseEnum::Code
         || node.kind() == MdParseEnum::Italic
         || node.kind() == MdParseEnum::Strikethrough
-        || node.kind() == MdParseEnum::Bold)
+        || node.kind() == MdParseEnum::Bold
+        || node.kind() == MdParseEnum::Link)
         && node.content().starts_with(' ')
     {
         let comp = ParseNode::new(MdParseEnum::Word, " ".to_owned());
