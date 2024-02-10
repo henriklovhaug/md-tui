@@ -8,10 +8,9 @@ s_char         = _{ (!(NEWLINE | " " | "~~") ~ ANY)+ }
 c_line_char    = _{ (!(NEWLINE | "```") ~ ANY)+ }
 comment_char   = _{ (!(NEWLINE | "-->") ~ ANY)+ }
 table_char     = _{ (!(NEWLINE | "|") ~ ANY)+ }
-
-link_char = _{ ASCII_ALPHANUMERIC | norwegian_char | "#" | "_" | "|" | "{" | "}" | "/" | ":" | ";" | "-" | "." | "," | "-" }
-digit     = _{ '0'..'9' }
-indent    =  { " "* }
+link_char      = _{ (!(NEWLINE | " " | "[" | "]" | "(" | ")") ~ ANY)+ }
+digit          = _{ '0'..'9' }
+indent         =  { " "* }
 
 // Words
 word               = {
