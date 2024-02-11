@@ -60,12 +60,20 @@ fn parse_component(parse_node: ParseNode) -> RenderComponent {
             let mut words = Vec::new();
             for node in leaf_nodes {
                 let word_type = WordType::from(node.kind());
-                let content = node
+                let mut content: String = node
                     .content()
                     .chars()
                     .dedup_by(|x, y| *x == ' ' && *y == ' ')
                     .collect();
-                words.push(Word::new(content, word_type));
+
+                if content.ends_with(' ') {
+                    content.pop();
+                    words.push(Word::new(content, word_type));
+                    let comp = Word::new(" ".to_owned(), word_type);
+                    words.push(comp);
+                } else {
+                    words.push(Word::new(content, word_type));
+                }
             }
             RenderComponent::new(RenderNode::Task, words)
         }

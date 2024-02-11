@@ -170,6 +170,7 @@ fn run_app<B: Backend>(
             } else {
                 error_box.set_message(format!("Could not open file {}", markdown.file_name()));
                 app.boxes = Boxes::Error;
+                app.mode = Mode::FileTree;
                 continue;
             };
             markdown = parse_markdown(markdown.file_name(), &text);
@@ -350,13 +351,11 @@ fn keyboard_mode_view(
                     app.boxes = Boxes::Error;
                     return KeyBoardAction::Continue;
                 }
-                markdown
-                    .mark_word(
-                        search.first().unwrap().0,
-                        search.first().unwrap().1,
-                        query.len(),
-                    )
-                    .unwrap();
+
+                for ele in search.iter() {
+                    markdown.mark_word(ele.0, ele.1, query.len()).unwrap();
+                }
+
                 app.boxes = Boxes::None;
             }
             KeyCode::Char(c) => {
