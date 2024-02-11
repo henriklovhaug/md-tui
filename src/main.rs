@@ -164,6 +164,15 @@ fn run_app<B: Backend>(
     loop {
         let new_width = cmp::min(terminal.size()?.width, 80);
         if new_width != width {
+            let text = if let Ok(file) = read_to_string(markdown.file_name()) {
+                app.vertical_scroll = 0;
+                file
+            } else {
+                error_box.set_message(format!("Could not open file {}", markdown.file_name()));
+                app.boxes = Boxes::Error;
+                continue;
+            };
+            markdown = parse_markdown(markdown.file_name(), &text);
             markdown.transform(new_width);
             width = new_width;
         }

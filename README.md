@@ -10,7 +10,7 @@
 
 ## Installation
 
-Using cargo: `cargo install --git https://github.com/henriklovhaug/md-cli`
+Using cargo: `cargo install md-tui`
 
 ## Key binds
 

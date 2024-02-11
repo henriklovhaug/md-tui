@@ -1,7 +1,6 @@
 use std::usize;
 
 use crate::parser::MdParseEnum;
-use itertools::Itertools;
 use ratatui::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 #[derive(Debug, Clone)]
@@ -547,11 +546,7 @@ impl RenderComponent {
                 let mut len = 0;
                 let mut lines = Vec::new();
                 let mut line = Vec::new();
-                let iter = self
-                    .content
-                    .iter()
-                    .flatten()
-                    .dedup_by(|a, b| a.content() == " " && b.content() == " ");
+                let iter = self.content.iter().flatten();
                 for word in iter {
                     if word.content.len() + len < width {
                         len += word.content.len();
