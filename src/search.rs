@@ -24,7 +24,6 @@ pub fn find_md_files() -> Result<FileTree, io::Error> {
     Ok(tree)
 }
 
-
 pub fn find_with_backoff(query: &str, text: &str) -> Vec<usize> {
     let precision = 0;
     let mut result = find(query, text, precision);

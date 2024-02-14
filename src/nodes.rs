@@ -41,9 +41,7 @@ impl RenderRoot {
         let mut count = 0;
         for comp in self.components.iter_mut() {
             if index - count < comp.num_links() {
-                if let Err(err) = comp.visually_select(index - count) {
-                    return Err(err);
-                }
+                comp.visually_select(index - count)?;
                 return Ok(comp.y_offset());
             }
             count += comp.num_links();
