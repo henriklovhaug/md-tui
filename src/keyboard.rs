@@ -2,8 +2,14 @@ use std::{cmp, fs::read_to_string};
 
 use crossterm::event::KeyCode;
 
-use crate::{boxes::{errorbox::ErrorBox, searchbox::SearchBox}, nodes::RenderRoot, pages::file_explorer::FileTree, parser::parse_markdown, search::find_line_match_and_index, App, Boxes, LinkType, Mode};
-
+use crate::{
+    boxes::{errorbox::ErrorBox, searchbox::SearchBox},
+    nodes::RenderRoot,
+    pages::file_explorer::FileTree,
+    parser::parse_markdown,
+    search::find_line_match_and_index,
+    App, Boxes, LinkType, Mode,
+};
 
 pub enum KeyBoardAction {
     Continue,
@@ -212,8 +218,8 @@ fn keyboard_mode_view(
                 if !app.selected {
                     return KeyBoardAction::Continue;
                 }
-                let heading = markdown.selected();
-                match LinkType::from(heading) {
+                let link = markdown.selected();
+                match LinkType::from(link) {
                     LinkType::Internal(heading) => {
                         app.vertical_scroll = if let Ok(index) = markdown.heading_offset(heading) {
                             index

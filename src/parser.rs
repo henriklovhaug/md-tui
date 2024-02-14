@@ -14,8 +14,11 @@ use crate::nodes::{MetaData, RenderComponent, RenderNode, RenderRoot, Word, Word
 pub struct MdParser;
 
 pub fn parse_markdown(name: &str, file: &str) -> RenderRoot {
-    let root: Pairs<'_, Rule> =
-        MdParser::parse(Rule::txt, file).unwrap_or_else(|e| panic!("{}", e));
+    let root: Pairs<'_, Rule> = if let Ok(file) = MdParser::parse(Rule::txt, file) {
+        file
+    } else {
+        return RenderRoot::new(name.to_owned(), Vec::new());
+    };
 
     let root_pair = root.into_iter().next().unwrap();
 
@@ -348,8 +351,7 @@ impl From<Rule> for MdParseEnum {
             Rule::horizontal_sep => Self::HorizontalSeperator,
             Rule::link_data => Self::LinkData,
 
-            Rule::norwegian_char
-            | Rule::p_char
+            Rule::p_char
             | Rule::table_char
             | Rule::link_char
             | Rule::normal
