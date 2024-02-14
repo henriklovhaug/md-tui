@@ -8,7 +8,7 @@ use crate::{
     pages::file_explorer::FileTree,
     parser::parse_markdown,
     search::find_line_match_and_index,
-    App, Boxes, LinkType, Mode,
+    util::{App, Boxes, LinkType, Mode},
 };
 
 pub enum KeyBoardAction {
@@ -36,7 +36,7 @@ pub fn handle_keyboard_input(
     }
 }
 
-fn keyboard_mode_file_tree(
+pub fn keyboard_mode_file_tree(
     key: KeyCode,
     app: &mut App,
     markdown: &mut RenderRoot,

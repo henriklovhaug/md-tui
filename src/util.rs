@@ -42,7 +42,7 @@ pub struct App {
 }
 
 impl App {
-    fn reset(&mut self) {
+    pub fn reset(&mut self) {
         self.vertical_scroll = 0;
         self.selected = false;
         self.select_index = 0;
