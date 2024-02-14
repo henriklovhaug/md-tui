@@ -9,7 +9,6 @@ use std::{
 
 use boxes::{errorbox::ErrorBox, searchbox::SearchBox};
 use crossterm::{
-    cursor,
     event::{self, DisableMouseCapture, EnableMouseCapture, Event},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
@@ -25,6 +24,7 @@ use ratatui::{
     Frame, Terminal,
 };
 use search::find_md_files;
+use util::{destruct_terminal, App, Boxes, Mode};
 
 pub mod boxes;
 mod keyboard;
@@ -32,73 +32,7 @@ pub mod nodes;
 pub mod pages;
 pub mod parser;
 pub mod search;
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-enum Mode {
-    View,
-    FileTree,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-enum Boxes {
-    Error,
-    Search,
-    None,
-}
-
-impl Default for Mode {
-    fn default() -> Self {
-        Self::FileTree
-    }
-}
-
-impl Default for Boxes {
-    fn default() -> Self {
-        Self::None
-    }
-}
-
-#[derive(Default, Clone, Copy)]
-struct App {
-    pub vertical_scroll: u16,
-    pub selected: bool,
-    pub select_index: usize,
-    pub mode: Mode,
-    pub boxes: Boxes,
-}
-
-impl App {
-    fn reset(&mut self) {
-        self.vertical_scroll = 0;
-        self.selected = false;
-        self.select_index = 0;
-        self.boxes = Boxes::None;
-    }
-}
-
-enum LinkType<'a> {
-    Internal(&'a str),
-    External(&'a str),
-    MarkdownFile(&'a str),
-}
-
-impl<'a> From<&'a str> for LinkType<'a> {
-    fn from(s: &'a str) -> Self {
-        if s.starts_with("http") {
-            return Self::External(s);
-        }
-        if s.starts_with('/') {
-            return Self::MarkdownFile(s);
-        }
-        Self::Internal(s)
-    }
-}
-
-fn destruct_terminal() {
-    disable_raw_mode().unwrap();
-    execute!(io::stdout(), LeaveAlternateScreen, DisableMouseCapture).unwrap();
-    execute!(io::stdout(), cursor::Show).unwrap();
-}
+pub mod util;
 
 fn main() -> Result<(), Box<dyn Error>> {
     // let text = read_to_string("./md_tests/test.md")?;
