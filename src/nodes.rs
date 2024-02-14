@@ -35,18 +35,18 @@ impl RenderRoot {
         &self.file_name
     }
 
-    pub fn select(&mut self, index: usize) -> u16 {
+    pub fn select(&mut self, index: usize) -> Result<u16, String> {
         self.deselect();
         self.is_focused = true;
         let mut count = 0;
         for comp in self.components.iter_mut() {
             if index - count < comp.num_links() {
                 comp.visually_select(index - count).unwrap();
-                return comp.y_offset();
+                return Ok(comp.y_offset());
             }
             count += comp.num_links();
         }
-        panic!("Index out of bounds: {} >= {}", index, count);
+        Err(format!("Index out of bounds: {} >= {}", index, count))
     }
 
     pub fn deselect(&mut self) {

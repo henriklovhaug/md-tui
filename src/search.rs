@@ -1,4 +1,29 @@
+use std::io;
+
 use strsim::damerau_levenshtein;
+
+use crate::pages::file_explorer::{FileTree, MdFile};
+
+pub fn find_md_files() -> Result<FileTree, io::Error> {
+    let mut tree = FileTree::new();
+    let mut stack = vec![std::path::PathBuf::from(".")];
+    while let Some(path) = stack.pop() {
+        for entry in std::fs::read_dir(path)? {
+            let entry = entry?;
+            let path = entry.path();
+            if path.is_dir() {
+                stack.push(path);
+            } else if path.extension().unwrap_or_default() == "md" {
+                let name = path.file_name().unwrap().to_str().unwrap().to_string();
+                let path = path.to_str().unwrap().to_string();
+                tree.add_file(MdFile::new(path, name));
+            }
+        }
+    }
+    tree.sort_2();
+    Ok(tree)
+}
+
 
 pub fn find_with_backoff(query: &str, text: &str) -> Vec<usize> {
     let precision = 0;
