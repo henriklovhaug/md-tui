@@ -63,6 +63,7 @@ impl From<MdFileComponent> for ListItem<'_> {
 #[derive(Debug, Clone, Default)]
 pub struct FileTree {
     files: Vec<MdFileComponent>,
+    page: u32,
     list_state: ListState,
 }
 
@@ -71,6 +72,7 @@ impl FileTree {
         Self {
             files: Vec::new(),
             list_state: ListState::default(),
+            page: 0,
         }
     }
 
@@ -118,7 +120,7 @@ impl FileTree {
         self.files = result;
     }
 
-    pub fn next(&mut self) {
+    pub fn next(&mut self, height: u16) {
         let i = match self.list_state.selected() {
             Some(i) => {
                 if i >= self.files.len() {
@@ -129,10 +131,11 @@ impl FileTree {
             }
             None => 0,
         };
+        self.page = i as u32 / ((height as u32 + 2) / 2);
         self.list_state.select(Some(i));
     }
 
-    pub fn previous(&mut self) {
+    pub fn previous(&mut self, height: u16) {
         let i = match self.list_state.selected() {
             Some(i) => {
                 if i == 0 {
@@ -143,6 +146,7 @@ impl FileTree {
             }
             None => 0,
         };
+        self.page = i as u32 / ((height as u32 + 2) / 2);
         self.list_state.select(Some(i));
     }
 
@@ -152,10 +156,13 @@ impl FileTree {
 
     pub fn selected(&self) -> Option<&MdFile> {
         match self.list_state.selected() {
-            Some(i) => self.files.get(i).and_then(|f| match f {
-                MdFileComponent::File(f) => Some(f),
-                MdFileComponent::Spacer => None,
-            }),
+            Some(i) => self
+                .files
+                .get(i * self.page as usize)
+                .and_then(|f| match f {
+                    MdFileComponent::File(f) => Some(f),
+                    MdFileComponent::Spacer => None,
+                }),
             None => None,
         }
     }
@@ -175,6 +182,16 @@ impl FileTree {
             .collect::<Vec<&MdFile>>()
     }
 
+    fn partition(&self, height: u16) -> usize {
+        let partition_size = (height as usize + 2) / 2;
+
+        if partition_size % 2 == 0 {
+            partition_size
+        } else {
+            partition_size
+        }
+    }
+
     pub fn state(&self) -> &ListState {
         &self.list_state
     }
@@ -190,9 +207,21 @@ impl Widget for FileTree {
 
         let items = self
             .files
-            .into_iter()
-            .map(|f| f.into())
-            .collect::<Vec<ListItem>>();
+            .chunks(self.partition(area.height))
+            .nth(self.page as usize)
+            .unwrap()
+            .iter()
+            .cloned();
+
+        state.select(Some(
+            state.selected().unwrap_or(0) % self.partition(area.height),
+        ));
+
+        // let items = self
+        //     .files
+        //     .into_iter()
+        //     .map(|f| f.into())
+        //     .collect::<Vec<ListItem>>();
 
         let items = List::new(items)
             .block(

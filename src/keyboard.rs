@@ -43,7 +43,7 @@ pub fn keyboard_mode_file_tree(
     _search_box: &mut SearchBox,
     error_box: &mut ErrorBox,
     file_tree: &mut FileTree,
-    _height: u16,
+    height: u16,
 ) -> KeyBoardAction {
     match app.boxes {
         Boxes::Error => match key {
@@ -55,10 +55,10 @@ pub fn keyboard_mode_file_tree(
         Boxes::Search => todo!(),
         Boxes::None => match key {
             KeyCode::Char('j') => {
-                file_tree.next();
+                file_tree.next(height);
             }
             KeyCode::Char('k') => {
-                file_tree.previous();
+                file_tree.previous(height);
             }
             KeyCode::Enter => {
                 let file = if let Some(file) = file_tree.selected() {

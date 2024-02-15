@@ -121,10 +121,10 @@ fn run_app<B: Backend>(
         terminal.draw(|f| {
             match app.mode {
                 Mode::View => {
-                    render_markdown(f, app, markdown.clone());
+                    render_markdown(f, &app, markdown.clone());
                 }
                 Mode::FileTree => {
-                    render_file_tree(f, app, file_tree.clone());
+                    render_file_tree(f, &app, file_tree.clone());
                 }
             };
             if app.boxes == Boxes::Search {
@@ -178,7 +178,7 @@ fn run_app<B: Backend>(
     }
 }
 
-fn render_file_tree(f: &mut Frame, _app: App, file_tree: FileTree) {
+fn render_file_tree(f: &mut Frame, _app: &App, file_tree: FileTree) {
     let size = f.size();
     let area = Rect {
         x: 2,
@@ -188,7 +188,7 @@ fn render_file_tree(f: &mut Frame, _app: App, file_tree: FileTree) {
     f.render_widget(file_tree, area);
 }
 
-fn render_markdown(f: &mut Frame, _app: App, markdown: RenderRoot) {
+fn render_markdown(f: &mut Frame, _app: &App, markdown: RenderRoot) {
     let size = f.size();
     let area = Rect {
         x: 2,
