@@ -222,7 +222,7 @@ impl Widget for FileTree {
         let page_count = format!(
             "  {}/{}",
             self.page + 1,
-            self.files.len() / self.partition(area.height)
+            self.files.len() / self.partition(area.height) + 1
         );
 
         let paragraph = Text::styled(page_count, Style::default().fg(Color::LightGreen));
