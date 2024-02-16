@@ -217,6 +217,16 @@ impl Widget for FileTree {
 
         state.select(state.selected().map(|i| i % self.partition(area.height)));
 
+        let y_height = items.len() / 2 * 3;
+
+        let page_count = format!(
+            "  {}/{}",
+            self.page + 1,
+            self.files.len() / self.partition(area.height)
+        );
+
+        let paragraph = Text::styled(page_count, Style::default().fg(Color::LightGreen));
+
         let items = List::new(items)
             .block(
                 Block::default()
@@ -233,5 +243,12 @@ impl Widget for FileTree {
             .repeat_highlight_symbol(true)
             .highlight_spacing(HighlightSpacing::Always);
         StatefulWidget::render(items, area, buf, &mut state);
+
+        let area = Rect {
+            y: area.y + y_height as u16 + 2,
+            ..area
+        };
+
+        paragraph.render(area, buf);
     }
 }
