@@ -131,7 +131,7 @@ impl FileTree {
             }
             None => 0,
         };
-        self.page = i as u32 / ((height as u32 + 2) / 2);
+        self.page = (i / self.partition(height)) as u32;
         self.list_state.select(Some(i));
     }
 
@@ -146,7 +146,7 @@ impl FileTree {
             }
             None => 0,
         };
-        self.page = i as u32 / ((height as u32 + 2) / 2);
+        self.page = (i / self.partition(height)) as u32;
         self.list_state.select(Some(i));
     }
 
@@ -188,7 +188,7 @@ impl FileTree {
         if partition_size % 2 == 0 {
             partition_size
         } else {
-            partition_size
+            partition_size + 1
         }
     }
 
@@ -205,23 +205,17 @@ impl Widget for FileTree {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let mut state = self.state().to_owned();
 
-        let items = self
+        let items = if let Some(iter) = self
             .files
             .chunks(self.partition(area.height))
             .nth(self.page as usize)
-            .unwrap()
-            .iter()
-            .cloned();
+        {
+            iter.iter().cloned()
+        } else {
+            self.files.iter().cloned()
+        };
 
-        state.select(Some(
-            state.selected().unwrap_or(0) % self.partition(area.height),
-        ));
-
-        // let items = self
-        //     .files
-        //     .into_iter()
-        //     .map(|f| f.into())
-        //     .collect::<Vec<ListItem>>();
+        state.select(state.selected().map(|i| i % self.partition(area.height)));
 
         let items = List::new(items)
             .block(
