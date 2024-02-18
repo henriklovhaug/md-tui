@@ -157,13 +157,10 @@ impl FileTree {
 
     pub fn selected(&self) -> Option<&MdFile> {
         match self.list_state.selected() {
-            Some(i) => self
-                .files
-                .get(i * self.page as usize)
-                .and_then(|f| match f {
-                    MdFileComponent::File(f) => Some(f),
-                    MdFileComponent::Spacer => None,
-                }),
+            Some(i) => self.files.get(i).and_then(|f| match f {
+                MdFileComponent::File(f) => Some(f),
+                MdFileComponent::Spacer => None,
+            }),
             None => None,
         }
     }
