@@ -19,16 +19,11 @@ enum MdFileComponent {
 pub struct MdFile {
     pub path: String,
     pub name: String,
-    pub selected: bool,
 }
 
 impl MdFile {
     pub fn new(path: String, name: String) -> Self {
-        Self {
-            path,
-            name,
-            selected: false,
-        }
+        Self { path, name }
     }
 
     pub fn path(&self) -> &str {
@@ -65,6 +60,7 @@ pub struct FileTree {
     files: Vec<MdFileComponent>,
     page: u32,
     list_state: ListState,
+    search: Option<String>,
 }
 
 impl FileTree {
@@ -73,6 +69,7 @@ impl FileTree {
             files: Vec::new(),
             list_state: ListState::default(),
             page: 0,
+            search: None,
         }
     }
 
@@ -118,6 +115,10 @@ impl FileTree {
 
         // Update self.files with the sorted and interleaved result
         self.files = result;
+    }
+
+    pub fn search(&mut self, query: &str) {
+        self.search = Some(query.to_string());
     }
 
     pub fn next(&mut self, height: u16) {
@@ -204,26 +205,24 @@ impl FileTree {
 impl Widget for FileTree {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let mut state = self.state().to_owned();
+        let file_len = self.files.len();
+        let partition = self.partition(area.height);
 
         let items = if let Some(iter) = self
             .files
             .chunks(self.partition(area.height))
             .nth(self.page as usize)
         {
-            iter.iter().cloned()
+            iter.to_owned()
         } else {
-            self.files.iter().cloned()
+            self.files
         };
 
-        state.select(state.selected().map(|i| i % self.partition(area.height)));
+        state.select(state.selected().map(|i| i % partition));
 
         let y_height = items.len() / 2 * 3;
 
-        let page_count = format!(
-            "  {}/{}",
-            self.page + 1,
-            self.files.len() / self.partition(area.height) + 1
-        );
+        let page_count = format!("  {}/{}", self.page + 1, file_len / partition + 1);
 
         let paragraph = Text::styled(page_count, Style::default().fg(Color::LightGreen));
 

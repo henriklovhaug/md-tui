@@ -24,6 +24,15 @@ pub fn find_md_files() -> Result<FileTree, io::Error> {
     Ok(tree)
 }
 
+pub fn find_files<'a>(files: &'a Vec<String>, query: &str) -> Vec<&'a String> {
+    files
+        .iter()
+        .filter(|file| {
+            char_windows(file, query.len()).any(|window| damerau_levenshtein(window, query) == 0)
+        })
+        .collect()
+}
+
 pub fn find_with_backoff(query: &str, text: &str) -> Vec<usize> {
     let precision = 0;
     let mut result = find(query, text, precision);
