@@ -24,7 +24,7 @@ pub fn find_md_files() -> Result<FileTree, io::Error> {
     Ok(tree)
 }
 
-pub fn find_files<'a>(files: &'a Vec<String>, query: &str) -> Vec<&'a String> {
+pub fn find_files<'a>(files: &'a [String], query: &str) -> Vec<&'a String> {
     files
         .iter()
         .filter(|file| {
