@@ -117,6 +117,7 @@ pub fn keyboard_mode_file_tree(
             }
             KeyCode::Esc => {
                 file_tree.unselect();
+                file_tree.search(None);
             }
             _ => {}
         },
@@ -226,6 +227,7 @@ fn keyboard_mode_view(
                 };
             }
             KeyCode::Char('f') | KeyCode::Char('/') => {
+                search_box.set_position(2, height - 3);
                 app.boxes = Boxes::Search;
             }
             KeyCode::Char('t') => {

@@ -125,6 +125,7 @@ impl FileTree {
 
     pub fn search(&mut self, query: Option<&str>) {
         self.state_mut().select(None);
+        self.page = 0;
         self.search = query.map(|s| s.to_owned());
         match query {
             Some(query) => {

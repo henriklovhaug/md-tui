@@ -20,7 +20,8 @@ use parser::parse_markdown;
 use ratatui::{
     backend::{Backend, CrosstermBackend},
     layout::Rect,
-    widgets::Clear,
+    style::{Color, Stylize},
+    widgets::{Block, Clear},
     Frame, Terminal,
 };
 use search::find_md_files;
@@ -135,7 +136,7 @@ fn run_app<B: Backend>(
                     width: search_width,
                     height: search_height,
                 };
-                f.render_widget(Clear, search_area);
+                // f.render_widget(Clear, search_area);
                 f.render_widget(search_box.clone(), search_area);
             } else if app.boxes == Boxes::Error {
                 let (error_height, error_width) = error_box.dimensions();
@@ -193,7 +194,18 @@ fn render_markdown(f: &mut Frame, _app: &App, markdown: RenderRoot) {
     let area = Rect {
         x: 2,
         width: size.width - 2,
+        height: size.height - 5,
         ..size
     };
     f.render_widget(markdown, area);
+
+    // Render a block at the bottom to show the current mode
+    let block = Block::default().bg(Color::Black);
+    let area = Rect {
+        y: size.height - 4,
+        height: 3,
+        width: 80,
+        ..area
+    };
+    f.render_widget(block, area);
 }
