@@ -24,11 +24,11 @@ pub fn find_md_files() -> Result<FileTree, io::Error> {
     Ok(tree)
 }
 
-pub fn find_files<'a>(files: &'a [MdFile], query: &str) -> Vec<MdFile> {
+pub fn find_files(files: &[MdFile], query: &str) -> Vec<MdFile> {
     files
         .iter()
         .filter(|file| {
-            char_windows(&file.name, query.len())
+            char_windows(&file.path, query.len())
                 .any(|window| damerau_levenshtein(window, query) == 0)
         })
         .cloned()
