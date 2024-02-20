@@ -113,6 +113,7 @@ pub fn keyboard_mode_file_tree(
             KeyCode::Char('f') | KeyCode::Char('/') => {
                 let file_height = file_tree.height(height);
                 search_box.set_position(10, file_height as u16 + 2);
+                search_box.set_width(20);
                 app.boxes = Boxes::Search;
             }
             KeyCode::Esc => {
@@ -228,6 +229,7 @@ fn keyboard_mode_view(
             }
             KeyCode::Char('f') | KeyCode::Char('/') => {
                 search_box.set_position(2, height - 3);
+                search_box.set_width(80);
                 app.boxes = Boxes::Search;
             }
             KeyCode::Char('t') => {

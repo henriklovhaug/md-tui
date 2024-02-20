@@ -66,6 +66,10 @@ impl SearchBox {
         self.y = y;
     }
 
+    pub fn set_width(&mut self, width: u16) {
+        self.width = width;
+    }
+
     pub fn x(&self) -> u16 {
         self.x
     }
