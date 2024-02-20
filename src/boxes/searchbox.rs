@@ -50,6 +50,14 @@ impl SearchBox {
         self.clear();
         text
     }
+
+    pub fn content(&self) -> Option<&str> {
+        if self.text.is_empty() {
+            None
+        } else {
+            Some(&self.text)
+        }
+    }
 }
 
 impl Default for SearchBox {

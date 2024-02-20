@@ -40,7 +40,7 @@ pub fn keyboard_mode_file_tree(
     key: KeyCode,
     app: &mut App,
     markdown: &mut RenderRoot,
-    _search_box: &mut SearchBox,
+    search_box: &mut SearchBox,
     error_box: &mut ErrorBox,
     file_tree: &mut FileTree,
     height: u16,
@@ -52,7 +52,32 @@ pub fn keyboard_mode_file_tree(
             }
             _ => {}
         },
-        Boxes::Search => todo!(),
+        Boxes::Search => match key {
+            KeyCode::Esc => {
+                search_box.clear();
+                file_tree.search(None);
+                app.boxes = Boxes::None;
+            }
+            KeyCode::Enter => {
+                let query = search_box.consume();
+                file_tree.search(Some(&query));
+                app.boxes = Boxes::None;
+            }
+
+            KeyCode::Char(c) => {
+                search_box.insert(c);
+                file_tree.search(search_box.content());
+            }
+
+            KeyCode::Backspace => {
+                if search_box.content().is_none() {
+                    app.boxes = Boxes::None;
+                }
+                search_box.delete();
+                file_tree.search(search_box.content());
+            }
+            _ => {}
+        },
         Boxes::None => match key {
             KeyCode::Char('j') => {
                 file_tree.next(height);
@@ -80,6 +105,9 @@ pub fn keyboard_mode_file_tree(
                 markdown.transform(80);
                 app.mode = Mode::View;
                 app.select_index = 0;
+            }
+            KeyCode::Char('f') | KeyCode::Char('/') => {
+                app.boxes = Boxes::Search;
             }
             KeyCode::Esc => {
                 file_tree.unselect();

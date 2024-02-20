@@ -9,6 +9,8 @@ use ratatui::{
     widgets::{Block, List, ListItem, ListState, StatefulWidget},
 };
 
+use crate::search::find_files;
+
 #[derive(Debug, Clone)]
 enum MdFileComponent {
     File(MdFile),
@@ -57,6 +59,7 @@ impl From<MdFileComponent> for ListItem<'_> {
 
 #[derive(Debug, Clone, Default)]
 pub struct FileTree {
+    all_files: Vec<MdFile>,
     files: Vec<MdFileComponent>,
     page: u32,
     list_state: ListState,
@@ -66,6 +69,7 @@ pub struct FileTree {
 impl FileTree {
     pub fn new() -> Self {
         Self {
+            all_files: Vec::new(),
             files: Vec::new(),
             list_state: ListState::default(),
             page: 0,
@@ -117,8 +121,37 @@ impl FileTree {
         self.files = result;
     }
 
-    pub fn search(&mut self, query: &str) {
-        self.search = Some(query.to_string());
+    pub fn search(&mut self, query: Option<&str>) {
+        self.state_mut().select(None);
+        self.search = query.map(|s| s.to_owned());
+        match query {
+            Some(query) => {
+                self.files = find_files(&self.all_files, query)
+                    .into_iter()
+                    .map(MdFileComponent::File)
+                    .collect();
+            }
+            None => {
+                self.files = self
+                    .all_files
+                    .iter()
+                    .cloned()
+                    .map(MdFileComponent::File)
+                    .collect();
+            }
+        }
+        self.fill_spacers();
+    }
+
+    fn fill_spacers(&mut self) {
+        let spacers = vec![MdFileComponent::Spacer; self.files.len()];
+        self.files = self
+            .files
+            .iter()
+            .cloned()
+            .zip(spacers)
+            .flat_map(|(f, s)| vec![f, s])
+            .collect::<Vec<_>>();
     }
 
     pub fn next(&mut self, height: u16) {
@@ -166,6 +199,7 @@ impl FileTree {
     }
 
     pub fn add_file(&mut self, file: MdFile) {
+        self.all_files.push(file.clone());
         self.files.push(MdFileComponent::File(file));
         self.files.push(MdFileComponent::Spacer);
     }
@@ -178,6 +212,10 @@ impl FileTree {
                 MdFileComponent::Spacer => None,
             })
             .collect::<Vec<&MdFile>>()
+    }
+
+    pub fn all_files(&self) -> &Vec<MdFile> {
+        &self.all_files
     }
 
     fn partition(&self, height: u16) -> usize {
