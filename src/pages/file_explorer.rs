@@ -1,3 +1,5 @@
+use std::cmp;
+
 use itertools::Itertools;
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Alignment, Rect};
@@ -106,7 +108,7 @@ impl FileTree {
 
         // Sort the files in-place by name
         files.sort_unstable_by(|a, b| match (a, b) {
-            (MdFileComponent::File(fa), MdFileComponent::File(fb)) => fb.name.cmp(&fa.name),
+            (MdFileComponent::File(fa), MdFileComponent::File(fb)) => fb.path.cmp(&fa.path),
             _ => unreachable!(), // This case should not happen
         });
 
@@ -141,6 +143,7 @@ impl FileTree {
             }
         }
         self.fill_spacers();
+        self.sort_2();
     }
 
     fn fill_spacers(&mut self) {
@@ -230,6 +233,17 @@ impl FileTree {
 
     pub fn state(&self) -> &ListState {
         &self.list_state
+    }
+
+    pub fn height(&self, height: u16) -> usize {
+        cmp::min(
+            self.partition(height) / 2 * 3,
+            self.files
+                .iter()
+                .filter(|f| matches!(f, MdFileComponent::File(_)))
+                .count()
+                * 3,
+        )
     }
 
     pub fn state_mut(&mut self) -> &mut ListState {

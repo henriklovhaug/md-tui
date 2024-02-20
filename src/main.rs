@@ -130,8 +130,8 @@ fn run_app<B: Backend>(
             if app.boxes == Boxes::Search {
                 let (search_height, search_width) = search_box.dimensions();
                 let search_area = Rect {
-                    x: height / 2,
-                    y: height / 2,
+                    x: search_box.x(),
+                    y: search_box.y(),
                     width: search_width,
                     height: search_height,
                 };

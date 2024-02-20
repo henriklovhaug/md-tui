@@ -67,6 +67,8 @@ pub fn keyboard_mode_file_tree(
             KeyCode::Char(c) => {
                 search_box.insert(c);
                 file_tree.search(search_box.content());
+                let file_height = file_tree.height(height);
+                search_box.set_position(10, file_height as u16 + 2);
             }
 
             KeyCode::Backspace => {
@@ -75,6 +77,8 @@ pub fn keyboard_mode_file_tree(
                 }
                 search_box.delete();
                 file_tree.search(search_box.content());
+                let file_height = file_tree.height(height);
+                search_box.set_position(10, file_height as u16 + 2);
             }
             _ => {}
         },
@@ -107,6 +111,8 @@ pub fn keyboard_mode_file_tree(
                 app.select_index = 0;
             }
             KeyCode::Char('f') | KeyCode::Char('/') => {
+                let file_height = file_tree.height(height);
+                search_box.set_position(10, file_height as u16 + 2);
                 app.boxes = Boxes::Search;
             }
             KeyCode::Esc => {

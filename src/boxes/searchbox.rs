@@ -10,6 +10,8 @@ pub struct SearchBox {
     pub cursor: usize,
     height: u16,
     width: u16,
+    x: u16,
+    y: u16,
 }
 
 impl SearchBox {
@@ -17,15 +19,16 @@ impl SearchBox {
         Self {
             text: String::new(),
             cursor: 0,
-            height: 3,
+            height: 2,
             width: 20,
+            x: 0,
+            y: 0,
         }
     }
 
     pub fn insert(&mut self, c: char) {
         self.text.push_str(&c.to_string());
         self.cursor += 1;
-        self.height = self.cursor as u16 / (self.width - 1) + 3;
     }
 
     pub fn delete(&mut self) {
@@ -33,7 +36,6 @@ impl SearchBox {
             self.text.remove(self.cursor - 1);
             self.cursor -= 1;
         }
-        self.height = self.cursor as u16 / (self.width - 1) + 3;
     }
 
     pub fn clear(&mut self) {
@@ -58,6 +60,19 @@ impl SearchBox {
             Some(&self.text)
         }
     }
+
+    pub fn set_position(&mut self, x: u16, y: u16) {
+        self.x = x;
+        self.y = y;
+    }
+
+    pub fn x(&self) -> u16 {
+        self.x
+    }
+
+    pub fn y(&self) -> u16 {
+        self.y
+    }
 }
 
 impl Default for SearchBox {
@@ -69,7 +84,7 @@ impl Default for SearchBox {
 impl Widget for SearchBox {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let paragraph = Paragraph::new(self.text)
-            .block(Block::default().borders(Borders::ALL))
+            .block(Block::default().borders(Borders::BOTTOM))
             .wrap(Wrap { trim: true });
         paragraph.render(area, buf);
     }
