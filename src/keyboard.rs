@@ -242,8 +242,14 @@ fn keyboard_mode_view(
                 app.mode = Mode::FileTree;
             }
             KeyCode::Char('r') => {
-                let text = if let Ok(file) = read_to_string(markdown.file_name().expect("No file"))
-                {
+                let url = if let Some(url) = markdown.file_name() {
+                    url
+                } else {
+                    error_box.set_message("No file".to_string());
+                    app.boxes = Boxes::Error;
+                    return KeyBoardAction::Continue;
+                };
+                let text = if let Ok(file) = read_to_string(url) {
                     app.vertical_scroll = 0;
                     file
                 } else {

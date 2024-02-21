@@ -101,7 +101,15 @@ fn run_app<B: Backend>(
     loop {
         let new_width = cmp::min(terminal.size()?.width, 80);
         if new_width != width {
-            let text = if let Ok(file) = read_to_string(markdown.file_name().expect("No file")) {
+            let url = if let Some(url) = markdown.file_name() {
+                url
+            } else {
+                error_box.set_message("No file".to_string());
+                app.boxes = Boxes::Error;
+                app.mode = Mode::FileTree;
+                continue;
+            };
+            let text = if let Ok(file) = read_to_string(url) {
                 app.vertical_scroll = 0;
                 file
             } else {
