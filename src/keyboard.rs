@@ -164,7 +164,7 @@ fn keyboard_mode_view(
                 }
 
                 for ele in search.iter() {
-                    markdown.mark_word(ele.0, ele.1, query.len()).unwrap();
+                    let _ = markdown.mark_word(ele.0, ele.1, query.len());
                 }
 
                 app.boxes = Boxes::None;
@@ -288,13 +288,17 @@ fn keyboard_mode_view(
                         let url = &url[1..];
                         let text = if let Ok(file) = read_to_string(url) {
                             app.vertical_scroll = 0;
-                            app.history.push(Jump::File(url.to_string()));
                             file
                         } else {
                             error_box.set_message(format!("Could not open file {}", url));
                             app.boxes = Boxes::Error;
                             return KeyBoardAction::Continue;
                         };
+
+                        if let Some(file_name) = markdown.file_name() {
+                            app.history.push(Jump::File(file_name.to_string()));
+                        }
+
                         *markdown = parse_markdown(Some(url), &text);
                         markdown.transform(80);
                         app.reset();
