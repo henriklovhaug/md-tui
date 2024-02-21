@@ -277,6 +277,7 @@ fn keyboard_mode_view(
                         } else {
                             error_box.set_message(format!("Could not find heading {}", heading));
                             app.reset();
+                            app.boxes = Boxes::Error;
                             return KeyBoardAction::Continue;
                         };
                     }

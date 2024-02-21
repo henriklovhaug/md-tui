@@ -35,6 +35,8 @@ pub mod parser;
 pub mod search;
 pub mod util;
 
+const EMPTY_FILE: &str = "";
+
 fn main() -> Result<(), Box<dyn Error>> {
     // let text = read_to_string("./md_tests/test.md")?;
     // let mut markdown = parse_markdown(&text);
@@ -87,9 +89,7 @@ fn run_app<B: Backend>(
 ) -> io::Result<()> {
     let mut last_tick = Instant::now();
 
-    let text = "# temp";
-
-    let mut markdown = parse_markdown(None, text);
+    let mut markdown = parse_markdown(None, EMPTY_FILE);
     let mut width = cmp::min(terminal.size()?.width, 80);
     markdown.transform(width);
 
