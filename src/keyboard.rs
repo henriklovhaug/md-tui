@@ -8,7 +8,7 @@ use crate::{
     pages::file_explorer::FileTree,
     parser::parse_markdown,
     search::find_line_match_and_index,
-    util::{App, Boxes, LinkType, Mode},
+    util::{App, Boxes, Jump, LinkType, Mode},
 };
 
 pub enum KeyBoardAction {
@@ -105,7 +105,13 @@ pub fn keyboard_mode_file_tree(
                     app.boxes = Boxes::Error;
                     return KeyBoardAction::Continue;
                 };
-                *markdown = parse_markdown(file.path(), &text);
+
+                match markdown.file_name() {
+                    Some(file_name) => app.history.push(Jump::File(file_name.to_string())),
+                    None => {}
+                }
+
+                *markdown = parse_markdown(Some(file.path()), &text);
                 markdown.transform(80);
                 app.mode = Mode::View;
                 app.select_index = 0;
@@ -236,11 +242,13 @@ fn keyboard_mode_view(
                 app.mode = Mode::FileTree;
             }
             KeyCode::Char('r') => {
-                let text = if let Ok(file) = read_to_string(markdown.file_name()) {
+                let text = if let Ok(file) = read_to_string(markdown.file_name().expect("No file"))
+                {
                     app.vertical_scroll = 0;
                     file
                 } else {
-                    error_box.set_message(format!("Could not open file {}", markdown.file_name()));
+                    error_box
+                        .set_message(format!("Could not open file {:?}", markdown.file_name()));
                     app.boxes = Boxes::Error;
                     return KeyBoardAction::Continue;
                 };
@@ -275,13 +283,14 @@ fn keyboard_mode_view(
                         let url = &url[1..];
                         let text = if let Ok(file) = read_to_string(url) {
                             app.vertical_scroll = 0;
+                            app.history.push(Jump::File(url.to_string()));
                             file
                         } else {
                             error_box.set_message(format!("Could not open file {}", url));
                             app.boxes = Boxes::Error;
                             return KeyBoardAction::Continue;
                         };
-                        *markdown = parse_markdown(url, &text);
+                        *markdown = parse_markdown(Some(url), &text);
                         markdown.transform(80);
                         app.reset();
                     }
@@ -289,6 +298,23 @@ fn keyboard_mode_view(
                 markdown.deselect();
                 app.selected = false;
             }
+
+            KeyCode::Char('b') => match app.history.pop() {
+                Jump::File(e) => {
+                    let text = if let Ok(file) = read_to_string(&e) {
+                        app.vertical_scroll = 0;
+                        file
+                    } else {
+                        error_box.set_message(format!("Could not open file {}", e));
+                        app.boxes = Boxes::Error;
+                        return KeyBoardAction::Continue;
+                    };
+                    *markdown = parse_markdown(Some(&e), &text);
+                    markdown.transform(80);
+                    app.reset();
+                }
+                Jump::FileTree => app.mode = Mode::FileTree,
+            },
             _ => {}
         },
     }

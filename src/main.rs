@@ -88,9 +88,8 @@ fn run_app<B: Backend>(
     let mut last_tick = Instant::now();
 
     let text = "# temp";
-    let name = "temp";
 
-    let mut markdown = parse_markdown(name, text);
+    let mut markdown = parse_markdown(None, text);
     let mut width = cmp::min(terminal.size()?.width, 80);
     markdown.transform(width);
 
@@ -102,11 +101,11 @@ fn run_app<B: Backend>(
     loop {
         let new_width = cmp::min(terminal.size()?.width, 80);
         if new_width != width {
-            let text = if let Ok(file) = read_to_string(markdown.file_name()) {
+            let text = if let Ok(file) = read_to_string(markdown.file_name().expect("No file")) {
                 app.vertical_scroll = 0;
                 file
             } else {
-                error_box.set_message(format!("Could not open file {}", markdown.file_name()));
+                error_box.set_message(format!("Could not open file {:?}", markdown.file_name()));
                 app.boxes = Boxes::Error;
                 app.mode = Mode::FileTree;
                 continue;

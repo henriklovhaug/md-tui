@@ -26,19 +26,32 @@ impl Default for Mode {
     }
 }
 
+impl From<JumpHistory> for Mode {
+    fn from(jump_history: JumpHistory) -> Self {
+        match jump_history.history.last() {
+            Some(jump) => match jump {
+                Jump::File(_) => Mode::View,
+                Jump::FileTree => Mode::FileTree,
+            },
+            None => Mode::FileTree,
+        }
+    }
+}
+
 impl Default for Boxes {
     fn default() -> Self {
         Self::None
     }
 }
 
-#[derive(Default, Clone, Copy)]
+#[derive(Default, Clone)]
 pub struct App {
     pub vertical_scroll: u16,
     pub selected: bool,
     pub select_index: usize,
     pub mode: Mode,
     pub boxes: Boxes,
+    pub history: JumpHistory,
 }
 
 impl App {
@@ -72,4 +85,41 @@ pub fn destruct_terminal() {
     disable_raw_mode().unwrap();
     execute!(io::stdout(), LeaveAlternateScreen, DisableMouseCapture).unwrap();
     execute!(io::stdout(), cursor::Show).unwrap();
+}
+
+#[derive(Debug, Clone)]
+pub struct JumpHistory {
+    history: Vec<Jump>,
+}
+
+impl JumpHistory {
+    pub fn new() -> Self {
+        Self {
+            history: Vec::new(),
+        }
+    }
+
+    pub fn push(&mut self, jump: Jump) {
+        self.history.push(jump);
+    }
+
+    pub fn pop(&mut self) -> Jump {
+        if let Some(jump) = self.history.pop() {
+            jump
+        } else {
+            Jump::FileTree
+        }
+    }
+}
+
+impl Default for JumpHistory {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum Jump {
+    File(String),
+    FileTree,
 }
