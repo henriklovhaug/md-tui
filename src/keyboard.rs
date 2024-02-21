@@ -106,9 +106,8 @@ pub fn keyboard_mode_file_tree(
                     return KeyBoardAction::Continue;
                 };
 
-                match markdown.file_name() {
-                    Some(file_name) => app.history.push(Jump::File(file_name.to_string())),
-                    None => {}
+                if let Some(file_name) = markdown.file_name() {
+                    app.history.push(Jump::File(file_name.to_string()));
                 }
 
                 *markdown = parse_markdown(Some(file.path()), &text);
