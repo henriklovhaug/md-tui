@@ -13,7 +13,7 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use keyboard::{handle_keyboard_input, KeyBoardAction};
+use event_handler::{handle_keyboard_input, KeyBoardAction};
 use nodes::RenderRoot;
 use pages::file_explorer::FileTree;
 use parser::parse_markdown;
@@ -28,16 +28,18 @@ use search::find_md_files;
 use util::{destruct_terminal, App, Boxes, Mode};
 
 pub mod boxes;
-mod keyboard;
+mod event_handler;
 pub mod nodes;
 pub mod pages;
 pub mod parser;
 pub mod search;
 pub mod util;
 
+const EMPTY_FILE: &str = "";
+
 fn main() -> Result<(), Box<dyn Error>> {
-    // let text = read_to_string("./md_tests/test.md")?;
-    // let mut markdown = parse_markdown(&text);
+    // let text = read_to_string("./md_tests/bad.md")?;
+    // let mut markdown = parse_markdown(Some("kek"), &text);
     // markdown.transform(80);
     // markdown.set_scroll(0);
     //
@@ -87,10 +89,7 @@ fn run_app<B: Backend>(
 ) -> io::Result<()> {
     let mut last_tick = Instant::now();
 
-    let text = "# temp";
-    let name = "temp";
-
-    let mut markdown = parse_markdown(name, text);
+    let mut markdown = parse_markdown(None, EMPTY_FILE);
     let mut width = cmp::min(terminal.size()?.width, 80);
     markdown.transform(width);
 
@@ -102,11 +101,19 @@ fn run_app<B: Backend>(
     loop {
         let new_width = cmp::min(terminal.size()?.width, 80);
         if new_width != width {
-            let text = if let Ok(file) = read_to_string(markdown.file_name()) {
+            let url = if let Some(url) = markdown.file_name() {
+                url
+            } else {
+                error_box.set_message("No file".to_string());
+                app.boxes = Boxes::Error;
+                app.mode = Mode::FileTree;
+                continue;
+            };
+            let text = if let Ok(file) = read_to_string(url) {
                 app.vertical_scroll = 0;
                 file
             } else {
-                error_box.set_message(format!("Could not open file {}", markdown.file_name()));
+                error_box.set_message(format!("Could not open file {:?}", markdown.file_name()));
                 app.boxes = Boxes::Error;
                 app.mode = Mode::FileTree;
                 continue;

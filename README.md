@@ -23,6 +23,7 @@ Using cargo: `cargo install md-tui`
 | `s`        | Enter select link mode                                                 |
 | `Enter`    | Select. Depending on which mode it can: open file, select link, search |
 | `t`        | Go back to files                                                       |
+| `b`        | Go back to previous file (file tree if no previous file)               |
 | `g`        | Go to top of file                                                      |
 | `G`        | Go to bottom of the file                                               |
 | `d`        | Go down half a page                                                    |

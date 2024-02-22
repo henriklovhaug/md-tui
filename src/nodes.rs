@@ -5,13 +5,13 @@ use ratatui::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 #[derive(Debug, Clone)]
 pub struct RenderRoot {
-    file_name: String,
+    file_name: Option<String>,
     components: Vec<RenderComponent>,
     is_focused: bool,
 }
 
 impl RenderRoot {
-    pub fn new(file_name: String, components: Vec<RenderComponent>) -> Self {
+    pub fn new(file_name: Option<String>, components: Vec<RenderComponent>) -> Self {
         Self {
             file_name,
             components,
@@ -31,8 +31,13 @@ impl RenderRoot {
         &mut self.components
     }
 
-    pub fn file_name(&self) -> &str {
-        &self.file_name
+    pub fn file_name(&self) -> Option<&str> {
+        self.file_name.as_deref()
+    }
+
+    pub fn clear(&mut self) {
+        self.file_name = None;
+        self.components.clear();
     }
 
     pub fn select(&mut self, index: usize) -> Result<u16, String> {
@@ -76,7 +81,12 @@ impl RenderRoot {
                     .iter()
                     .flatten()
                     .filter(|c| c.content() != " ")
-                    .map(|c| c.content().trim().to_lowercase().replace(['(', ')'], ""))
+                    .map(|c| {
+                        c.content()
+                            .trim()
+                            .to_lowercase()
+                            .replace(['(', ')', '.', ','], "")
+                    })
                     .eq(heading.clone())
             {
                 return Ok(y_offset);

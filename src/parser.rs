@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::str::{self, FromStr};
 
 use itertools::Itertools;
 use pest::{
@@ -13,18 +13,18 @@ use crate::nodes::{MetaData, RenderComponent, RenderNode, RenderRoot, Word, Word
 #[grammar = "md.pest"]
 pub struct MdParser;
 
-pub fn parse_markdown(name: &str, file: &str) -> RenderRoot {
+pub fn parse_markdown(name: Option<&str>, file: &str) -> RenderRoot {
     let root: Pairs<'_, Rule> = if let Ok(file) = MdParser::parse(Rule::txt, file) {
         file
     } else {
-        return RenderRoot::new(name.to_owned(), Vec::new());
+        return RenderRoot::new(name.map(str::to_string), Vec::new());
     };
 
     let root_pair = root.into_iter().next().unwrap();
 
     let children = parse_text(root_pair).children_owned();
     let children = children.iter().dedup().cloned().collect();
-    let parse_root = ParseRoot::new(name.to_owned(), children);
+    let parse_root = ParseRoot::new(name.map(str::to_string), children);
 
     node_to_component(parse_root)
 }
@@ -222,12 +222,12 @@ fn print_component(component: &RenderComponent, _depth: usize) {
 
 #[derive(Debug, Clone)]
 pub struct ParseRoot {
-    file_name: String,
+    file_name: Option<String>,
     children: Vec<ParseNode>,
 }
 
 impl ParseRoot {
-    pub fn new(file_name: String, children: Vec<ParseNode>) -> Self {
+    pub fn new(file_name: Option<String>, children: Vec<ParseNode>) -> Self {
         Self {
             file_name,
             children,
@@ -242,8 +242,8 @@ impl ParseRoot {
         self.children
     }
 
-    pub fn file_name(&self) -> &str {
-        &self.file_name
+    pub fn file_name(&self) -> Option<String> {
+        self.file_name.to_owned()
     }
 }
 
