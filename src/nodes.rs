@@ -35,6 +35,11 @@ impl RenderRoot {
         self.file_name.as_deref()
     }
 
+    pub fn clear(&mut self) {
+        self.file_name = None;
+        self.components.clear();
+    }
+
     pub fn select(&mut self, index: usize) -> Result<u16, String> {
         self.deselect();
         self.is_focused = true;

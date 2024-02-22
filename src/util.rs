@@ -110,6 +110,10 @@ impl JumpHistory {
             Jump::FileTree
         }
     }
+
+    pub fn last(&self) -> Option<&Jump> {
+        self.history.last()
+    }
 }
 
 impl Default for JumpHistory {
@@ -122,4 +126,19 @@ impl Default for JumpHistory {
 pub enum Jump {
     File(String),
     FileTree,
+}
+
+#[cfg(test)]
+#[test]
+fn test_jump_history() {
+    let mut jump_history = JumpHistory::default();
+    jump_history.push(Jump::File("file".to_string()));
+    jump_history.push(Jump::File("file2".to_string()));
+    jump_history.push(Jump::FileTree);
+    assert_eq!(jump_history.pop(), Jump::FileTree);
+    assert_eq!(jump_history.pop(), Jump::File("file2".to_string()));
+    assert_eq!(jump_history.pop(), Jump::File("file".to_string()));
+    assert_eq!(jump_history.pop(), Jump::FileTree);
+    assert_eq!(jump_history.pop(), Jump::FileTree);
+    assert_eq!(jump_history.pop(), Jump::FileTree);
 }

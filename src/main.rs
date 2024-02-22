@@ -13,7 +13,7 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use keyboard::{handle_keyboard_input, KeyBoardAction};
+use event_handler::{handle_keyboard_input, KeyBoardAction};
 use nodes::RenderRoot;
 use pages::file_explorer::FileTree;
 use parser::parse_markdown;
@@ -28,7 +28,7 @@ use search::find_md_files;
 use util::{destruct_terminal, App, Boxes, Mode};
 
 pub mod boxes;
-mod keyboard;
+mod event_handler;
 pub mod nodes;
 pub mod pages;
 pub mod parser;

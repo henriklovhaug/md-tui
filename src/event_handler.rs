@@ -106,10 +106,6 @@ pub fn keyboard_mode_file_tree(
                     return KeyBoardAction::Continue;
                 };
 
-                if let Some(file_name) = markdown.file_name() {
-                    app.history.push(Jump::File(file_name.to_string()));
-                }
-
                 *markdown = parse_markdown(Some(file.path()), &text);
                 markdown.transform(80);
                 app.mode = Mode::View;
@@ -121,6 +117,28 @@ pub fn keyboard_mode_file_tree(
                 search_box.set_width(20);
                 app.boxes = Boxes::Search;
             }
+
+            KeyCode::Char('b') => match app.history.pop() {
+                Jump::File(e) => {
+                    let text = if let Ok(file) = read_to_string(&e) {
+                        app.vertical_scroll = 0;
+                        file
+                    } else {
+                        error_box.set_message(format!("Could not open file {}", e));
+                        app.boxes = Boxes::Error;
+                        return KeyBoardAction::Continue;
+                    };
+                    *markdown = parse_markdown(Some(&e), &text);
+                    markdown.transform(80);
+                    app.reset();
+                    app.mode = Mode::View;
+                }
+                Jump::FileTree => {
+                    markdown.clear();
+                    app.mode = Mode::FileTree;
+                }
+            },
+
             KeyCode::Esc => {
                 file_tree.unselect();
                 file_tree.search(None);
@@ -239,6 +257,9 @@ fn keyboard_mode_view(
             }
             KeyCode::Char('t') => {
                 app.mode = Mode::FileTree;
+                if let Some(file) = markdown.file_name() {
+                    app.history.push(Jump::File(file.to_string()));
+                }
             }
             KeyCode::Char('r') => {
                 let url = if let Some(url) = markdown.file_name() {
@@ -323,7 +344,10 @@ fn keyboard_mode_view(
                     markdown.transform(80);
                     app.reset();
                 }
-                Jump::FileTree => app.mode = Mode::FileTree,
+                Jump::FileTree => {
+                    markdown.clear();
+                    app.mode = Mode::FileTree;
+                }
             },
             _ => {}
         },
