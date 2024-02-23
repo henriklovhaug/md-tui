@@ -12,6 +12,8 @@
 
 Using cargo: `cargo install md-tui`
 
+Using AUR: `yay -S md-tui-bin`
+
 ## Key binds
 
 | Key        | Action                                                                 |
