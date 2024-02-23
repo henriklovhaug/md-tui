@@ -322,7 +322,7 @@ pub enum MdParseEnum {
 impl From<Rule> for MdParseEnum {
     fn from(value: Rule) -> Self {
         match value {
-            Rule::word | Rule::table_word => Self::Word,
+            Rule::word | Rule::table_word | Rule::h_word=> Self::Word,
             Rule::indent => Self::Indent,
             Rule::italic | Rule::italic_word => Self::Italic,
             Rule::bold | Rule::bold_word => Self::Bold,

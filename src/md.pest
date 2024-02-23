@@ -15,6 +15,7 @@ indent       =  { " "* }
 word               = {
     !(forbidden_sentence_prefix | bold | italic | strikethrough | code | link) ~ NEWLINE? ~ " "* ~ p_char+ ~ " "?
 }
+h_word             = { p_char+ ~ " "? }
 italic_word        = { i_char+ ~ " "? }
 bold_word          = { b_char+ ~ " "? }
 strikethrough_word = { s_char+ ~ " "? }
@@ -58,12 +59,12 @@ table_seperator = { ("|"? ~ " "? ~ "-"+ ~ " "? ~ "|")+ }
 u_list = { indent ~ ("-" | "*") ~ " " ~ sentence+ }
 o_list = { indent ~ o_list_counter ~ sentence+ }
 
-h1 = _{ "# " ~ (sentence | " ")+ }
-h2 = _{ "## " ~ (sentence | " ")+ }
-h3 = _{ "### " ~ (sentence | " ")+ }
-h4 = _{ "#### " ~ (sentence | " ")+ }
-h5 = _{ "##### " ~ (sentence | " ")+ }
-h6 = _{ "###### " ~ (sentence | " ")+ }
+h1 = _{ "# " ~ (h_word | " ")+ }
+h2 = _{ "## " ~ (h_word | " ")+ }
+h3 = _{ "### " ~ (h_word | " ")+ }
+h4 = _{ "#### " ~ (h_word | " ")+ }
+h5 = _{ "##### " ~ (h_word | " ")+ }
+h6 = _{ "###### " ~ (h_word | " ")+ }
 
 // Blocks
 heading        = { (h1 | h2 | h3 | h4 | h5 | h6) }
