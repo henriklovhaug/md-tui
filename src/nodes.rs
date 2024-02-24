@@ -547,15 +547,20 @@ impl RenderComponent {
                 let height = self.content.len() as u16;
                 self.height = height;
             }
-            RenderNode::Paragraph | RenderNode::Task => {
+            RenderNode::Paragraph | RenderNode::Task | RenderNode::Quote => {
                 let width = match self.kind {
                     RenderNode::Paragraph => width as usize,
                     RenderNode::Task => width as usize - 4,
+                    RenderNode::Quote => width as usize - 2,
                     _ => unreachable!(),
                 };
                 let mut len = 0;
                 let mut lines = Vec::new();
                 let mut line = Vec::new();
+                if self.kind() == RenderNode::Quote {
+                    let filler = Word::new(" ".to_string(), WordType::Normal);
+                    line.push(filler);
+                }
                 let iter = self.content.iter().flatten();
                 for word in iter {
                     if word.content.len() + len < width {
@@ -567,7 +572,12 @@ impl RenderComponent {
                         let mut word = word.clone();
                         let content = word.content.trim_start().to_owned();
                         word.set_content(content);
-                        line = vec![word];
+                        if self.kind() == RenderNode::Quote {
+                            let filler = Word::new(" ".repeat(2), WordType::Normal);
+                            line = vec![filler, word];
+                        } else {
+                            line = vec![word];
+                        }
                     }
                 }
                 if !line.is_empty() {
@@ -582,8 +592,7 @@ impl RenderComponent {
             RenderNode::Table => {
                 let height = self.content.len() as u16;
                 self.height = height;
-            }
-            RenderNode::Quote => self.height = 1,
+            } // RenderNode::Quote => self.height = 1,
         }
     }
 }

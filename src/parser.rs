@@ -1,5 +1,3 @@
-use std::str::{self, FromStr};
-
 use itertools::Itertools;
 use pest::{
     iterators::{Pair, Pairs},
@@ -322,7 +320,7 @@ pub enum MdParseEnum {
 impl From<Rule> for MdParseEnum {
     fn from(value: Rule) -> Self {
         match value {
-            Rule::word | Rule::table_word | Rule::h_word=> Self::Word,
+            Rule::word | Rule::table_word | Rule::h_word => Self::Word,
             Rule::indent => Self::Indent,
             Rule::italic | Rule::italic_word => Self::Italic,
             Rule::bold | Rule::bold_word => Self::Bold,
@@ -371,39 +369,6 @@ impl From<Rule> for MdParseEnum {
             | Rule::s_char
             | Rule::comment_char
             | Rule::c_line_char => todo!(),
-        }
-    }
-}
-
-impl FromStr for MdParseEnum {
-    type Err = ();
-
-    /// This cannot return Err
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "h1" | "h2" | "h3" | "h4" | "heading" => Ok(Self::Heading),
-            "task" => Ok(Self::Task),
-            "task_open" => Ok(Self::TaskOpen),
-            "task_complete" => Ok(Self::TaskClosed),
-            "u_list" => Ok(Self::UnorderedList),
-            "o_list" => Ok(Self::OrderedList),
-            "code_block" => Ok(Self::CodeBlock),
-            "programming_language" => Ok(Self::PLanguage),
-            "code" | "code_word" => Ok(Self::Code),
-            "paragraph" => Ok(Self::Paragraph),
-            "link" => Ok(Self::Link),
-            "quote" => Ok(Self::Quote),
-            "table" => Ok(Self::Table),
-            "table_seperator" => Ok(Self::TableSeperator),
-            "table_row" => Ok(Self::TableRow),
-            "block_sep" => Ok(Self::BlockSeperator),
-            "code_line" => Ok(Self::Sentence),
-            "list_container" => Ok(Self::ListContainer),
-            "table_word" | "o_list_counter" | "word" | "digit" => Ok(Self::Word),
-            "bold" | "bold_word" => Ok(Self::Bold),
-            "italic" | "italic_word" => Ok(Self::Italic),
-            "strikethrough" | "strikethrough_word" => Ok(Self::Strikethrough),
-            _e => Ok(Self::Paragraph),
         }
     }
 }

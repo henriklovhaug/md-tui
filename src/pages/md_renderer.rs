@@ -77,7 +77,8 @@ impl Widget for RenderComponent {
             RenderNode::List => render_list(area, buf, self.content_owned(), clips),
             RenderNode::CodeBlock => render_code_block(area, buf, self.content_owned(), clips),
             RenderNode::Table => render_table(area, buf, self.content_owned(), clips),
-            RenderNode::Quote => render_quote(area, buf, self.content_owned()),
+            RenderNode::Quote => render_quote(area, buf, self.content_owned(), clips),
+            // RenderNode::Quote => render_quote(area, buf, self.content_owned()),
             RenderNode::LineBreak => (),
         }
     }
@@ -108,14 +109,30 @@ fn style_word(word: &Word) -> Span<'_> {
     }
 }
 
-fn render_quote(area: Rect, buf: &mut Buffer, content: Vec<Vec<Word>>) {
-    let content: Vec<Span<'_>> = content
-        .iter()
-        .flatten()
-        .map(|c| Span::from(c.content()).fg(Color::White))
-        .collect();
+fn render_quote(area: Rect, buf: &mut Buffer, content: Vec<Vec<Word>>, clip: Clipping) {
+    let content = match clip {
+        Clipping::Upper => {
+            let len = content.len();
+            let height = area.height;
+            let offset = len - height as usize;
+            let mut content = content;
+            content.drain(0..offset);
+            content
+        }
+        Clipping::Lower => {
+            let mut content = content;
+            content.drain(area.height as usize..);
+            content
+        }
+        Clipping::None => content,
+    };
 
-    let paragraph = Paragraph::new(Line::from(content))
+    let lines = content
+        .iter()
+        .map(|c| Line::from(c.iter().map(|i| style_word(i)).collect::<Vec<_>>()))
+        .collect::<Vec<_>>();
+
+    let paragraph = Paragraph::new(lines)
         .block(Block::default().style(Style::default().bg(Color::Rgb(48, 48, 48))));
 
     let area = Rect {
