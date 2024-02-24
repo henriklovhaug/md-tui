@@ -558,7 +558,7 @@ impl RenderComponent {
                 let mut lines = Vec::new();
                 let mut line = Vec::new();
                 if self.kind() == RenderNode::Quote {
-                    let filler = Word::new(" ".repeat(1), WordType::Normal);
+                    let filler = Word::new(" ".to_string(), WordType::Normal);
                     line.push(filler);
                 }
                 let iter = self.content.iter().flatten();
@@ -592,8 +592,7 @@ impl RenderComponent {
             RenderNode::Table => {
                 let height = self.content.len() as u16;
                 self.height = height;
-            }
-            // RenderNode::Quote => self.height = 1,
+            } // RenderNode::Quote => self.height = 1,
         }
     }
 }
