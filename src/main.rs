@@ -98,6 +98,19 @@ fn run_app<B: Backend>(
 
     let mut file_tree = find_md_files()?;
 
+    let args: Vec<String> = std::env::args().collect();
+    if let Some(arg) = args.get(1) {
+        if let Ok(file) = read_to_string(arg) {
+            markdown = parse_markdown(Some(arg), &file);
+            markdown.transform(width);
+            app.mode = Mode::View;
+        } else {
+            error_box.set_message(format!("Could not open file {:?}", arg));
+            app.boxes = Boxes::Error;
+            app.mode = Mode::FileTree;
+        }
+    }
+
     loop {
         let new_width = cmp::min(terminal.size()?.width, 80);
         if new_width != width {

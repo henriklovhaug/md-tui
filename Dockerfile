@@ -7,14 +7,12 @@ ARG RUST_VERSION=1.76.0
 FROM --platform=linux/amd64 rust:${RUST_VERSION}-alpine AS build
 WORKDIR /app
 
-COPY . .
-
 # Install host build dependencies.
 RUN apk add --no-cache clang lld musl-dev git file
 
 RUN cargo install cargo-aur
 
-RUN mkdir -p /usr/final/target
+COPY . .
 
 RUN cargo aur && \
   cp ./target/cargo-aur/* /usr/final/target/
