@@ -1,7 +1,7 @@
 use ratatui::{
     buffer::Buffer,
     layout::Rect,
-    widgets::{Block, Borders, Paragraph, Widget},
+    widgets::{Block, Borders, Paragraph, Widget, Wrap},
 };
 
 #[derive(Debug, Clone)]
@@ -37,7 +37,9 @@ impl Default for ErrorBox {
 
 impl Widget for ErrorBox {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let paragraph = Paragraph::new(self.message).block(Block::default().borders(Borders::ALL));
+        let paragraph = Paragraph::new(self.message)
+            .block(Block::default().borders(Borders::ALL))
+            .wrap(Wrap { trim: true });
         paragraph.render(area, buf);
     }
 }
