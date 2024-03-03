@@ -12,6 +12,8 @@ RUN apk add --no-cache clang lld musl-dev git file
 
 RUN cargo install cargo-aur
 
+RUN mkdir -p /usr/final/target
+
 COPY . .
 
 RUN cargo aur && \
