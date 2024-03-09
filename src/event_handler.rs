@@ -294,7 +294,7 @@ fn keyboard_mode_view(
                 match LinkType::from(link) {
                     LinkType::Internal(heading) => {
                         app.vertical_scroll = if let Ok(index) = markdown.heading_offset(heading) {
-                            index
+                            cmp::min(index, markdown.height().saturating_sub(height / 2))
                         } else {
                             error_box.set_message(format!("Could not find heading {}", heading));
                             app.boxes = Boxes::Error;
