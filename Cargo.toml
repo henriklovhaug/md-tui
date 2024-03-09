@@ -1,6 +1,6 @@
 [package]
 name = "md-tui"
-version = "0.2.4"
+version = "0.2.3"
 edition = "2021"
 authors = ["Henrik Tøn Løvhaug"]
 description = "A terminal markdown viewer"
@@ -29,9 +29,9 @@ lto = "thin"
 better-panic = "0.3.0"
 crossterm = "0.27.0"
 itertools = "0.12.1"
-open = "5.1.2"
-pest = "2.7.8"
-pest_derive = "2.7.8"
+open = "5.0.1"
+pest = "2.7.7"
+pest_derive = "2.7.7"
 ratatui = { version = "0.26.1", default-features = true, features = ["macros", "all-widgets"] }
 strsim = "0.11.0"
 
