@@ -1,5 +1,6 @@
 // Characters
 p_char       = _{ (!(NEWLINE | code | italic | bold | strikethrough | " ") ~ ANY)+ }
+//t_char       = _{ (!(NEWLINE | code | italic | bold | strikethrough | " " | "|") ~ ANY)+ }
 c_char       = _{ (!(NEWLINE | " " | "`") ~ ANY)+ }
 i_char       = _{ (!(NEWLINE | " " | "_" | "*") ~ ANY)+ }
 b_char       = _{ (!(NEWLINE | " " | "**") ~ ANY)+ }
@@ -12,9 +13,10 @@ digit        = _{ '0'..'9' }
 indent       =  { " "* }
 
 // Words
-word               = {
+word = {
     !(forbidden_sentence_prefix | bold | italic | strikethrough | code | link) ~ NEWLINE? ~ " "* ~ p_char+ ~ " "?
 }
+
 h_word             = { p_char+ ~ " "? }
 italic_word        = { i_char+ ~ " "? }
 bold_word          = { b_char+ ~ " "? }
@@ -30,7 +32,7 @@ task_prefix       = _{ task_open | task_complete }
 quote_prefix      =  { ">" }
 code_block_prefix =  { "```" }
 table_prefix      =  { "|" }
-list_prefix       =  { (" "* ~ "-") | (NUMBER ~ ". ") }
+list_prefix       =  { (" "* ~ "-") | (NUMBER+ ~ ". ") }
 heading_prefix    =  { "#" }
 
 forbidden_sentence_prefix = {
@@ -51,10 +53,12 @@ bold                 =  { NEWLINE? ~ " "* ~ "**" ~ (bold_word | NEWLINE)+ ~ "**"
 strikethrough        =  { NEWLINE? ~ " "* ~ "~~" ~ (strikethrough_word | NEWLINE)+ ~ "~~" }
 o_list_counter       =  { digit+ ~ ". " }
 
-sentence = _{ (code | link | italic | bold | strikethrough | normal)+ }
+sentence   = _{ (code | link | italic | bold | strikethrough | normal+)+ }
+t_sentence = _{ (!"|" ~ (code | link | italic | bold | strikethrough | normal))+ }
 
-table_row       = { "|" ~ (table_word | " " | "|")+ }
-table_seperator = { ("|"? ~ " "? ~ "-"+ ~ " "? ~ "|")+ }
+table_cell = { "|" ~ " "* ~ t_sentence+ }
+// table_row       = { "|" ~ (table_word | " " | "|")+ }
+table_seperator = { ("|"? ~ (" " | ":")? ~ "-"+ ~ (" " | ":")? ~ "|") }
 
 u_list = { indent ~ ("-" | "*") ~ " " ~ sentence+ }
 o_list = { indent ~ o_list_counter ~ sentence+ }
@@ -72,7 +76,7 @@ heading        = { (h1 | h2 | h3 | h4 | h5 | h6) }
 list_container = { (NEWLINE? ~ (u_list | o_list))+ }
 paragraph      = { sentence+ }
 code_block     = { "```" ~ (programming_language | NEWLINE) ~ (code_line | NEWLINE)+ ~ "```" }
-table          = { (NEWLINE? ~ (table_seperator | table_row))+ }
+table          = { (NEWLINE? ~ (table_seperator | table_cell))+ }
 quote          = { (NEWLINE? ~ ">" ~ (sentence | " ")+)+ }
 task           = { NEWLINE? ~ task_prefix ~ sentence }
 block_sep      = { NEWLINE }

@@ -38,7 +38,7 @@ pub mod util;
 const EMPTY_FILE: &str = "";
 
 fn main() -> Result<(), Box<dyn Error>> {
-    // let text = read_to_string("./md_tests/bad.md")?;
+    // let text = read_to_string("./README.md")?;
     // let mut markdown = parse_markdown(Some("kek"), &text);
     // markdown.transform(80);
     // markdown.set_scroll(0);
