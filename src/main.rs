@@ -21,7 +21,7 @@ use ratatui::{
     backend::{Backend, CrosstermBackend},
     layout::Rect,
     style::{Color, Stylize},
-    widgets::{Block, Clear},
+    widgets::{Block, Clear, Paragraph},
     Frame, Terminal,
 };
 use search::find_md_files;
@@ -89,14 +89,25 @@ fn run_app<B: Backend>(
 ) -> io::Result<()> {
     let mut last_tick = Instant::now();
 
-    let mut markdown = parse_markdown(None, EMPTY_FILE);
-    let mut width = cmp::min(terminal.size()?.width, 80);
-    markdown.transform(width);
+    let mut file_tree = FileTree::default();
 
     let mut search_box = SearchBox::default();
     let mut error_box = ErrorBox::default();
 
-    let mut file_tree = find_md_files()?;
+    terminal.draw(|f| {
+        render_loading(f, &app);
+        if let Ok(files) = find_md_files() {
+            file_tree = files;
+        } else {
+            error_box.set_message("MDT does not have permissions to view directories".to_string());
+            app.boxes = Boxes::Error;
+            app.mode = Mode::FileTree;
+        }
+    })?;
+
+    let mut markdown = parse_markdown(None, EMPTY_FILE);
+    let mut width = cmp::min(terminal.size()?.width, 80);
+    markdown.transform(width);
 
     let args: Vec<String> = std::env::args().collect();
     if let Some(arg) = args.get(1) {
@@ -228,4 +239,27 @@ fn render_markdown(f: &mut Frame, _app: &App, markdown: RenderRoot) {
         ..area
     };
     f.render_widget(block, area);
+}
+
+fn render_loading(f: &mut Frame, _app: &App) {
+    let size = f.size();
+    let area = Rect {
+        x: 2,
+        width: size.width - 2,
+        height: size.height - 5,
+        ..size
+    };
+
+    let loading_text = r#"
+ __        ______        ___       _______   __  .__   __.   _______ 
+|  |      /  __  \      /   \     |       \ |  | |  \ |  |  /  _____|
+|  |     |  |  |  |    /  ^  \    |  .--.  ||  | |   \|  | |  |  __  
+|  |     |  |  |  |   /  /_\  \   |  |  |  ||  | |  . `  | |  | |_ | 
+|  `----.|  `--'  |  /  _____  \  |  '--'  ||  | |  |\   | |  |__| | 
+|_______| \______/  /__/     \__\ |_______/ |__| |__| \__|  \______|
+"#;
+
+    let page = Paragraph::new(loading_text);
+
+    f.render_widget(page, area);
 }

@@ -1,6 +1,6 @@
 use ratatui::{
     buffer::Buffer,
-    layout::Rect,
+    layout::{Alignment, Rect},
     widgets::{Block, Borders, Paragraph, Widget, Wrap},
 };
 
@@ -15,7 +15,7 @@ impl ErrorBox {
     }
 
     pub fn dimensions(&self) -> (u16, u16) {
-        ((self.message.len() / 28) as u16 + 3, 30)
+        ((self.message.len() / 30) as u16 + 4, 30)
     }
 
     pub fn consume(&mut self) -> String {
@@ -39,7 +39,8 @@ impl Widget for ErrorBox {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let paragraph = Paragraph::new(self.message)
             .block(Block::default().borders(Borders::ALL))
-            .wrap(Wrap { trim: true });
+            .wrap(Wrap { trim: true })
+            .alignment(Alignment::Center);
         paragraph.render(area, buf);
     }
 }
