@@ -19,7 +19,7 @@ impl ErrorBox {
     }
 
     pub fn consume(&mut self) -> String {
-        let message = self.message.clone();
+        let message = self.message.to_owned();
         self.message.clear();
         message
     }

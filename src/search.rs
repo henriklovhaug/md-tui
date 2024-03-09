@@ -25,11 +25,24 @@ pub fn find_md_files() -> Result<FileTree, io::Error> {
 }
 
 pub fn find_files(files: &[MdFile], query: &str) -> Vec<MdFile> {
+    if query.is_empty() {
+        return files.to_vec();
+    }
+
+    // Check if any char in the query is uppercase, making the search case sensitive
+    let case_sensitive = query.chars().any(|c| c.is_uppercase());
+
     files
         .iter()
         .filter(|file| {
-            char_windows(&file.path, query.len())
-                .any(|window| damerau_levenshtein(window, query) == 0)
+            let file_path = if case_sensitive {
+                file.path.to_owned()
+            } else {
+                file.path.to_lowercase()
+            };
+            let res = char_windows(&file_path, query.len())
+                .any(|window| damerau_levenshtein(window, query) == 0);
+            res
         })
         .cloned()
         .collect()
