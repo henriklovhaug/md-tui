@@ -592,13 +592,8 @@ impl RenderComponent {
                 self.height = 1;
             }
             RenderNode::Table => {
-                self.content = self
-                    .content
-                    .iter()
-                    .filter(|c| !c.is_empty())
-                    .cloned()
-                    .collect();
-                let height = (self.content.len() / self.meta_info().len() ) as u16;
+                self.content.retain(|c| !c.is_empty());
+                let height = (self.content.len() / self.meta_info().len()) as u16;
                 self.height = height;
             } // RenderNode::Quote => self.height = 1,
         }
