@@ -80,13 +80,13 @@ impl RenderRoot {
                     .content()
                     .iter()
                     .flatten()
-                    .filter(|c| c.content() != " ")
                     .map(|c| {
                         c.content()
                             .trim()
                             .to_lowercase()
-                            .replace(['(', ')', '.', ','], "")
+                            .replace(['(', ')', '.', ',', '-'], "")
                     })
+                    .filter(|c| !c.is_empty())
                     .eq(heading.clone())
             {
                 return Ok(y_offset);
