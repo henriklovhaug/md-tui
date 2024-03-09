@@ -16,7 +16,7 @@ RUN mkdir -p /usr/final/target
 
 COPY . .
 
-RUN cargo aur && \
+RUN cargo-aur && \
   cp ./target/cargo-aur/* /usr/final/target/
 
 FROM scratch AS final
