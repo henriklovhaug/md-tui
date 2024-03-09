@@ -5,6 +5,7 @@
 - [MD-TUI](#md-tui)
   - [Installation](#installation)
   - [Key binds](#key-binds)
+  - [Contributions](#contributions)
 
 <!--toc:end-->
 
@@ -31,3 +32,7 @@ Using AUR: `yay -S md-tui-bin`
 | `d`        | Go down half a page                                                    |
 | `u`        | Go up half a page                                                      |
 | `q`        | Quit the application                                                   |
+
+## Contributions
+
+Both PRs and issues are welcome!
