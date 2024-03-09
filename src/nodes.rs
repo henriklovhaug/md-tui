@@ -161,6 +161,7 @@ pub enum MetaData {
     OList,
     PLanguage,
     Other,
+    ColumnsCount,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -212,6 +213,7 @@ impl From<MdParseEnum> for WordType {
             | MdParseEnum::CodeStr
             | MdParseEnum::Quote
             | MdParseEnum::Table
+            | MdParseEnum::TableCell
             | MdParseEnum::TableSeperator => {
                 unreachable!("Edit this or pest file to fix for value: {:?}", value)
             }
@@ -544,7 +546,7 @@ impl RenderComponent {
 
                 self.content = content;
 
-                let height = self.content.len() as u16;
+                let height = (self.content.len() / self.meta_info.len()) as u16;
                 self.height = height;
             }
             RenderNode::Paragraph | RenderNode::Task | RenderNode::Quote => {
@@ -590,7 +592,8 @@ impl RenderComponent {
                 self.height = 1;
             }
             RenderNode::Table => {
-                let height = self.content.len() as u16;
+                self.content.retain(|c| !c.is_empty());
+                let height = (self.content.len() / self.meta_info().len()) as u16;
                 self.height = height;
             } // RenderNode::Quote => self.height = 1,
         }

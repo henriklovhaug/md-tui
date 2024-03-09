@@ -68,6 +68,8 @@ impl Widget for RenderComponent {
             .cloned()
             .unwrap_or_else(|| Word::new("".to_string(), WordType::Normal));
 
+        let table_meta = self.meta_info().to_owned();
+
         let area = Rect { height, y, ..area };
 
         match kind {
@@ -76,7 +78,7 @@ impl Widget for RenderComponent {
             RenderNode::Task => render_task(area, buf, self.content_owned(), clips, &meta_info),
             RenderNode::List => render_list(area, buf, self.content_owned(), clips),
             RenderNode::CodeBlock => render_code_block(area, buf, self.content_owned(), clips),
-            RenderNode::Table => render_table(area, buf, self.content_owned(), clips),
+            RenderNode::Table => render_table(area, buf, self.content_owned(), clips, table_meta),
             RenderNode::Quote => render_quote(area, buf, self.content_owned(), clips),
             // RenderNode::Quote => render_quote(area, buf, self.content_owned()),
             RenderNode::LineBreak => (),
@@ -257,34 +259,59 @@ fn render_code_block(area: Rect, buf: &mut Buffer, content: Vec<Vec<Word>>, clip
     paragraph.render(area, buf);
 }
 
-fn render_table(area: Rect, buf: &mut Buffer, content: Vec<Vec<Word>>, clip: Clipping) {
-    let titles = content.first().unwrap();
+fn render_table(
+    area: Rect,
+    buf: &mut Buffer,
+    content: Vec<Vec<Word>>,
+    clip: Clipping,
+    meta_info: Vec<Word>,
+) {
+    let column_count = meta_info.len();
 
-    let widths = titles
+    let titles = content.chunks(column_count).next().unwrap().to_vec();
+
+    let widths = meta_info
         .iter()
         .map(|c| Constraint::Length(c.content().len() as u16))
         .collect::<Vec<_>>();
 
-    let moved_content = content.to_owned();
+    let moved_content = content.chunks(column_count).skip(1).collect::<Vec<_>>();
+
     let header = Row::new(
         titles
             .iter()
-            .map(|c| Cell::from(c.content()).style(Style::default().fg(Color::Red)))
+            .map(|c| {
+                Cell::from(Line::from(
+                    c.iter().map(|i| style_word(i)).collect::<Vec<_>>(),
+                ))
+            })
             .collect::<Vec<_>>(),
     );
 
     let mut rows = moved_content
         .iter()
-        .skip(1)
-        .map(|c| Row::new(c.iter().map(|i| style_word(i)).collect::<Vec<_>>()))
+        .map(|c| {
+            Row::new(
+                c.iter()
+                    .map(|i| {
+                        Cell::from(Line::from(
+                            i.iter().map(|i| style_word(i)).collect::<Vec<_>>(),
+                        ))
+                    })
+                    .collect::<Vec<_>>(),
+            )
+        })
         .collect::<Vec<_>>();
 
     match clip {
         Clipping::Upper => {
             let len = rows.len();
             let height = area.height as usize;
-            let offset = len - height;
-            rows.drain(0..offset);
+            let offset = len.saturating_sub(height) + 1;
+            // panic!("offset: {}, height: {}, len: {}", offset, height, len);
+            if offset < len {
+                rows.drain(0..offset);
+            }
         }
         Clipping::Lower => {
             let drain_area = cmp::min(area.height, rows.len() as u16);

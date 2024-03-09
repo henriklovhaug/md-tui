@@ -155,12 +155,21 @@ fn parse_component(parse_node: ParseNode) -> RenderComponent {
             let mut words = Vec::new();
             for row in parse_node.children_owned() {
                 if row.kind() == MdParseEnum::TableSeperator {
+                    words.push(vec![Word::new(
+                        row.content().to_owned(),
+                        WordType::MetaInfo(MetaData::ColumnsCount),
+                    )]);
                     continue;
                 }
                 let mut inner_words = Vec::new();
                 for word in get_leaf_nodes(row) {
                     let word_type = WordType::from(word.kind());
                     let content = word.content().to_owned();
+                    if string_only_contains(&content, vec!["|", " "]) {
+                        words.push(inner_words.clone());
+                        inner_words.clear();
+                        continue;
+                    }
                     inner_words.push(Word::new(content, word_type));
                 }
                 words.push(inner_words);
@@ -171,6 +180,15 @@ fn parse_component(parse_node: ParseNode) -> RenderComponent {
         MdParseEnum::BlockSeperator => RenderComponent::new(RenderNode::LineBreak, Vec::new()),
         _ => todo!("Not implemented for {:?}", parse_node.kind()),
     }
+}
+
+fn string_only_contains(s: &str, c: Vec<&str>) -> bool {
+    for ch in s.chars() {
+        if !c.iter().any(|x| x.contains(ch)) {
+            return false;
+        }
+    }
+    true
 }
 
 fn get_leaf_nodes(node: ParseNode) -> Vec<ParseNode> {
@@ -280,10 +298,6 @@ impl ParseNode {
     pub fn children_owned(self) -> Vec<ParseNode> {
         self.children
     }
-
-    pub fn children_mut(&mut self) -> &mut Vec<ParseNode> {
-        &mut self.children
-    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -307,6 +321,7 @@ pub enum MdParseEnum {
     Table,
     TableSeperator,
     TableRow,
+    TableCell,
     Digit,
     BlockSeperator,
     Sentence,
@@ -331,8 +346,9 @@ impl From<Rule> for MdParseEnum {
             Rule::o_list_counter | Rule::digit => Self::Digit,
             Rule::task_open => Self::TaskOpen,
             Rule::task_complete => Self::TaskClosed,
-            Rule::code_line | Rule::sentence => Self::Sentence,
-            Rule::table_row => Self::TableRow,
+            Rule::code_line | Rule::sentence | Rule::t_sentence => Self::Sentence,
+            // Rule::table_row => Self::TableRow,
+            Rule::table_cell => Self::TableRow,
             Rule::table_seperator => Self::TableSeperator,
             Rule::u_list => Self::UnorderedList,
             Rule::o_list => Self::OrderedList,
