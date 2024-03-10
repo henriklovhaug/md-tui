@@ -86,9 +86,27 @@ pub fn keyboard_mode_file_tree(
             KeyCode::Char('j') => {
                 file_tree.next(height);
             }
+
             KeyCode::Char('k') => {
                 file_tree.previous(height);
             }
+
+            KeyCode::Char('l') => {
+                file_tree.next_page(height);
+            }
+
+            KeyCode::Char('h') => {
+                file_tree.previous_page(height);
+            }
+
+            KeyCode::Char('g') => {
+                file_tree.first();
+            }
+
+            KeyCode::Char('G') => {
+                file_tree.last(height);
+            }
+
             KeyCode::Enter => {
                 let file = if let Some(file) = file_tree.selected() {
                     file
@@ -258,6 +276,18 @@ fn keyboard_mode_view(
             KeyCode::Char('u') => {
                 app.vertical_scroll = app.vertical_scroll.saturating_sub(height / 2);
             }
+
+            KeyCode::Char('l') => {
+                app.vertical_scroll = cmp::min(
+                    app.vertical_scroll + height,
+                    markdown.height().saturating_sub(height / 2),
+                );
+            }
+
+            KeyCode::Char('h') => {
+                app.vertical_scroll = app.vertical_scroll.saturating_sub(height);
+            }
+
             KeyCode::Char('s') => {
                 app.vertical_scroll = if let Ok(scroll) = markdown.select(app.select_index) {
                     app.selected = true;

@@ -21,6 +21,8 @@ Using AUR: `yay -S md-tui-bin`
 | ---------- | ---------------------------------------------------------------------- |
 | `j`        | Scroll down                                                            |
 | `k`        | Scroll up                                                              |
+| `l`        | Scroll one page down                                                   |
+| `h`        | Scroll one page up                                                     |
 | `r`        | Reload file                                                            |
 | `f` or `/` | Search                                                                 |
 | `s`        | Enter select link mode                                                 |
