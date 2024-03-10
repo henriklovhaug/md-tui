@@ -181,8 +181,24 @@ fn keyboard_mode_view(
                     return KeyBoardAction::Continue;
                 }
 
+                let closest = search.iter().min_by_key(|(index, _)| {
+                    if *index as u16 > app.vertical_scroll + height / 2 {
+                        *index as u16 - app.vertical_scroll - height / 2
+                    } else {
+                        app.vertical_scroll + height / 2 - *index as u16
+                    }
+                });
+
+                if let Some((index, _)) = closest {
+                    app.vertical_scroll = cmp::min(
+                        (*index as u16).saturating_sub(height / 2),
+                        markdown.height().saturating_sub(height / 2),
+                    );
+                }
+
                 for ele in search.iter() {
                     let _ = markdown.mark_word(ele.0, ele.1, query.len());
+                    // Scroll to closest match
                 }
 
                 app.boxes = Boxes::None;
