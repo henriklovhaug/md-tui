@@ -321,7 +321,7 @@ fn render_table(
     }
 
     let table = Table::new(rows, &widths)
-        .header(header.style(Style::default().fg(Color::Black)))
+        .header(header.style(Style::default().fg(Color::Yellow)))
         .block(Block::default())
         .column_spacing(1);
 

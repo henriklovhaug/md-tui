@@ -37,4 +37,4 @@ Using AUR: `yay -S md-tui-bin`
 
 ## Contributions
 
-Both PRs and issues are welcome!
+Both PRs and issues are appreciated!
