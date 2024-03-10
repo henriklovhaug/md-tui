@@ -7,6 +7,8 @@ use crossterm::{
     terminal::{disable_raw_mode, LeaveAlternateScreen},
 };
 
+use crate::boxes::{errorbox::ErrorBox, help_box::HelpBox, searchbox::SearchBox};
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Mode {
     View,
@@ -52,6 +54,9 @@ pub struct App {
     pub mode: Mode,
     pub boxes: Boxes,
     pub history: JumpHistory,
+    pub search_box: SearchBox,
+    pub error_box: ErrorBox,
+    pub help_box: HelpBox,
 }
 
 impl App {
