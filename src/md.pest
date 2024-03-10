@@ -1,29 +1,28 @@
 // Characters
-p_char       = _{ (!(NEWLINE | code | italic | bold | strikethrough | " ") ~ ANY)+ }
-//t_char       = _{ (!(NEWLINE | code | italic | bold | strikethrough | " " | "|") ~ ANY)+ }
+p_char       = _{ (!(NEWLINE | code | italic | bold | strikethrough | latex | " ") ~ ANY)+ }
 c_char       = _{ (!(NEWLINE | " " | "`") ~ ANY)+ }
 i_char       = _{ (!(NEWLINE | " " | "_" | "*") ~ ANY)+ }
 b_char       = _{ (!(NEWLINE | " " | "**") ~ ANY)+ }
 s_char       = _{ (!(NEWLINE | " " | "~~") ~ ANY)+ }
 c_line_char  = _{ (!(NEWLINE | "```") ~ ANY)+ }
 comment_char = _{ (!(NEWLINE | "-->") ~ ANY)+ }
-table_char   = _{ (!(NEWLINE | "|") ~ ANY)+ }
 link_char    = _{ (!(NEWLINE | " " | "[" | "]" | "(" | ")") ~ ANY)+ }
+latex_char   = _{ (!(NEWLINE | " " | "$") ~ ANY)+ }
 digit        = _{ '0'..'9' }
 indent       =  { " "* }
 
 // Words
-word = {
-    !(forbidden_sentence_prefix | bold | italic | strikethrough | code | link) ~ NEWLINE? ~ " "* ~ p_char+ ~ " "?
+word               = {
+    !(forbidden_sentence_prefix | latex | bold | italic | strikethrough | code | link) ~ NEWLINE? ~ " "* ~ p_char+ ~ " "?
 }
-
 h_word             = { p_char+ ~ " "? }
 italic_word        = { i_char+ ~ " "? }
 bold_word          = { b_char+ ~ " "? }
 strikethrough_word = { s_char+ ~ " "? }
 code_word          = { c_char+ ~ " "? }
+latex_word         = { latex_char+ ~ " "? }
 link_word          = { (link_char | " " | "(" | ")")+ }
-link_data          = { (link_char | "@")+ }
+link_data          = { link_char+ }
 
 // Prefixes
 task_open         =  { "- [ ] " }
@@ -47,17 +46,16 @@ normal               = _{ word+ }
 markdown_link        = _{ "[" ~ link_word+ ~ "]" ~ "(#" ~ link_data+ ~ ")" }
 external_link        = _{ "[" ~ link_word+ ~ "]" ~ "(" ~ link_data+ ~ ")" }
 link                 =  { NEWLINE? ~ " "* ~ (markdown_link | external_link) }
-table_word           =  { (table_char | code | link | " ")+ }
 italic               =  { NEWLINE? ~ " "* ~ (("*" ~ (italic_word | NEWLINE)+ ~ "*") | ("_" ~ (italic_word | NEWLINE)+ ~ "_")) }
 bold                 =  { NEWLINE? ~ " "* ~ "**" ~ (bold_word | NEWLINE)+ ~ "**" }
 strikethrough        =  { NEWLINE? ~ " "* ~ "~~" ~ (strikethrough_word | NEWLINE)+ ~ "~~" }
+latex                =  { NEWLINE? ~ " "* ~ "$"+ ~ " "? ~ (latex_word | NEWLINE)+ ~ "$"+ }
 o_list_counter       =  { digit+ ~ ". " }
 
-sentence   = _{ (code | link | italic | bold | strikethrough | normal+)+ }
-t_sentence = _{ (!"|" ~ (code | link | italic | bold | strikethrough | normal))+ }
+sentence   = _{ (latex | code | link | italic | bold | strikethrough | normal+)+ }
+t_sentence = _{ (!"|" ~ (latex | code | link | italic | bold | strikethrough | normal))+ }
 
-table_cell = { "|" ~ " "* ~ t_sentence+ }
-// table_row       = { "|" ~ (table_word | " " | "|")+ }
+table_cell      = { "|" ~ " "* ~ t_sentence+ }
 table_seperator = { ("|"? ~ (" " | ":")? ~ "-"+ ~ (" " | ":")? ~ "|") }
 
 u_list = { indent ~ ("-" | "*") ~ " " ~ sentence+ }

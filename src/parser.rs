@@ -335,7 +335,7 @@ pub enum MdParseEnum {
 impl From<Rule> for MdParseEnum {
     fn from(value: Rule) -> Self {
         match value {
-            Rule::word | Rule::table_word | Rule::h_word => Self::Word,
+            Rule::word | Rule::h_word | Rule::latex_word => Self::Word,
             Rule::indent => Self::Indent,
             Rule::italic | Rule::italic_word => Self::Italic,
             Rule::bold | Rule::bold_word => Self::Bold,
@@ -366,9 +366,9 @@ impl From<Rule> for MdParseEnum {
             Rule::link_data => Self::LinkData,
 
             Rule::p_char
-            | Rule::table_char
             | Rule::link_char
             | Rule::normal
+            | Rule::latex
             | Rule::comment
             | Rule::txt
             | Rule::task_prefix
@@ -380,6 +380,7 @@ impl From<Rule> for MdParseEnum {
 
             Rule::heading_prefix
             | Rule::c_char
+            | Rule::latex_char
             | Rule::i_char
             | Rule::b_char
             | Rule::s_char
