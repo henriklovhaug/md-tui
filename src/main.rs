@@ -96,14 +96,15 @@ fn run_app<B: Backend>(
 
     terminal.draw(|f| {
         render_loading(f, &app);
-        if let Ok(files) = find_md_files() {
-            file_tree = files;
-        } else {
-            error_box.set_message("MDT does not have permissions to view directories".to_string());
-            app.boxes = Boxes::Error;
-            app.mode = Mode::FileTree;
-        }
     })?;
+
+    if let Ok(files) = find_md_files() {
+        file_tree = files;
+    } else {
+        error_box.set_message("MDT does not have permissions to view directories".to_string());
+        app.boxes = Boxes::Error;
+        app.mode = Mode::FileTree;
+    }
 
     let mut markdown = parse_markdown(None, EMPTY_FILE);
     let mut width = cmp::min(terminal.size()?.width, 80);
@@ -251,12 +252,12 @@ fn render_loading(f: &mut Frame, _app: &App) {
     };
 
     let loading_text = r#"
- __        ______        ___       _______   __  .__   __.   _______ 
-|  |      /  __  \      /   \     |       \ |  | |  \ |  |  /  _____|
-|  |     |  |  |  |    /  ^  \    |  .--.  ||  | |   \|  | |  |  __  
-|  |     |  |  |  |   /  /_\  \   |  |  |  ||  | |  . `  | |  | |_ | 
-|  `----.|  `--'  |  /  _____  \  |  '--'  ||  | |  |\   | |  |__| | 
-|_______| \______/  /__/     \__\ |_______/ |__| |__| \__|  \______|
+  _        ___       _      ____    ___   _   _    ____             
+ | |      / _ \     / \    |  _ \  |_ _| | \ | |  / ___|            
+ | |     | | | |   / _ \   | | | |  | |  |  \| | | |  _             
+ | |___  | |_| |  / ___ \  | |_| |  | |  | |\  | | |_| |  _   _   _ 
+ |_____|  \___/  /_/   \_\ |____/  |___| |_| \_|  \____| (_) (_) (_)
+                                                                    
 "#;
 
     let page = Paragraph::new(loading_text);
