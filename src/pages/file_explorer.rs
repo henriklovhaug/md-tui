@@ -188,6 +188,50 @@ impl FileTree {
         self.list_state.select(Some(i));
     }
 
+    pub fn next_page(&mut self, height: u16) {
+        let partition = self.partition(height);
+        let i = match self.list_state.selected() {
+            Some(i) => {
+                if i + partition >= self.files.len() {
+                    0
+                } else {
+                    i + partition
+                }
+            }
+            None => 0,
+        };
+        self.page = (i / partition) as u32;
+        self.list_state.select(Some(i));
+    }
+
+    pub fn previous_page(&mut self, height: u16) {
+        let partition = self.partition(height);
+        let i = match self.list_state.selected() {
+            Some(i) => {
+                if i < partition {
+                    self.files.len() - partition
+                } else {
+                    i - partition
+                }
+            }
+            None => 0,
+        };
+        self.page = (i / partition) as u32;
+        self.list_state.select(Some(i));
+    }
+
+    pub fn first(&mut self) {
+        self.list_state.select(Some(0));
+        self.page = 0;
+    }
+
+    pub fn last(&mut self, height: u16) {
+        let partition = self.partition(height);
+        let i = self.files.len() - 2;
+        self.list_state.select(Some(i));
+        self.page = (i / partition) as u32;
+    }
+
     pub fn unselect(&mut self) {
         self.list_state.select(None);
     }

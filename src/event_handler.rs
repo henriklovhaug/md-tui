@@ -86,9 +86,27 @@ pub fn keyboard_mode_file_tree(
             KeyCode::Char('j') => {
                 file_tree.next(height);
             }
+
             KeyCode::Char('k') => {
                 file_tree.previous(height);
             }
+
+            KeyCode::Char('l') => {
+                file_tree.next_page(height);
+            }
+
+            KeyCode::Char('h') => {
+                file_tree.previous_page(height);
+            }
+
+            KeyCode::Char('g') => {
+                file_tree.first();
+            }
+
+            KeyCode::Char('G') => {
+                file_tree.last(height);
+            }
+
             KeyCode::Enter => {
                 let file = if let Some(file) = file_tree.selected() {
                     file
@@ -181,8 +199,24 @@ fn keyboard_mode_view(
                     return KeyBoardAction::Continue;
                 }
 
+                let closest = search.iter().min_by_key(|(index, _)| {
+                    if *index as u16 > app.vertical_scroll + height / 2 {
+                        *index as u16 - app.vertical_scroll - height / 2
+                    } else {
+                        app.vertical_scroll + height / 2 - *index as u16
+                    }
+                });
+
+                if let Some((index, _)) = closest {
+                    app.vertical_scroll = cmp::min(
+                        (*index as u16).saturating_sub(height / 2),
+                        markdown.height().saturating_sub(height / 2),
+                    );
+                }
+
                 for ele in search.iter() {
                     let _ = markdown.mark_word(ele.0, ele.1, query.len());
+                    // Scroll to closest match
                 }
 
                 app.boxes = Boxes::None;
@@ -242,6 +276,18 @@ fn keyboard_mode_view(
             KeyCode::Char('u') => {
                 app.vertical_scroll = app.vertical_scroll.saturating_sub(height / 2);
             }
+
+            KeyCode::Char('l') => {
+                app.vertical_scroll = cmp::min(
+                    app.vertical_scroll + height,
+                    markdown.height().saturating_sub(height / 2),
+                );
+            }
+
+            KeyCode::Char('h') => {
+                app.vertical_scroll = app.vertical_scroll.saturating_sub(height);
+            }
+
             KeyCode::Char('s') => {
                 app.vertical_scroll = if let Ok(scroll) = markdown.select(app.select_index) {
                     app.selected = true;
@@ -294,11 +340,11 @@ fn keyboard_mode_view(
                 match LinkType::from(link) {
                     LinkType::Internal(heading) => {
                         app.vertical_scroll = if let Ok(index) = markdown.heading_offset(heading) {
-                            index
+                            cmp::min(index, markdown.height().saturating_sub(height / 2))
                         } else {
                             error_box.set_message(format!("Could not find heading {}", heading));
-                            app.reset();
                             app.boxes = Boxes::Error;
+                            markdown.deselect();
                             return KeyBoardAction::Continue;
                         };
                     }

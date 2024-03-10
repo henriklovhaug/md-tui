@@ -61,10 +61,17 @@ pub fn find_with_backoff(query: &str, text: &str) -> Vec<usize> {
 pub fn find(query: &str, text: &str, precision: usize) -> Vec<usize> {
     let mut result = Vec::new();
 
+    let case_sensitive = query.chars().any(|c| c.is_uppercase());
+
     char_windows(text, query.len())
         .enumerate()
         .for_each(|(i, window)| {
-            let score = damerau_levenshtein(query, window);
+            let window = if case_sensitive {
+                window.to_owned()
+            } else {
+                window.to_lowercase()
+            };
+            let score = damerau_levenshtein(query, &window);
             if score <= precision {
                 result.push(i);
             }

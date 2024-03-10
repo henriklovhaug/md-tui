@@ -5,6 +5,7 @@
 - [MD-TUI](#md-tui)
   - [Installation](#installation)
   - [Key binds](#key-binds)
+  - [Contributions](#contributions)
 
 <!--toc:end-->
 
@@ -20,6 +21,8 @@ Using AUR: `yay -S md-tui-bin`
 | ---------- | ---------------------------------------------------------------------- |
 | `j`        | Scroll down                                                            |
 | `k`        | Scroll up                                                              |
+| `l`        | Scroll one page down                                                   |
+| `h`        | Scroll one page up                                                     |
 | `r`        | Reload file                                                            |
 | `f` or `/` | Search                                                                 |
 | `s`        | Enter select link mode                                                 |
@@ -31,3 +34,7 @@ Using AUR: `yay -S md-tui-bin`
 | `d`        | Go down half a page                                                    |
 | `u`        | Go up half a page                                                      |
 | `q`        | Quit the application                                                   |
+
+## Contributions
+
+Both PRs and issues are appreciated!
