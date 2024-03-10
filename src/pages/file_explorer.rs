@@ -209,9 +209,9 @@ impl FileTree {
         let i = match self.list_state.selected() {
             Some(i) => {
                 if i < partition {
-                    self.files.len() - partition
+                    self.files.len().saturating_sub(partition)
                 } else {
-                    i - partition
+                    i.saturating_sub(partition)
                 }
             }
             None => 0,

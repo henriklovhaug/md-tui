@@ -7,7 +7,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use boxes::{errorbox::ErrorBox, searchbox::SearchBox};
+use boxes::{errorbox::ErrorBox, help_box::HelpBox, searchbox::SearchBox};
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event},
     execute,
@@ -93,6 +93,7 @@ fn run_app<B: Backend>(
 
     let mut search_box = SearchBox::default();
     let mut error_box = ErrorBox::default();
+    let mut help_box = HelpBox::default();
 
     terminal.draw(|f| {
         render_loading(f, &app);
@@ -154,10 +155,10 @@ fn run_app<B: Backend>(
         terminal.draw(|f| {
             match app.mode {
                 Mode::View => {
-                    render_markdown(f, &app, markdown.clone());
+                    render_markdown(f, &app, markdown.clone(), help_box);
                 }
                 Mode::FileTree => {
-                    render_file_tree(f, &app, file_tree.clone());
+                    render_file_tree(f, &app, file_tree.clone(), help_box);
                 }
             };
             if app.boxes == Boxes::Search {
@@ -196,6 +197,7 @@ fn run_app<B: Backend>(
                     &mut search_box,
                     &mut error_box,
                     &mut file_tree,
+                    &mut help_box,
                     height,
                 ) {
                     KeyBoardAction::Continue => {}
@@ -211,7 +213,7 @@ fn run_app<B: Backend>(
     }
 }
 
-fn render_file_tree(f: &mut Frame, _app: &App, file_tree: FileTree) {
+fn render_file_tree(f: &mut Frame, _app: &App, file_tree: FileTree, help_box: HelpBox) {
     let size = f.size();
     let area = Rect {
         x: 2,
@@ -219,9 +221,28 @@ fn render_file_tree(f: &mut Frame, _app: &App, file_tree: FileTree) {
         ..size
     };
     f.render_widget(file_tree, area);
+
+    let area = if help_box.expanded() {
+        Rect {
+            x: 4,
+            y: size.height - 13,
+            height: 10,
+            width: 80,
+        }
+    } else {
+        Rect {
+            x: 4,
+            y: size.height - 4,
+            height: 3,
+            width: 80,
+        }
+    };
+
+    f.render_widget(Clear, area);
+    f.render_widget(help_box, area);
 }
 
-fn render_markdown(f: &mut Frame, _app: &App, markdown: RenderRoot) {
+fn render_markdown(f: &mut Frame, _app: &App, markdown: RenderRoot, _help_box: HelpBox) {
     let size = f.size();
     let area = Rect {
         x: 2,

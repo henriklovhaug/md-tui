@@ -3,7 +3,7 @@ use std::{cmp, fs::read_to_string};
 use crossterm::event::KeyCode;
 
 use crate::{
-    boxes::{errorbox::ErrorBox, searchbox::SearchBox},
+    boxes::{errorbox::ErrorBox, help_box::HelpBox, searchbox::SearchBox},
     nodes::RenderRoot,
     pages::file_explorer::FileTree,
     parser::parse_markdown,
@@ -23,16 +23,19 @@ pub fn handle_keyboard_input(
     search_box: &mut SearchBox,
     error_box: &mut ErrorBox,
     file_tree: &mut FileTree,
+    help_box: &mut HelpBox,
     height: u16,
 ) -> KeyBoardAction {
     if key == KeyCode::Char('q') && app.boxes != Boxes::Search {
         return KeyBoardAction::Exit;
     }
     match app.mode {
-        Mode::View => keyboard_mode_view(key, app, markdown, search_box, error_box, height),
-        Mode::FileTree => {
-            keyboard_mode_file_tree(key, app, markdown, search_box, error_box, file_tree, height)
+        Mode::View => {
+            keyboard_mode_view(key, app, markdown, search_box, error_box, help_box, height)
         }
+        Mode::FileTree => keyboard_mode_file_tree(
+            key, app, markdown, search_box, error_box, file_tree, help_box, height,
+        ),
     }
 }
 
@@ -43,6 +46,7 @@ pub fn keyboard_mode_file_tree(
     search_box: &mut SearchBox,
     error_box: &mut ErrorBox,
     file_tree: &mut FileTree,
+    help_box: &mut HelpBox,
     height: u16,
 ) -> KeyBoardAction {
     match app.boxes {
@@ -156,6 +160,9 @@ pub fn keyboard_mode_file_tree(
                     app.mode = Mode::FileTree;
                 }
             },
+            KeyCode::Char('?') => {
+                help_box.toggle();
+            }
 
             KeyCode::Esc => {
                 file_tree.unselect();
@@ -174,6 +181,7 @@ fn keyboard_mode_view(
     markdown: &mut RenderRoot,
     search_box: &mut SearchBox,
     error_box: &mut ErrorBox,
+    _help_box: &mut HelpBox,
     height: u16,
 ) -> KeyBoardAction {
     match app.boxes {
