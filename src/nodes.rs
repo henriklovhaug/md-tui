@@ -84,7 +84,7 @@ impl RenderRoot {
                         c.content()
                             .trim()
                             .to_lowercase()
-                            .replace(['(', ')', '.', ',', '-'], "")
+                            .replace(['(', ')', '.', ',', '/', '\''], "")
                     })
                     .filter(|c| !c.is_empty())
                     .eq(heading.clone())
