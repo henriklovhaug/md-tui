@@ -200,6 +200,8 @@ fn keyboard_mode_view(
                     return KeyBoardAction::Continue;
                 }
 
+                markdown.deselect();
+
                 let closest = search.iter().min_by_key(|(index, _)| {
                     if *index as u16 > app.vertical_scroll + height / 2 {
                         *index as u16 - app.vertical_scroll - height / 2
