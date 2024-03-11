@@ -259,8 +259,8 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: RenderRoot, help_box: Hel
         }
     } else {
         Rect {
-            y: size.height - 13,
-            height: 12,
+            y: size.height - 17,
+            height: 16,
             width: 80,
             ..area
         }
@@ -272,8 +272,8 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: RenderRoot, help_box: Hel
     let area = if help_box.expanded() {
         Rect {
             x: 4,
-            y: size.height - 12,
-            height: 10,
+            y: size.height - 16,
+            height: 14,
             width: 80,
         }
     } else {

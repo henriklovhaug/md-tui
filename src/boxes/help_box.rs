@@ -1,9 +1,9 @@
 use ratatui::{
     buffer::Buffer,
     layout::Rect,
-    style::{Color, Style},
+    style::{Color, Style, Stylize},
     text::Text,
-    widgets::{Paragraph, Row, Table, Widget},
+    widgets::{Row, Table, Widget},
 };
 
 use crate::util::Mode;
@@ -54,8 +54,8 @@ impl Widget for HelpBox {
 
 fn render_file_tree_help(expanded: bool, area: Rect, buf: &mut Buffer) {
     if !expanded {
-        let paragraph = Paragraph::new("? - Help");
-        paragraph.render(area, buf);
+        let text = Text::styled("? - Help", Style::default().fg(Color::LightGreen).bold());
+        text.render(area, buf);
         return;
     }
 
@@ -81,8 +81,8 @@ fn render_file_tree_help(expanded: bool, area: Rect, buf: &mut Buffer) {
 
 fn render_markdown_help(expandend: bool, area: Rect, buf: &mut Buffer) {
     if !expandend {
-        let paragraph = Text::styled("? - Help", Style::default().fg(Color::LightGreen));
-        paragraph.render(area, buf);
+        let text = Text::styled("? - Help", Style::default().fg(Color::LightGreen).bold());
+        text.render(area, buf);
         return;
     }
 

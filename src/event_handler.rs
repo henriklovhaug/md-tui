@@ -121,6 +121,7 @@ pub fn keyboard_mode_file_tree(
                 *markdown = parse_markdown(Some(file.path()), &text);
                 markdown.transform(80);
                 app.mode = Mode::View;
+                app.help_box.set_mode(Mode::View);
                 app.select_index = 0;
             }
             KeyCode::Char('f') | KeyCode::Char('/') => {
@@ -146,10 +147,12 @@ pub fn keyboard_mode_file_tree(
                     markdown.transform(80);
                     app.reset();
                     app.mode = Mode::View;
+                    app.help_box.set_mode(Mode::View);
                 }
                 Jump::FileTree => {
                     markdown.clear();
                     app.mode = Mode::FileTree;
+                    app.help_box.set_mode(Mode::FileTree);
                 }
             },
             KeyCode::Char('?') => {
@@ -393,10 +396,13 @@ fn keyboard_mode_view(
                     *markdown = parse_markdown(Some(&e), &text);
                     markdown.transform(80);
                     app.reset();
+                    app.mode = Mode::View;
+                    app.help_box.set_mode(Mode::View);
                 }
                 Jump::FileTree => {
                     markdown.clear();
                     app.mode = Mode::FileTree;
+                    app.help_box.set_mode(Mode::FileTree);
                 }
             },
 
