@@ -8,19 +8,10 @@ use ratatui::{
 
 use crate::util::Mode;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default)]
 pub struct HelpBox {
     mode: Mode,
     expanded: bool,
-}
-
-impl Default for HelpBox {
-    fn default() -> Self {
-        Self {
-            mode: Default::default(),
-            expanded: Default::default(),
-        }
-    }
 }
 
 impl HelpBox {
