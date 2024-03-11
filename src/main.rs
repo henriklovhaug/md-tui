@@ -238,7 +238,7 @@ fn render_file_tree(f: &mut Frame, _app: &App, file_tree: FileTree, help_box: He
     f.render_widget(help_box, area);
 }
 
-fn render_markdown(f: &mut Frame, _app: &App, markdown: RenderRoot, help_box: HelpBox) {
+fn render_markdown(f: &mut Frame, app: &App, markdown: RenderRoot, help_box: HelpBox) {
     let size = f.size();
     let area = Rect {
         x: 2,
@@ -250,31 +250,44 @@ fn render_markdown(f: &mut Frame, _app: &App, markdown: RenderRoot, help_box: He
 
     // Render a block at the bottom to show the current mode
     let block = Block::default().bg(Color::Black);
-    let area = Rect {
-        y: size.height - 4,
-        height: 3,
-        width: 80,
-        ..area
+    let area = if !app.help_box.expanded() {
+        Rect {
+            y: size.height - 4,
+            height: 3,
+            width: 80,
+            ..area
+        }
+    } else {
+        Rect {
+            y: size.height - 13,
+            height: 12,
+            width: 80,
+            ..area
+        }
     };
+    f.render_widget(Clear, area);
+
     f.render_widget(block, area);
 
     let area = if help_box.expanded() {
         Rect {
             x: 4,
-            y: size.height - 13,
+            y: size.height - 12,
             height: 10,
             width: 80,
         }
     } else {
         Rect {
             x: 4,
-            y: size.height - 4,
+            y: size.height - 3,
             height: 3,
             width: 80,
         }
     };
 
-    f.render_widget(help_box, area)
+    if app.boxes != Boxes::Search {
+        f.render_widget(help_box, area)
+    }
 }
 
 fn render_loading(f: &mut Frame, _app: &App) {
@@ -286,7 +299,7 @@ fn render_loading(f: &mut Frame, _app: &App) {
         ..size
     };
 
-    let loading_text = r#"
+    const LOADING_TEXT: &str = r#"
   _        ___       _      ____    ___   _   _    ____             
  | |      / _ \     / \    |  _ \  |_ _| | \ | |  / ___|            
  | |     | | | |   / _ \   | | | |  | |  |  \| | | |  _             
@@ -295,7 +308,7 @@ fn render_loading(f: &mut Frame, _app: &App) {
                                                                     
 "#;
 
-    let page = Paragraph::new(loading_text);
+    let page = Paragraph::new(LOADING_TEXT);
 
     f.render_widget(page, area);
 }

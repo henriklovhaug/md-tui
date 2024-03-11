@@ -65,6 +65,7 @@ impl App {
         self.selected = false;
         self.select_index = 0;
         self.boxes = Boxes::None;
+        self.help_box.close();
     }
 }
 
