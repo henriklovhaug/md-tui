@@ -3,7 +3,6 @@ use std::{cmp, fs::read_to_string};
 use crossterm::event::KeyCode;
 
 use crate::{
-    boxes::{errorbox::ErrorBox, searchbox::SearchBox},
     nodes::RenderRoot,
     pages::file_explorer::FileTree,
     parser::parse_markdown,
@@ -20,8 +19,6 @@ pub fn handle_keyboard_input(
     key: KeyCode,
     app: &mut App,
     markdown: &mut RenderRoot,
-    search_box: &mut SearchBox,
-    error_box: &mut ErrorBox,
     file_tree: &mut FileTree,
     height: u16,
 ) -> KeyBoardAction {
@@ -29,10 +26,8 @@ pub fn handle_keyboard_input(
         return KeyBoardAction::Exit;
     }
     match app.mode {
-        Mode::View => keyboard_mode_view(key, app, markdown, search_box, error_box, height),
-        Mode::FileTree => {
-            keyboard_mode_file_tree(key, app, markdown, search_box, error_box, file_tree, height)
-        }
+        Mode::View => keyboard_mode_view(key, app, markdown, height),
+        Mode::FileTree => keyboard_mode_file_tree(key, app, markdown, file_tree, height),
     }
 }
 
@@ -40,8 +35,6 @@ pub fn keyboard_mode_file_tree(
     key: KeyCode,
     app: &mut App,
     markdown: &mut RenderRoot,
-    search_box: &mut SearchBox,
-    error_box: &mut ErrorBox,
     file_tree: &mut FileTree,
     height: u16,
 ) -> KeyBoardAction {
@@ -54,31 +47,31 @@ pub fn keyboard_mode_file_tree(
         },
         Boxes::Search => match key {
             KeyCode::Esc => {
-                search_box.clear();
+                app.search_box.clear();
                 file_tree.search(None);
                 app.boxes = Boxes::None;
             }
             KeyCode::Enter => {
-                let query = search_box.consume();
+                let query = app.search_box.consume();
                 file_tree.search(Some(&query));
                 app.boxes = Boxes::None;
             }
 
             KeyCode::Char(c) => {
-                search_box.insert(c);
-                file_tree.search(search_box.content());
+                app.search_box.insert(c);
+                file_tree.search(app.search_box.content());
                 let file_height = file_tree.height(height);
-                search_box.set_position(10, file_height as u16 + 2);
+                app.search_box.set_position(10, file_height as u16 + 2);
             }
 
             KeyCode::Backspace => {
-                if search_box.content().is_none() {
+                if app.search_box.content().is_none() {
                     app.boxes = Boxes::None;
                 }
-                search_box.delete();
-                file_tree.search(search_box.content());
+                app.search_box.delete();
+                file_tree.search(app.search_box.content());
                 let file_height = file_tree.height(height);
-                search_box.set_position(10, file_height as u16 + 2);
+                app.search_box.set_position(10, file_height as u16 + 2);
             }
             _ => {}
         },
@@ -111,7 +104,7 @@ pub fn keyboard_mode_file_tree(
                 let file = if let Some(file) = file_tree.selected() {
                     file
                 } else {
-                    error_box.set_message("No file selected".to_string());
+                    app.error_box.set_message("No file selected".to_string());
                     app.boxes = Boxes::Error;
                     return KeyBoardAction::Continue;
                 };
@@ -119,7 +112,8 @@ pub fn keyboard_mode_file_tree(
                     app.reset();
                     file
                 } else {
-                    error_box.set_message(format!("Could not open file {}", file.path()));
+                    app.error_box
+                        .set_message(format!("Could not open file {}", file.path()));
                     app.boxes = Boxes::Error;
                     return KeyBoardAction::Continue;
                 };
@@ -127,13 +121,15 @@ pub fn keyboard_mode_file_tree(
                 *markdown = parse_markdown(Some(file.path()), &text);
                 markdown.transform(80);
                 app.mode = Mode::View;
+                app.help_box.set_mode(Mode::View);
                 app.select_index = 0;
             }
             KeyCode::Char('f') | KeyCode::Char('/') => {
                 let file_height = file_tree.height(height);
-                search_box.set_position(10, file_height as u16 + 2);
-                search_box.set_width(20);
+                app.search_box.set_position(10, file_height as u16 + 2);
+                app.search_box.set_width(20);
                 app.boxes = Boxes::Search;
+                app.help_box.close();
             }
 
             KeyCode::Char('b') => match app.history.pop() {
@@ -142,7 +138,8 @@ pub fn keyboard_mode_file_tree(
                         app.vertical_scroll = 0;
                         file
                     } else {
-                        error_box.set_message(format!("Could not open file {}", e));
+                        app.error_box
+                            .set_message(format!("Could not open file {}", e));
                         app.boxes = Boxes::Error;
                         return KeyBoardAction::Continue;
                     };
@@ -150,12 +147,17 @@ pub fn keyboard_mode_file_tree(
                     markdown.transform(80);
                     app.reset();
                     app.mode = Mode::View;
+                    app.help_box.set_mode(Mode::View);
                 }
                 Jump::FileTree => {
                     markdown.clear();
                     app.mode = Mode::FileTree;
+                    app.help_box.set_mode(Mode::FileTree);
                 }
             },
+            KeyCode::Char('?') => {
+                app.help_box.toggle();
+            }
 
             KeyCode::Esc => {
                 file_tree.unselect();
@@ -172,8 +174,6 @@ fn keyboard_mode_view(
     key: KeyCode,
     app: &mut App,
     markdown: &mut RenderRoot,
-    search_box: &mut SearchBox,
-    error_box: &mut ErrorBox,
     height: u16,
 ) -> KeyBoardAction {
     match app.boxes {
@@ -185,16 +185,17 @@ fn keyboard_mode_view(
         },
         Boxes::Search => match key {
             KeyCode::Esc => {
-                search_box.clear();
+                app.search_box.clear();
                 app.boxes = Boxes::None;
             }
             KeyCode::Enter => {
-                let query = search_box.consume();
+                let query = app.search_box.consume();
                 let lines = markdown.content();
                 let search =
                     find_line_match_and_index(&query, lines.iter().map(|s| &**s).collect(), 0);
                 if search.is_empty() {
-                    error_box.set_message(format!("No results for {}", query));
+                    app.error_box
+                        .set_message(format!("No results for {}", query));
                     app.boxes = Boxes::Error;
                     return KeyBoardAction::Continue;
                 }
@@ -222,10 +223,10 @@ fn keyboard_mode_view(
                 app.boxes = Boxes::None;
             }
             KeyCode::Char(c) => {
-                search_box.insert(c);
+                app.search_box.insert(c);
             }
             KeyCode::Backspace => {
-                search_box.delete();
+                app.search_box.delete();
             }
             _ => {}
         },
@@ -297,21 +298,24 @@ fn keyboard_mode_view(
                 };
             }
             KeyCode::Char('f') | KeyCode::Char('/') => {
-                search_box.set_position(2, height - 3);
-                search_box.set_width(80);
+                app.search_box.set_position(2, height - 3);
+                app.search_box.set_width(80);
                 app.boxes = Boxes::Search;
+                app.help_box.close();
             }
             KeyCode::Char('t') => {
                 app.mode = Mode::FileTree;
+                app.help_box.set_mode(Mode::FileTree);
                 if let Some(file) = markdown.file_name() {
                     app.history.push(Jump::File(file.to_string()));
                 }
+                app.reset();
             }
             KeyCode::Char('r') => {
                 let url = if let Some(url) = markdown.file_name() {
                     url
                 } else {
-                    error_box.set_message("No file".to_string());
+                    app.error_box.set_message("No file".to_string());
                     app.boxes = Boxes::Error;
                     return KeyBoardAction::Continue;
                 };
@@ -319,7 +323,7 @@ fn keyboard_mode_view(
                     app.vertical_scroll = 0;
                     file
                 } else {
-                    error_box
+                    app.error_box
                         .set_message(format!("Could not open file {:?}", markdown.file_name()));
                     app.boxes = Boxes::Error;
                     return KeyBoardAction::Continue;
@@ -342,7 +346,8 @@ fn keyboard_mode_view(
                         app.vertical_scroll = if let Ok(index) = markdown.heading_offset(heading) {
                             cmp::min(index, markdown.height().saturating_sub(height / 2))
                         } else {
-                            error_box.set_message(format!("Could not find heading {}", heading));
+                            app.error_box
+                                .set_message(format!("Could not find heading {}", heading));
                             app.boxes = Boxes::Error;
                             markdown.deselect();
                             return KeyBoardAction::Continue;
@@ -358,7 +363,8 @@ fn keyboard_mode_view(
                             app.vertical_scroll = 0;
                             file
                         } else {
-                            error_box.set_message(format!("Could not open file {}", url));
+                            app.error_box
+                                .set_message(format!("Could not open file {}", url));
                             app.boxes = Boxes::Error;
                             return KeyBoardAction::Continue;
                         };
@@ -382,19 +388,27 @@ fn keyboard_mode_view(
                         app.vertical_scroll = 0;
                         file
                     } else {
-                        error_box.set_message(format!("Could not open file {}", e));
+                        app.error_box
+                            .set_message(format!("Could not open file {}", e));
                         app.boxes = Boxes::Error;
                         return KeyBoardAction::Continue;
                     };
                     *markdown = parse_markdown(Some(&e), &text);
                     markdown.transform(80);
                     app.reset();
+                    app.mode = Mode::View;
+                    app.help_box.set_mode(Mode::View);
                 }
                 Jump::FileTree => {
                     markdown.clear();
                     app.mode = Mode::FileTree;
+                    app.help_box.set_mode(Mode::FileTree);
                 }
             },
+
+            KeyCode::Char('?') => {
+                app.help_box.toggle();
+            }
             _ => {}
         },
     }

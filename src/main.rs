@@ -7,7 +7,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use boxes::{errorbox::ErrorBox, searchbox::SearchBox};
+use boxes::help_box::HelpBox;
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event},
     execute,
@@ -91,9 +91,6 @@ fn run_app<B: Backend>(
 
     let mut file_tree = FileTree::default();
 
-    let mut search_box = SearchBox::default();
-    let mut error_box = ErrorBox::default();
-
     terminal.draw(|f| {
         render_loading(f, &app);
     })?;
@@ -101,7 +98,8 @@ fn run_app<B: Backend>(
     if let Ok(files) = find_md_files() {
         file_tree = files;
     } else {
-        error_box.set_message("MDT does not have permissions to view directories".to_string());
+        app.error_box
+            .set_message("MDT does not have permissions to view directories".to_string());
         app.boxes = Boxes::Error;
         app.mode = Mode::FileTree;
     }
@@ -117,7 +115,8 @@ fn run_app<B: Backend>(
             markdown.transform(width);
             app.mode = Mode::View;
         } else {
-            error_box.set_message(format!("Could not open file {:?}", arg));
+            app.error_box
+                .set_message(format!("Could not open file {:?}", arg));
             app.boxes = Boxes::Error;
             app.mode = Mode::FileTree;
         }
@@ -129,7 +128,7 @@ fn run_app<B: Backend>(
             let url = if let Some(url) = markdown.file_name() {
                 url
             } else {
-                error_box.set_message("No file".to_string());
+                app.error_box.set_message("No file".to_string());
                 app.boxes = Boxes::Error;
                 app.mode = Mode::FileTree;
                 continue;
@@ -138,7 +137,8 @@ fn run_app<B: Backend>(
                 app.vertical_scroll = 0;
                 file
             } else {
-                error_box.set_message(format!("Could not open file {:?}", markdown.file_name()));
+                app.error_box
+                    .set_message(format!("Could not open file {:?}", markdown.file_name()));
                 app.boxes = Boxes::Error;
                 app.mode = Mode::FileTree;
                 continue;
@@ -154,24 +154,24 @@ fn run_app<B: Backend>(
         terminal.draw(|f| {
             match app.mode {
                 Mode::View => {
-                    render_markdown(f, &app, markdown.clone());
+                    render_markdown(f, &app, markdown.clone(), app.help_box);
                 }
                 Mode::FileTree => {
-                    render_file_tree(f, &app, file_tree.clone());
+                    render_file_tree(f, &app, file_tree.clone(), app.help_box);
                 }
             };
             if app.boxes == Boxes::Search {
-                let (search_height, search_width) = search_box.dimensions();
+                let (search_height, search_width) = app.search_box.dimensions();
                 let search_area = Rect {
-                    x: search_box.x(),
-                    y: search_box.y(),
+                    x: app.search_box.x(),
+                    y: app.search_box.y(),
                     width: search_width,
                     height: search_height,
                 };
                 // f.render_widget(Clear, search_area);
-                f.render_widget(search_box.clone(), search_area);
+                f.render_widget(app.search_box.clone(), search_area);
             } else if app.boxes == Boxes::Error {
-                let (error_height, error_width) = error_box.dimensions();
+                let (error_height, error_width) = app.error_box.dimensions();
                 let error_area = Rect {
                     x: height / 2,
                     y: height / 2,
@@ -179,7 +179,7 @@ fn run_app<B: Backend>(
                     height: error_height,
                 };
                 f.render_widget(Clear, error_area);
-                f.render_widget(error_box.clone(), error_area);
+                f.render_widget(app.error_box.clone(), error_area);
             }
         })?;
 
@@ -193,8 +193,6 @@ fn run_app<B: Backend>(
                     key.code,
                     &mut app,
                     &mut markdown,
-                    &mut search_box,
-                    &mut error_box,
                     &mut file_tree,
                     height,
                 ) {
@@ -211,7 +209,7 @@ fn run_app<B: Backend>(
     }
 }
 
-fn render_file_tree(f: &mut Frame, _app: &App, file_tree: FileTree) {
+fn render_file_tree(f: &mut Frame, _app: &App, file_tree: FileTree, help_box: HelpBox) {
     let size = f.size();
     let area = Rect {
         x: 2,
@@ -219,9 +217,28 @@ fn render_file_tree(f: &mut Frame, _app: &App, file_tree: FileTree) {
         ..size
     };
     f.render_widget(file_tree, area);
+
+    let area = if help_box.expanded() {
+        Rect {
+            x: 4,
+            y: size.height - 13,
+            height: 10,
+            width: 80,
+        }
+    } else {
+        Rect {
+            x: 4,
+            y: size.height - 4,
+            height: 3,
+            width: 80,
+        }
+    };
+
+    f.render_widget(Clear, area);
+    f.render_widget(help_box, area);
 }
 
-fn render_markdown(f: &mut Frame, _app: &App, markdown: RenderRoot) {
+fn render_markdown(f: &mut Frame, app: &App, markdown: RenderRoot, help_box: HelpBox) {
     let size = f.size();
     let area = Rect {
         x: 2,
@@ -233,13 +250,44 @@ fn render_markdown(f: &mut Frame, _app: &App, markdown: RenderRoot) {
 
     // Render a block at the bottom to show the current mode
     let block = Block::default().bg(Color::Black);
-    let area = Rect {
-        y: size.height - 4,
-        height: 3,
-        width: 80,
-        ..area
+    let area = if !app.help_box.expanded() {
+        Rect {
+            y: size.height - 4,
+            height: 3,
+            width: 80,
+            ..area
+        }
+    } else {
+        Rect {
+            y: size.height - 17,
+            height: 16,
+            width: 80,
+            ..area
+        }
     };
+    f.render_widget(Clear, area);
+
     f.render_widget(block, area);
+
+    let area = if help_box.expanded() {
+        Rect {
+            x: 4,
+            y: size.height - 16,
+            height: 14,
+            width: 80,
+        }
+    } else {
+        Rect {
+            x: 4,
+            y: size.height - 3,
+            height: 3,
+            width: 80,
+        }
+    };
+
+    if app.boxes != Boxes::Search {
+        f.render_widget(help_box, area)
+    }
 }
 
 fn render_loading(f: &mut Frame, _app: &App) {
@@ -251,7 +299,7 @@ fn render_loading(f: &mut Frame, _app: &App) {
         ..size
     };
 
-    let loading_text = r#"
+    const LOADING_TEXT: &str = r#"
   _        ___       _      ____    ___   _   _    ____             
  | |      / _ \     / \    |  _ \  |_ _| | \ | |  / ___|            
  | |     | | | |   / _ \   | | | |  | |  |  \| | | |  _             
@@ -260,7 +308,7 @@ fn render_loading(f: &mut Frame, _app: &App) {
                                                                     
 "#;
 
-    let page = Paragraph::new(loading_text);
+    let page = Paragraph::new(LOADING_TEXT);
 
     f.render_widget(page, area);
 }
