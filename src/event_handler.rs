@@ -72,7 +72,6 @@ pub fn keyboard_mode_file_tree(
                 file_tree.search(app.search_box.content());
                 let file_height = file_tree.height(height);
                 app.search_box.set_position(10, file_height as u16 + 2);
-                app.boxes = Boxes::Error;
             }
             _ => {}
         },
@@ -129,6 +128,7 @@ pub fn keyboard_mode_file_tree(
                 app.search_box.set_position(10, file_height as u16 + 2);
                 app.search_box.set_width(20);
                 app.boxes = Boxes::Search;
+                app.help_box.close();
             }
 
             KeyCode::Char('b') => match app.history.pop() {
@@ -298,9 +298,11 @@ fn keyboard_mode_view(
                 app.search_box.set_position(2, height - 3);
                 app.search_box.set_width(80);
                 app.boxes = Boxes::Search;
+                app.help_box.close();
             }
             KeyCode::Char('t') => {
                 app.mode = Mode::FileTree;
+                app.help_box.set_mode(Mode::FileTree);
                 if let Some(file) = markdown.file_name() {
                     app.history.push(Jump::File(file.to_string()));
                 }

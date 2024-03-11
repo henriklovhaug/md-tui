@@ -6,7 +6,7 @@ use ratatui::{
     widgets::{Paragraph, Row, Table, Widget},
 };
 
-use crate::util::{App, Mode};
+use crate::util::Mode;
 
 #[derive(Debug, Clone, Copy)]
 pub struct HelpBox {
@@ -40,8 +40,8 @@ impl HelpBox {
         self.expanded = !self.expanded;
     }
 
-    pub fn set_mode(&mut self, app: &App) {
-        self.mode = app.mode;
+    pub fn set_mode(&mut self, mode: Mode) {
+        self.mode = mode;
     }
 
     pub fn expanded(&self) -> bool {

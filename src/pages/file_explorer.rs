@@ -323,7 +323,7 @@ impl Widget for FileTree {
         let items = List::new(items)
             .block(
                 Block::default()
-                    .title("MD-CLI")
+                    .title("MD-TUI")
                     .add_modifier(Modifier::BOLD)
                     .title_alignment(Alignment::Center),
             )
