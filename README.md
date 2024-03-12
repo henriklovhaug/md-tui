@@ -27,6 +27,7 @@ Using AUR: `yay -S md-tui-bin`
 | `f` or `/` | Search                                                                 |
 | `s`        | Enter select link mode                                                 |
 | `Enter`    | Select. Depending on which mode it can: open file, select link, search |
+| `Esc`      | Go back to _normal_ mode                                               |
 | `t`        | Go back to files                                                       |
 | `b`        | Go back to previous file (file tree if no previous file)               |
 | `g`        | Go to top of file                                                      |
