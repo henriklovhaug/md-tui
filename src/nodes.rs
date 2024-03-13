@@ -1,6 +1,6 @@
 use std::usize;
 
-use crate::parser::MdParseEnum;
+use crate::{parser::MdParseEnum, search::compare_heading};
 use ratatui::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 #[derive(Debug, Clone)]
@@ -73,30 +73,15 @@ impl RenderRoot {
 
     pub fn heading_offset(&self, heading: &str) -> Result<u16, String> {
         let mut y_offset = 0;
-        let heading = heading.split('-');
         for component in self.components.iter() {
             if component.kind() == RenderNode::Heading
-                && component
-                    .content()
-                    .iter()
-                    .flatten()
-                    .map(|c| {
-                        c.content()
-                            .trim()
-                            .to_lowercase()
-                            .replace(['(', ')', '.', ',', '-'], "")
-                    })
-                    .filter(|c| !c.is_empty())
-                    .eq(heading.clone())
+                && compare_heading(heading, component.content())
             {
                 return Ok(y_offset);
             }
             y_offset += component.height();
         }
-        Err(format!(
-            "Heading not found: {}",
-            heading.collect::<Vec<_>>().join("-")
-        ))
+        Err(format!("Heading not found: {}", heading))
     }
 
     /// Return the content of the components, where each element a line

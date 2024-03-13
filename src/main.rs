@@ -7,7 +7,6 @@ use std::{
     time::{Duration, Instant},
 };
 
-use boxes::help_box::HelpBox;
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event},
     execute,
@@ -154,10 +153,10 @@ fn run_app<B: Backend>(
         terminal.draw(|f| {
             match app.mode {
                 Mode::View => {
-                    render_markdown(f, &app, markdown.clone(), app.help_box);
+                    render_markdown(f, &app, markdown.clone());
                 }
                 Mode::FileTree => {
-                    render_file_tree(f, &app, file_tree.clone(), app.help_box);
+                    render_file_tree(f, &app, file_tree.clone());
                 }
             };
             if app.boxes == Boxes::Search {
@@ -168,7 +167,6 @@ fn run_app<B: Backend>(
                     width: search_width,
                     height: search_height,
                 };
-                // f.render_widget(Clear, search_area);
                 f.render_widget(app.search_box.clone(), search_area);
             } else if app.boxes == Boxes::Error {
                 let (error_height, error_width) = app.error_box.dimensions();
@@ -196,10 +194,10 @@ fn run_app<B: Backend>(
                     &mut file_tree,
                     height,
                 ) {
-                    KeyBoardAction::Continue => {}
                     KeyBoardAction::Exit => {
                         return Ok(());
                     }
+                    KeyBoardAction::Continue => {}
                 }
             }
         }
@@ -209,7 +207,7 @@ fn run_app<B: Backend>(
     }
 }
 
-fn render_file_tree(f: &mut Frame, _app: &App, file_tree: FileTree, help_box: HelpBox) {
+fn render_file_tree(f: &mut Frame, app: &App, file_tree: FileTree) {
     let size = f.size();
     let area = Rect {
         x: 2,
@@ -218,7 +216,7 @@ fn render_file_tree(f: &mut Frame, _app: &App, file_tree: FileTree, help_box: He
     };
     f.render_widget(file_tree, area);
 
-    let area = if help_box.expanded() {
+    let area = if app.help_box.expanded() {
         Rect {
             x: 4,
             y: size.height - 13,
@@ -235,10 +233,10 @@ fn render_file_tree(f: &mut Frame, _app: &App, file_tree: FileTree, help_box: He
     };
 
     f.render_widget(Clear, area);
-    f.render_widget(help_box, area);
+    f.render_widget(app.help_box, area);
 }
 
-fn render_markdown(f: &mut Frame, app: &App, markdown: RenderRoot, help_box: HelpBox) {
+fn render_markdown(f: &mut Frame, app: &App, markdown: RenderRoot) {
     let size = f.size();
     let area = Rect {
         x: 2,
@@ -269,7 +267,7 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: RenderRoot, help_box: Hel
 
     f.render_widget(block, area);
 
-    let area = if help_box.expanded() {
+    let area = if app.help_box.expanded() {
         Rect {
             x: 4,
             y: size.height - 16,
@@ -286,7 +284,7 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: RenderRoot, help_box: Hel
     };
 
     if app.boxes != Boxes::Search {
-        f.render_widget(help_box, area)
+        f.render_widget(app.help_box, area)
     }
 }
 
