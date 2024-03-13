@@ -123,14 +123,17 @@ fn char_windows(src: &str, win_size: usize) -> impl Iterator<Item = &'_ str> {
     })
 }
 
-pub fn compare_heading(link_header: &str, header: &Vec<Vec<Word>>) -> bool {
+pub fn compare_heading(link_header: &str, header: &[Vec<Word>]) -> bool {
     let header: String = header
         .iter()
         .flatten()
         .map(|word| word.content().to_lowercase())
         .collect::<Vec<String>>()
         .join("-")
-        .replace(['(', ')', '[', ']', '{', '}', '<', '>', '"', '\'', ' ', '/'], "")
+        .replace(
+            ['(', ')', '[', ']', '{', '}', '<', '>', '"', '\'', ' ', '/'],
+            "",
+        )
         .chars()
         .dedup_by(|a, b| *a == '-' && *b == '-')
         .collect();
