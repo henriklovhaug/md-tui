@@ -1,8 +1,12 @@
 use std::io;
 
+use itertools::Itertools;
 use strsim::damerau_levenshtein;
 
-use crate::pages::file_explorer::{FileTree, MdFile};
+use crate::{
+    nodes::Word,
+    pages::file_explorer::{FileTree, MdFile},
+};
 
 pub fn find_md_files() -> Result<FileTree, io::Error> {
     let mut tree = FileTree::new();
@@ -117,6 +121,21 @@ fn char_windows(src: &str, win_size: usize) -> impl Iterator<Item = &'_ str> {
             .nth(win_size - 1)
             .map(|(to, c)| &src[from..from + to + c.len_utf8()])
     })
+}
+
+pub fn compare_heading(link_header: &str, header: &Vec<Vec<Word>>) -> bool {
+    let header: String = header
+        .iter()
+        .flatten()
+        .map(|word| word.content().to_lowercase())
+        .collect::<Vec<String>>()
+        .join("-")
+        .replace(['(', ')', '[', ']', '{', '}', '<', '>', '"', '\'', ' ', '/'], "")
+        .chars()
+        .dedup_by(|a, b| *a == '-' && *b == '-')
+        .collect();
+
+    link_header == header
 }
 
 #[cfg(test)]
