@@ -1,9 +1,9 @@
 // Characters
-p_char       = _{ (!(NEWLINE | code | italic | bold | strikethrough | latex | " ") ~ ANY)+ }
+p_char       = _{ (!(NEWLINE | comment | code | italic | bold | strikethrough | latex | " ") ~ ANY)+ }
 c_char       = _{ (!(NEWLINE | " " | "`") ~ ANY)+ }
-i_char       = _{ (!(NEWLINE | " " | "_" | "*") ~ ANY)+ }
-b_char       = _{ (!(NEWLINE | " " | "**") ~ ANY)+ }
-s_char       = _{ (!(NEWLINE | " " | "~~") ~ ANY)+ }
+i_char       = _{ (!(NEWLINE | comment | " " | "_" | "*") ~ ANY)+ }
+b_char       = _{ (!(NEWLINE | comment | " " | "**") ~ ANY)+ }
+s_char       = _{ (!(NEWLINE | comment | " " | "~~") ~ ANY)+ }
 c_line_char  = _{ (!(NEWLINE | "```") ~ ANY)+ }
 comment_char = _{ (!(NEWLINE | "-->") ~ ANY)+ }
 link_char    = _{ (!(NEWLINE | " " | "[" | "]" | "(" | ")") ~ ANY)+ }
@@ -71,7 +71,7 @@ h6 = _{ "###### " ~ (h_word | " ")+ }
 
 // Blocks
 heading        = { (h1 | h2 | h3 | h4 | h5 | h6) }
-list_container = { (NEWLINE? ~ (u_list | o_list))+ }
+list_container = { (NEWLINE? ~ !comment ~ (u_list | o_list))+ }
 paragraph      = { sentence+ }
 code_block     = { "```" ~ (programming_language | NEWLINE) ~ (code_line | NEWLINE)+ ~ "```" }
 table          = { (NEWLINE? ~ (table_seperator | table_cell))+ }
