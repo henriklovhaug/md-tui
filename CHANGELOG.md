@@ -1,4 +1,4 @@
-# Unreleased
+# v0.3.2
 
 ## Fixes
 
