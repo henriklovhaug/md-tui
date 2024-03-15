@@ -361,6 +361,10 @@ fn keyboard_mode_view(
                     LinkType::MarkdownFile(url) => {
                         // Remove the first character, which is a '/'
                         let url = &url[1..];
+                        if !url.ends_with("md") {
+                            let _ = open::that(url);
+                            return KeyBoardAction::Continue;
+                        }
                         let text = if let Ok(file) = read_to_string(url) {
                             app.vertical_scroll = 0;
                             file
