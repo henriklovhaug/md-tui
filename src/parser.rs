@@ -178,6 +178,9 @@ fn parse_component(parse_node: ParseNode) -> RenderComponent {
         }
 
         MdParseEnum::BlockSeperator => RenderComponent::new(RenderNode::LineBreak, Vec::new()),
+        MdParseEnum::HorizontalSeperator => {
+            RenderComponent::new(RenderNode::HorizontalSeperator, Vec::new())
+        }
         _ => todo!("Not implemented for {:?}", parse_node.kind()),
     }
 }
