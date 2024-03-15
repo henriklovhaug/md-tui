@@ -263,6 +263,7 @@ pub enum RenderNode {
     Table,
     CodeBlock,
     Quote,
+    HorizontalSeperator,
 }
 
 #[derive(Debug, Clone)]
@@ -580,7 +581,8 @@ impl RenderComponent {
                 self.content.retain(|c| !c.is_empty());
                 let height = (self.content.len() / self.meta_info().len()) as u16;
                 self.height = height;
-            } // RenderNode::Quote => self.height = 1,
+            }
+            RenderNode::HorizontalSeperator => self.height = 1,
         }
     }
 }

@@ -82,6 +82,7 @@ impl Widget for RenderComponent {
             RenderNode::Quote => render_quote(area, buf, self.content_owned(), clips),
             // RenderNode::Quote => render_quote(area, buf, self.content_owned()),
             RenderNode::LineBreak => (),
+            RenderNode::HorizontalSeperator => render_horizontal_seperator(area, buf),
         }
     }
 }
@@ -377,6 +378,12 @@ fn render_task(
         .collect::<Vec<_>>();
 
     let paragraph = Paragraph::new(lines);
+
+    paragraph.render(area, buf);
+}
+
+fn render_horizontal_seperator(area: Rect, buf: &mut Buffer) {
+    let paragraph = Paragraph::new(Line::from(vec![Span::raw("\u{2014}".repeat(80))]));
 
     paragraph.render(area, buf);
 }

@@ -78,7 +78,7 @@ table          = { (NEWLINE? ~ (table_seperator | table_cell))+ }
 quote          = { (NEWLINE? ~ ">" ~ (sentence | " ")+)+ }
 task           = { NEWLINE? ~ task_prefix ~ sentence }
 block_sep      = { NEWLINE }
-horizontal_sep = { "---"+ }
+horizontal_sep = { NEWLINE? ~ "---" ~ "-"* }
 
 comment = _{ "<!--" ~ (comment_char)+ ~ "-->" }
 
