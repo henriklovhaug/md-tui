@@ -11,7 +11,7 @@
 
 ## Installation
 
-Using cargo: `cargo install md-tui`
+Using cargo: `cargo install md-tui --locked`
 
 Using AUR: `yay -S md-tui-bin`
 
