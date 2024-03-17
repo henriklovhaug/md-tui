@@ -1,11 +1,13 @@
 use std::io;
 
+use config::{Config, File};
 use crossterm::{
     cursor,
     event::DisableMouseCapture,
     execute,
     terminal::{disable_raw_mode, LeaveAlternateScreen},
 };
+use lazy_static::lazy_static;
 
 use crate::boxes::{errorbox::ErrorBox, help_box::HelpBox, searchbox::SearchBox};
 
@@ -132,6 +134,29 @@ impl Default for JumpHistory {
 pub enum Jump {
     File(String),
     FileTree,
+}
+
+pub struct MdConfig {
+    pub width: u16,
+    pub h1_bg_color: String,
+}
+
+lazy_static! {
+    pub static ref CONFIG: MdConfig = {
+        let config_dir = dirs::home_dir().unwrap();
+        let config_file = config_dir.join(".config").join("mdt").join("config.toml");
+        let settings = Config::builder()
+            .add_source(File::with_name(config_file.to_str().unwrap()).required(false))
+            .build()
+            .unwrap();
+
+        MdConfig {
+            width: settings.get::<u16>("width").unwrap_or(80),
+            h1_bg_color: settings
+                .get::<String>("h1_bg_color")
+                .unwrap_or("blue".to_string()),
+        }
+    };
 }
 
 #[cfg(test)]

@@ -8,7 +8,10 @@ use ratatui::{
     widgets::{Block, Cell, List, ListItem, Paragraph, Row, Table, Widget},
 };
 
-use crate::nodes::{RenderComponent, RenderNode, Word, WordType};
+use crate::{
+    nodes::{RenderComponent, RenderNode, Word, WordType},
+    util::CONFIG,
+};
 
 fn clips_upper_bound(_area: Rect, component: &RenderComponent) -> bool {
     component.scroll_offset() > component.y_offset()
@@ -139,7 +142,7 @@ fn render_quote(area: Rect, buf: &mut Buffer, content: Vec<Vec<Word>>, clip: Cli
         .block(Block::default().style(Style::default().bg(Color::Rgb(48, 48, 48))));
 
     let area = Rect {
-        width: cmp::min(area.width, 80),
+        width: cmp::min(area.width, CONFIG.width),
         ..area
     };
 
@@ -158,7 +161,7 @@ fn render_heading(area: Rect, buf: &mut Buffer, content: Vec<Vec<Word>>) {
         .alignment(Alignment::Center);
 
     let area = Rect {
-        width: cmp::min(area.width, 80),
+        width: cmp::min(area.width, CONFIG.width),
         ..area
     };
 
@@ -250,7 +253,7 @@ fn render_code_block(area: Rect, buf: &mut Buffer, content: Vec<Vec<Word>>, clip
 
     let area = Rect {
         x: area.x + 1,
-        width: cmp::min(area.width - 2, 80),
+        width: cmp::min(area.width - 2, CONFIG.width),
         ..area
     };
 
@@ -383,7 +386,9 @@ fn render_task(
 }
 
 fn render_horizontal_seperator(area: Rect, buf: &mut Buffer) {
-    let paragraph = Paragraph::new(Line::from(vec![Span::raw("\u{2014}".repeat(80))]));
+    let paragraph = Paragraph::new(Line::from(vec![Span::raw(
+        "\u{2014}".repeat(CONFIG.width.into()),
+    )]));
 
     paragraph.render(area, buf);
 }

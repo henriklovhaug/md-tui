@@ -7,7 +7,7 @@ use crate::{
     pages::file_explorer::FileTree,
     parser::parse_markdown,
     search::find_line_match_and_index,
-    util::{App, Boxes, Jump, LinkType, Mode},
+    util::{App, Boxes, Jump, LinkType, Mode, CONFIG},
 };
 
 pub enum KeyBoardAction {
@@ -119,7 +119,7 @@ pub fn keyboard_mode_file_tree(
                 };
 
                 *markdown = parse_markdown(Some(file.path()), &text);
-                markdown.transform(80);
+                markdown.transform(CONFIG.width);
                 app.mode = Mode::View;
                 app.help_box.set_mode(Mode::View);
                 app.select_index = 0;
@@ -144,7 +144,7 @@ pub fn keyboard_mode_file_tree(
                         return KeyBoardAction::Continue;
                     };
                     *markdown = parse_markdown(Some(&e), &text);
-                    markdown.transform(80);
+                    markdown.transform(CONFIG.width);
                     app.reset();
                     app.mode = Mode::View;
                     app.help_box.set_mode(Mode::View);
@@ -301,7 +301,7 @@ fn keyboard_mode_view(
             }
             KeyCode::Char('f') | KeyCode::Char('/') => {
                 app.search_box.set_position(2, height - 3);
-                app.search_box.set_width(80);
+                app.search_box.set_width(CONFIG.width);
                 app.boxes = Boxes::Search;
                 app.help_box.close();
             }
@@ -331,7 +331,7 @@ fn keyboard_mode_view(
                     return KeyBoardAction::Continue;
                 };
                 *markdown = parse_markdown(markdown.file_name(), text.as_ref());
-                markdown.transform(80);
+                markdown.transform(CONFIG.width);
                 app.mode = Mode::View;
             }
             KeyCode::Esc => {
@@ -380,7 +380,7 @@ fn keyboard_mode_view(
                         }
 
                         *markdown = parse_markdown(Some(url), &text);
-                        markdown.transform(80);
+                        markdown.transform(CONFIG.width);
                         app.reset();
                     }
                 }
@@ -400,7 +400,7 @@ fn keyboard_mode_view(
                         return KeyBoardAction::Continue;
                     };
                     *markdown = parse_markdown(Some(&e), &text);
-                    markdown.transform(80);
+                    markdown.transform(CONFIG.width);
                     app.reset();
                     app.mode = Mode::View;
                     app.help_box.set_mode(Mode::View);
