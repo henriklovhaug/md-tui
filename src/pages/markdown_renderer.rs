@@ -98,16 +98,21 @@ fn style_word(word: &Word) -> Span<'_> {
             Style::default().fg(Color::Green).bg(Color::DarkGray),
         ),
         WordType::Normal => Span::raw(word.content()),
-        WordType::Code => Span::styled(word.content(), Style::default().fg(Color::Red)),
+        WordType::Code => Span::styled(word.content(), Style::default().fg(CONFIG.code_fg_color))
+            .bg(CONFIG.code_bg_color),
         WordType::Link => Span::styled(word.content(), Style::default().fg(Color::Blue)),
-        WordType::Italic => {
-            Span::styled(word.content(), Style::default().fg(Color::Green).italic())
-        }
-        WordType::Bold => Span::styled(word.content(), Style::default().fg(Color::Green).bold()),
+        WordType::Italic => Span::styled(
+            word.content(),
+            Style::default().fg(CONFIG.italic_color).italic(),
+        ),
+        WordType::Bold => Span::styled(
+            word.content(),
+            Style::default().fg(CONFIG.bold_color).bold(),
+        ),
         WordType::Strikethrough => Span::styled(
             word.content(),
             Style::default()
-                .fg(Color::Green)
+                .fg(CONFIG.striketrough_color)
                 .add_modifier(Modifier::CROSSED_OUT),
         ),
         WordType::White => Span::styled(word.content(), Style::default().fg(Color::White)),
@@ -139,7 +144,7 @@ fn render_quote(area: Rect, buf: &mut Buffer, content: Vec<Vec<Word>>, clip: Cli
         .collect::<Vec<_>>();
 
     let paragraph = Paragraph::new(lines)
-        .block(Block::default().style(Style::default().bg(Color::Rgb(48, 48, 48))));
+        .block(Block::default().style(Style::default().bg(CONFIG.quote_bg_color)));
 
     let area = Rect {
         width: cmp::min(area.width, CONFIG.width),
@@ -157,7 +162,7 @@ fn render_heading(area: Rect, buf: &mut Buffer, content: Vec<Vec<Word>>) {
         .collect();
 
     let paragraph = Paragraph::new(Line::from(content))
-        .block(Block::default().style(Style::default().bg(Color::Blue)))
+        .block(Block::default().style(Style::default().bg(CONFIG.heading_bg_color)))
         .alignment(Alignment::Center);
 
     let area = Rect {
@@ -232,7 +237,9 @@ fn render_code_block(area: Rect, buf: &mut Buffer, content: Vec<Vec<Word>>, clip
         .map(|c| {
             Line::from(
                 c.iter()
-                    .map(|i| Span::styled(i.content(), Style::default().fg(Color::Red)))
+                    .map(|i| {
+                        Span::styled(i.content(), Style::default().fg(CONFIG.code_block_fg_color))
+                    })
                     .collect::<Vec<_>>(),
             )
         })
@@ -258,7 +265,7 @@ fn render_code_block(area: Rect, buf: &mut Buffer, content: Vec<Vec<Word>>, clip
     };
 
     let paragraph = Paragraph::new(content)
-        .block(Block::default().style(Style::default().bg(Color::Rgb(48, 48, 48))));
+        .block(Block::default().style(Style::default().bg(CONFIG.code_block_bg_color)));
 
     paragraph.render(area, buf);
 }

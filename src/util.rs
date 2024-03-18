@@ -1,4 +1,4 @@
-use std::io;
+use std::{io, str::FromStr};
 
 use config::{Config, File};
 use crossterm::{
@@ -8,6 +8,7 @@ use crossterm::{
     terminal::{disable_raw_mode, LeaveAlternateScreen},
 };
 use lazy_static::lazy_static;
+use ratatui::style::Color;
 
 use crate::boxes::{errorbox::ErrorBox, help_box::HelpBox, searchbox::SearchBox};
 
@@ -136,9 +137,19 @@ pub enum Jump {
     FileTree,
 }
 
+#[derive(Debug)]
 pub struct MdConfig {
     pub width: u16,
-    pub h1_bg_color: String,
+    pub heading_bg_color: Color,
+    pub italic_color: Color,
+    pub bold_color: Color,
+    pub striketrough_color: Color,
+    pub quote_bg_color: Color,
+    pub code_fg_color: Color,
+    pub code_bg_color: Color,
+
+    pub code_block_fg_color: Color,
+    pub code_block_bg_color: Color,
 }
 
 lazy_static! {
@@ -152,9 +163,69 @@ lazy_static! {
 
         MdConfig {
             width: settings.get::<u16>("width").unwrap_or(80),
-            h1_bg_color: settings
-                .get::<String>("h1_bg_color")
-                .unwrap_or("blue".to_string()),
+
+            heading_bg_color: Color::from_str(
+                &settings
+                    .get::<String>("h1_bg_color")
+                    .unwrap_or("blue".to_string()),
+            )
+            .unwrap_or(Color::Blue),
+
+            italic_color: Color::from_str(
+                &settings
+                    .get::<String>("italic_color")
+                    .unwrap_or("".to_string()),
+            )
+            .unwrap_or(Color::Reset),
+
+            bold_color: Color::from_str(
+                &settings
+                    .get::<String>("bold_color")
+                    .unwrap_or("".to_string()),
+            )
+            .unwrap_or(Color::Reset),
+
+            striketrough_color: Color::from_str(
+                &settings
+                    .get_string("striketrough_color")
+                    .unwrap_or("".to_string()),
+            )
+            .unwrap_or(Color::Reset),
+
+            quote_bg_color: Color::from_str(
+                &settings
+                    .get::<String>("quote_bg_color")
+                    .unwrap_or("".to_string()),
+            )
+            .unwrap_or(Color::Rgb(48, 48, 48)),
+
+            code_fg_color: Color::from_str(
+                &settings
+                    .get::<String>("code_fg_color")
+                    .unwrap_or("".to_string()),
+            )
+            .unwrap_or(Color::Red),
+
+            code_bg_color: Color::from_str(
+                &settings
+                    .get::<String>("code_bg_color")
+                    .unwrap_or("".to_string()),
+            )
+            .unwrap_or(Color::Rgb(48, 48, 48)),
+
+            code_block_fg_color: Color::from_str(
+                &settings
+                    .get::<String>("code_block_fg_color")
+                    .unwrap_or("".to_string()),
+            )
+            .unwrap_or(Color::Red),
+
+            code_block_bg_color: Color::from_str(
+                &settings
+                    .get::<String>("code_block_bg_color")
+                    .unwrap_or("".to_string()),
+            )
+            .unwrap_or(Color::Rgb(48, 48, 48)),
         }
     };
 }

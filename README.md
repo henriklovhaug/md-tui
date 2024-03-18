@@ -36,6 +36,29 @@ Using AUR: `yay -S md-tui-bin`
 | `u`        | Go up half a page                                                      |
 | `q`        | Quit the application                                                   |
 
+## Configuration
+
+To change the config create a file called `config.toml` at the path
+`~/.config/mdt/`. The following values are possible to set and their defaults.
+
+```toml
+# Size
+width = 80
+
+# Inline styling
+italic_color = ""
+bold_color = ""
+strikethrough_color = ""
+code_fg_color = "red"
+code_bg_color = "#2A2A2A"
+
+# Block configs
+h1_bg_color = "blue"
+quote_bg_color = "#2A2A2A"
+code_block_fg_color = "red" #Will change when tree-sitter gets implemted
+code_block_bg_color = "#2A2A2A"
+```
+
 ## Contributions
 
 Both PRs and issues are appreciated!
