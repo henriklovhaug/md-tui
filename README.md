@@ -51,6 +51,7 @@ width = 80
 # Inline styling
 italic_color = "reset"
 bold_color = "reset"
+bold_italic_color = "reset"
 strikethrough_color = "reset"
 code_fg_color = "red"
 code_bg_color = "#2A2A2A"

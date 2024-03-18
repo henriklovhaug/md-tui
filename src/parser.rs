@@ -330,6 +330,7 @@ pub enum MdParseEnum {
     Sentence,
     Bold,
     Italic,
+    BoldItalic,
     Strikethrough,
     HorizontalSeperator,
     Indent,
@@ -338,10 +339,11 @@ pub enum MdParseEnum {
 impl From<Rule> for MdParseEnum {
     fn from(value: Rule) -> Self {
         match value {
-            Rule::word | Rule::h_word | Rule::latex_word => Self::Word,
+            Rule::word | Rule::h_word | Rule::latex_word | Rule::t_word => Self::Word,
             Rule::indent => Self::Indent,
             Rule::italic | Rule::italic_word => Self::Italic,
             Rule::bold | Rule::bold_word => Self::Bold,
+            Rule::bold_italic | Rule::bold_italic_word => Self::BoldItalic,
             Rule::strikethrough | Rule::strikethrough_word => Self::Strikethrough,
             Rule::code_word | Rule::code => Self::Code,
             Rule::programming_language => Self::PLanguage,
@@ -350,7 +352,6 @@ impl From<Rule> for MdParseEnum {
             Rule::task_open => Self::TaskOpen,
             Rule::task_complete => Self::TaskClosed,
             Rule::code_line | Rule::sentence | Rule::t_sentence => Self::Sentence,
-            // Rule::table_row => Self::TableRow,
             Rule::table_cell => Self::TableRow,
             Rule::table_seperator => Self::TableSeperator,
             Rule::u_list => Self::UnorderedList,
@@ -371,6 +372,7 @@ impl From<Rule> for MdParseEnum {
             Rule::p_char
             | Rule::link_char
             | Rule::normal
+            | Rule::t_normal
             | Rule::latex
             | Rule::comment
             | Rule::txt
