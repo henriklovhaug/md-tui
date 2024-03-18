@@ -534,7 +534,7 @@ impl RenderComponent {
 
                 self.content = content;
 
-                let height = (self.content.len() / self.meta_info.len()) as u16;
+                let height = (self.content.len() / self.meta_info.len()) as u16 - 1;
                 self.height = height;
             }
             RenderNode::Paragraph | RenderNode::Task | RenderNode::Quote => {
