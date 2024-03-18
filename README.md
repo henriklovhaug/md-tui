@@ -78,3 +78,8 @@ file_tree_path_color = "gray"
 ## Contributions
 
 Both PRs and issues are appreciated!
+
+## Versioning
+
+Until 1.0.0 release, every minor increase adds new features and patches fixes
+something that the program should support, but doesn't yet for some reason.
