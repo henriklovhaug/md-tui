@@ -41,7 +41,7 @@ Using AUR: `yay -S md-tui-bin`
 ## Configuration
 
 The program checks for the file `~/.config/mdt/config.toml` at startup. The
-following parameters and their defaults is written below. Setting color to `""`
+following parameters and their defaults are written below. Setting color to `""`
 will not remove it, but leave it as its default. To remove colors, set it to
 `reset`.
 
