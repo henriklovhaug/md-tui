@@ -28,7 +28,11 @@ pub fn parse_markdown(name: Option<&str>, file: &str) -> RenderRoot {
 }
 
 fn parse_text(pair: Pair<'_, Rule>) -> ParseNode {
-    let content = pair.as_str().replace('\n', " ");
+    let content = if pair.as_rule() != Rule::code_line {
+        pair.as_str().replace('\n', " ")
+    } else {
+        pair.as_str().to_string()
+    };
     let mut component = ParseNode::new(pair.as_rule().into(), content);
     let children = parse_node_children(pair.into_inner());
     component.add_children(children);

@@ -46,7 +46,7 @@ forbidden_sentence_prefix = {
 // Lines
 code                 =  { NEWLINE? ~ " "* ~ "`" ~ code_word+ ~ "`" }
 programming_language =  { ASCII_ALPHA+ }
-code_line            =  { (c_line_char | " ")+ }
+code_line            =  { NEWLINE ~ (c_line_char | " ")* }
 normal               = _{ word+ }
 t_normal             = _{ t_word+ }
 markdown_link        = _{ "[" ~ link_word+ ~ "]" ~ "(#" ~ link_data+ ~ ")" }
@@ -86,7 +86,7 @@ h6 = _{ "###### " ~ (h_word | " ")+ }
 heading        = { (h1 | h2 | h3 | h4 | h5 | h6) }
 list_container = { (NEWLINE? ~ !comment ~ (u_list | o_list))+ }
 paragraph      = { sentence+ }
-code_block     = { "```" ~ (programming_language | NEWLINE) ~ (code_line | NEWLINE)+ ~ "```" }
+code_block     = { "```" ~ (programming_language | NEWLINE) ~ code_line+ ~ "```" }
 table          = { (NEWLINE? ~ (table_seperator | table_cell))+ }
 quote          = { (NEWLINE? ~ ">" ~ (sentence | " ")+)+ }
 task           = { NEWLINE? ~ task_prefix ~ sentence }

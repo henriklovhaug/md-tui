@@ -9,6 +9,8 @@
 
 - Stricter italic checking (#45)
 - Allowing escaping some characters (#28)
+- Rewrote table parsing (slight regression)
+- Allows newlines in code blocks
 
 # Version 0.3.2
 
