@@ -9,7 +9,7 @@
 
 - Stricter italic checking (#45)
 - Allowing escaping some characters (#28)
-- Rewrote table parsing (slight regression)
+- Rewrote table parsing (slight regression. Noted in #48)
 - Allows newlines in code blocks
 
 # Version 0.3.2
