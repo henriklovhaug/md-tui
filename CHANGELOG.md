@@ -1,4 +1,4 @@
-# Version 0.4.0 (Unreleased)
+# Version 0.4.0
 
 ## New features
 
