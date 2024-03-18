@@ -2,7 +2,7 @@
 
 ## New features
 
-- Adds configuration for custom coloring and width
+- Adds configuration for custom coloring and width (#4)
 
 # Version 0.3.2
 
