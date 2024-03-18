@@ -40,9 +40,9 @@ Using AUR: `yay -S md-tui-bin`
 
 ## Configuration
 
-The program checks the file `~/.config/mdt/config.toml` at startup. The
-following parameters and their defaults is written below. Setting color string
-to `""` will not remove it, but leave it as default. To remove colors, set it to
+The program checks for the file `~/.config/mdt/config.toml` at startup. The
+following parameters and their defaults is written below. Setting color to `""`
+will not remove it, but leave it as its default. To remove colors, set it to
 `reset`.
 
 ```toml
@@ -82,5 +82,5 @@ Both PRs and issues are appreciated!
 
 ## Versioning
 
-Until 1.0.0 release, every minor increase adds new features and patches fixes
+Until 1.0.0 release, every minor increase adds new features. Patches fixes
 something that the program should support, but doesn't yet for some reason.
