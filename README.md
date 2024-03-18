@@ -40,7 +40,9 @@ Using AUR: `yay -S md-tui-bin`
 ## Configuration
 
 The program checks the file `~/.config/mdt/config.toml` at startup. The
-following parameters and their defaults is written below.
+following parameters and their defaults is written below. Setting color string
+to `""` will not remove it, but leave it as default. To remove colors, set it to
+`reset`.
 
 ```toml
 # General settings
@@ -49,6 +51,7 @@ width = 80
 # Inline styling
 italic_color = "reset"
 bold_color = "reset"
+bold_italic_color = "reset"
 strikethrough_color = "reset"
 code_fg_color = "red"
 code_bg_color = "#2A2A2A"

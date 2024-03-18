@@ -119,6 +119,13 @@ fn style_word(word: &Word) -> Span<'_> {
         ),
         WordType::White => Span::styled(word.content(), Style::default().fg(Color::White)),
         WordType::ListMarker => Span::styled(word.content(), Style::default().fg(Color::White)),
+        WordType::BoldItalic => Span::styled(
+            word.content(),
+            Style::default()
+                .fg(CONFIG.bold_italic_color)
+                .add_modifier(Modifier::BOLD)
+                .add_modifier(Modifier::ITALIC),
+        ),
     }
 }
 

@@ -160,6 +160,7 @@ pub enum WordType {
     Italic,
     Bold,
     Strikethrough,
+    BoldItalic,
     White,
     ListMarker,
 }
@@ -179,6 +180,7 @@ impl From<MdParseEnum> for WordType {
             MdParseEnum::Italic => WordType::Italic,
             MdParseEnum::Strikethrough => WordType::Strikethrough,
             MdParseEnum::Link => WordType::Link,
+            MdParseEnum::BoldItalic => WordType::BoldItalic,
 
             MdParseEnum::Digit => WordType::ListMarker,
 
