@@ -7,6 +7,7 @@
   - [Key binds](#key-binds)
   - [Configuration](#configuration)
   - [Contributions](#contributions)
+  - [Versioning](#versioning)
 
 <!--toc:end-->
 
