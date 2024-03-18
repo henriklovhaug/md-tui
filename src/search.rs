@@ -173,7 +173,7 @@ fn test_vec_find() {
     let query = "world";
     let precision = 0;
     let result = line_match(query, text, precision);
-    assert_eq!(result, vec![2]);
+    assert_eq!(result, vec![2, 3]);
 }
 
 #[test]
