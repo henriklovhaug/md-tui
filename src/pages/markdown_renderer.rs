@@ -95,12 +95,14 @@ fn style_word(word: &Word) -> Span<'_> {
         WordType::MetaInfo(_) | WordType::LinkData => unreachable!(),
         WordType::Selected => Span::styled(
             word.content(),
-            Style::default().fg(Color::Green).bg(Color::DarkGray),
+            Style::default()
+                .fg(CONFIG.link_selected_fg_color)
+                .bg(CONFIG.link_selected_bg_color),
         ),
         WordType::Normal => Span::raw(word.content()),
         WordType::Code => Span::styled(word.content(), Style::default().fg(CONFIG.code_fg_color))
             .bg(CONFIG.code_bg_color),
-        WordType::Link => Span::styled(word.content(), Style::default().fg(Color::Blue)),
+        WordType::Link => Span::styled(word.content(), Style::default().fg(CONFIG.link_color)),
         WordType::Italic => Span::styled(
             word.content(),
             Style::default().fg(CONFIG.italic_color).italic(),
@@ -158,7 +160,7 @@ fn render_heading(area: Rect, buf: &mut Buffer, content: Vec<Vec<Word>>) {
     let content: Vec<Span<'_>> = content
         .iter()
         .flatten()
-        .map(|c| Span::styled(c.content(), Style::default().fg(Color::Black)))
+        .map(|c| Span::styled(c.content(), Style::default().fg(CONFIG.heading_fg_color)))
         .collect();
 
     let paragraph = Paragraph::new(Line::from(content))
@@ -332,7 +334,13 @@ fn render_table(
     }
 
     let table = Table::new(rows, &widths)
-        .header(header.style(Style::default().fg(Color::Yellow)))
+        .header(
+            header.style(
+                Style::default()
+                    .fg(CONFIG.table_header_fg_color)
+                    .bg(CONFIG.table_header_bg_color),
+            ),
+        )
         .block(Block::default())
         .column_spacing(1);
 

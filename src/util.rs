@@ -139,17 +139,27 @@ pub enum Jump {
 
 #[derive(Debug)]
 pub struct MdConfig {
+    // General settings
     pub width: u16,
-    pub heading_bg_color: Color,
+
+    // Inline styles
     pub italic_color: Color,
     pub bold_color: Color,
     pub striketrough_color: Color,
-    pub quote_bg_color: Color,
     pub code_fg_color: Color,
     pub code_bg_color: Color,
+    pub link_color: Color,
+    pub link_selected_fg_color: Color,
+    pub link_selected_bg_color: Color,
 
+    // Block styles
     pub code_block_fg_color: Color,
     pub code_block_bg_color: Color,
+    pub heading_fg_color: Color,
+    pub heading_bg_color: Color,
+    pub table_header_fg_color: Color,
+    pub table_header_bg_color: Color,
+    pub quote_bg_color: Color,
 }
 
 lazy_static! {
@@ -163,69 +173,78 @@ lazy_static! {
 
         MdConfig {
             width: settings.get::<u16>("width").unwrap_or(80),
-
             heading_bg_color: Color::from_str(
-                &settings
-                    .get::<String>("h1_bg_color")
-                    .unwrap_or("blue".to_string()),
+                &settings.get::<String>("h_bg_color").unwrap_or_default(),
             )
             .unwrap_or(Color::Blue),
-
+            heading_fg_color: Color::from_str(
+                &settings.get::<String>("h_fg_color").unwrap_or_default(),
+            )
+            .unwrap_or(Color::Black),
             italic_color: Color::from_str(
-                &settings
-                    .get::<String>("italic_color")
-                    .unwrap_or("".to_string()),
+                &settings.get::<String>("italic_color").unwrap_or_default(),
             )
             .unwrap_or(Color::Reset),
-
-            bold_color: Color::from_str(
-                &settings
-                    .get::<String>("bold_color")
-                    .unwrap_or("".to_string()),
-            )
-            .unwrap_or(Color::Reset),
-
+            bold_color: Color::from_str(&settings.get::<String>("bold_color").unwrap_or_default())
+                .unwrap_or(Color::Reset),
             striketrough_color: Color::from_str(
                 &settings
                     .get_string("striketrough_color")
-                    .unwrap_or("".to_string()),
+                    .unwrap_or_default(),
             )
             .unwrap_or(Color::Reset),
-
             quote_bg_color: Color::from_str(
-                &settings
-                    .get::<String>("quote_bg_color")
-                    .unwrap_or("".to_string()),
+                &settings.get::<String>("quote_bg_color").unwrap_or_default(),
             )
             .unwrap_or(Color::Rgb(48, 48, 48)),
-
             code_fg_color: Color::from_str(
-                &settings
-                    .get::<String>("code_fg_color")
-                    .unwrap_or("".to_string()),
+                &settings.get::<String>("code_fg_color").unwrap_or_default(),
             )
             .unwrap_or(Color::Red),
-
             code_bg_color: Color::from_str(
-                &settings
-                    .get::<String>("code_bg_color")
-                    .unwrap_or("".to_string()),
+                &settings.get::<String>("code_bg_color").unwrap_or_default(),
             )
             .unwrap_or(Color::Rgb(48, 48, 48)),
-
             code_block_fg_color: Color::from_str(
                 &settings
                     .get::<String>("code_block_fg_color")
-                    .unwrap_or("".to_string()),
+                    .unwrap_or_default(),
             )
             .unwrap_or(Color::Red),
-
             code_block_bg_color: Color::from_str(
                 &settings
                     .get::<String>("code_block_bg_color")
-                    .unwrap_or("".to_string()),
+                    .unwrap_or_default(),
             )
             .unwrap_or(Color::Rgb(48, 48, 48)),
+            link_color: Color::from_str(&settings.get::<String>("link_color").unwrap_or_default())
+                .unwrap_or(Color::Blue),
+            link_selected_fg_color: Color::from_str(
+                &settings
+                    .get::<String>("link_selected_fg_color")
+                    .unwrap_or_default(),
+            )
+            .unwrap_or(Color::Green),
+            link_selected_bg_color: Color::from_str(
+                &settings
+                    .get::<String>("link_selected_bg_color")
+                    .unwrap_or_default(),
+            )
+            .unwrap_or(Color::DarkGray),
+
+            table_header_fg_color: Color::from_str(
+                &settings
+                    .get::<String>("table_header_fg_color")
+                    .unwrap_or_default(),
+            )
+            .unwrap_or(Color::Yellow),
+
+            table_header_bg_color: Color::from_str(
+                &settings
+                    .get::<String>("table_header_bg_color")
+                    .unwrap_or_default(),
+            )
+            .unwrap_or(Color::Reset),
         }
     };
 }

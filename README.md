@@ -5,6 +5,7 @@
 - [MD-TUI](#md-tui)
   - [Installation](#installation)
   - [Key binds](#key-binds)
+  - [Configuration](#configuration)
   - [Contributions](#contributions)
 
 <!--toc:end-->
@@ -39,24 +40,32 @@ Using AUR: `yay -S md-tui-bin`
 ## Configuration
 
 To change the config create a file called `config.toml` at the path
-`~/.config/mdt/`. The following values are possible to set and their defaults.
+`~/.config/mdt/config.toml`. The following values are possible to set and their
+defaults. `reset` removes any coloring and ends up as your terminal _normal_
+text coloring.
 
 ```toml
-# Size
+# General settings
 width = 80
 
 # Inline styling
-italic_color = ""
-bold_color = ""
-strikethrough_color = ""
+italic_color = "reset"
+bold_color = "reset"
+strikethrough_color = "reset"
 code_fg_color = "red"
 code_bg_color = "#2A2A2A"
+link_color = "blue"
+link_selected_fg_color = "green"
+link_selected_bg_color = "darkgrey"
 
-# Block configs
-h1_bg_color = "blue"
+# Block styling
+h_bg_color = "blue"
+h_fg_color = "black"
 quote_bg_color = "#2A2A2A"
-code_block_fg_color = "red" #Will change when tree-sitter gets implemted
+code_block_fg_color = "red" #Will change when tree-sitter gets implemented
 code_block_bg_color = "#2A2A2A"
+table_header_fg_color = "yellow"
+table_header_bg_color = "reset"
 ```
 
 ## Contributions
