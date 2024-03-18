@@ -39,10 +39,8 @@ Using AUR: `yay -S md-tui-bin`
 
 ## Configuration
 
-To change the config create a file called `config.toml` at the path
-`~/.config/mdt/config.toml`. The following values are possible to set and their
-defaults. `reset` removes any coloring and ends up as your terminal _normal_
-text coloring.
+The program checks the file `~/.config/mdt/config.toml` at startup. The
+following parameters and their defaults is written below.
 
 ```toml
 # General settings
@@ -66,6 +64,12 @@ code_block_fg_color = "red" #Will change when tree-sitter gets implemented
 code_block_bg_color = "#2A2A2A"
 table_header_fg_color = "yellow"
 table_header_bg_color = "reset"
+
+# File tree
+file_tree_selected_fg_color = "lightgreen"
+file_tree_page_count_color = "lightgreen"
+file_tree_name_color = "blue"
+file_tree_path_color = "gray"
 ```
 
 ## Contributions

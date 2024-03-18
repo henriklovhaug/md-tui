@@ -160,6 +160,12 @@ pub struct MdConfig {
     pub table_header_fg_color: Color,
     pub table_header_bg_color: Color,
     pub quote_bg_color: Color,
+
+    // File tree
+    pub file_tree_selected_fg_color: Color,
+    pub file_tree_page_count_color: Color,
+    pub file_tree_name_color: Color,
+    pub file_tree_path_color: Color,
 }
 
 lazy_static! {
@@ -231,20 +237,42 @@ lazy_static! {
                     .unwrap_or_default(),
             )
             .unwrap_or(Color::DarkGray),
-
             table_header_fg_color: Color::from_str(
                 &settings
                     .get::<String>("table_header_fg_color")
                     .unwrap_or_default(),
             )
             .unwrap_or(Color::Yellow),
-
             table_header_bg_color: Color::from_str(
                 &settings
                     .get::<String>("table_header_bg_color")
                     .unwrap_or_default(),
             )
             .unwrap_or(Color::Reset),
+            file_tree_selected_fg_color: Color::from_str(
+                &settings
+                    .get::<String>("file_tree_selected_fg_color")
+                    .unwrap_or_default(),
+            )
+            .unwrap_or(Color::LightGreen),
+            file_tree_page_count_color: Color::from_str(
+                &settings
+                    .get::<String>("file_tree_page_count_color")
+                    .unwrap_or_default(),
+            )
+            .unwrap_or(Color::LightGreen),
+            file_tree_name_color: Color::from_str(
+                &settings
+                    .get::<String>("file_tree_name_color")
+                    .unwrap_or_default(),
+            )
+            .unwrap_or(Color::Blue),
+            file_tree_path_color: Color::from_str(
+                &settings
+                    .get::<String>("file_tree_path_color")
+                    .unwrap_or_default(),
+            )
+            .unwrap_or(Color::DarkGray),
         }
     };
 }
