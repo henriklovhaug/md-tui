@@ -46,10 +46,13 @@ normal               = _{ word+ }
 markdown_link        = _{ "[" ~ link_word+ ~ "]" ~ "(#" ~ link_data+ ~ ")" }
 external_link        = _{ "[" ~ link_word+ ~ "]" ~ "(" ~ link_data+ ~ ")" }
 link                 =  { NEWLINE? ~ " "* ~ (markdown_link | external_link) }
-italic               =  { (NEWLINE? ~ " "* ~ "*" ~ (italic_word | NEWLINE)+ ~ "*") | ((NEWLINE | " ") ~ " "* ~ ("_" ~ (italic_word | NEWLINE)+ ~ "_")) }
-bold                 =  { NEWLINE? ~ " "* ~ "**" ~ (bold_word | NEWLINE)+ ~ "**" }
-strikethrough        =  { NEWLINE? ~ " "* ~ "~~" ~ (strikethrough_word | NEWLINE)+ ~ "~~" }
-latex                =  { NEWLINE? ~ " "* ~ "$"+ ~ " "? ~ (latex_word | NEWLINE)+ ~ "$"+ }
+italic               =  {
+    (NEWLINE? ~ " "* ~ !"\\" ~ "*" ~ (italic_word | NEWLINE)+ ~ "*")
+  | ((NEWLINE | " ") ~ " "* ~ !"\\" ~ "_" ~ (italic_word | NEWLINE)+ ~ "_")
+}
+bold                 =  { NEWLINE? ~ " "* ~ !"\\" ~ "**" ~ (bold_word | NEWLINE)+ ~ "**" }
+strikethrough        =  { NEWLINE? ~ " "* ~ !"\\" ~ "~~" ~ (strikethrough_word | NEWLINE)+ ~ "~~" }
+latex                =  { NEWLINE? ~ " "* ~ !"\\" ~ "$"+ ~ " "? ~ (latex_word | NEWLINE)+ ~ "$"+ }
 o_list_counter       =  { digit+ ~ ". " }
 
 sentence   = _{ (latex | code | link | italic | bold | strikethrough | normal+)+ }
