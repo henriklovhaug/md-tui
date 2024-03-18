@@ -165,11 +165,6 @@ fn parse_component(parse_node: ParseNode) -> RenderComponent {
                 for word in get_leaf_nodes(row) {
                     let word_type = WordType::from(word.kind());
                     let content = word.content().to_owned();
-                    if string_only_contains(&content, vec!["|", " "]) {
-                        words.push(inner_words.clone());
-                        inner_words.clear();
-                        continue;
-                    }
                     inner_words.push(Word::new(content, word_type));
                 }
                 words.push(inner_words);
@@ -183,15 +178,6 @@ fn parse_component(parse_node: ParseNode) -> RenderComponent {
         }
         _ => todo!("Not implemented for {:?}", parse_node.kind()),
     }
-}
-
-fn string_only_contains(s: &str, c: Vec<&str>) -> bool {
-    for ch in s.chars() {
-        if !c.iter().any(|x| x.contains(ch)) {
-            return false;
-        }
-    }
-    true
 }
 
 fn get_leaf_nodes(node: ParseNode) -> Vec<ParseNode> {
@@ -370,6 +356,7 @@ impl From<Rule> for MdParseEnum {
             Rule::link_data => Self::LinkData,
 
             Rule::p_char
+            | Rule::t_char
             | Rule::link_char
             | Rule::normal
             | Rule::t_normal

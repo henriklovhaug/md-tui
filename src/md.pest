@@ -1,5 +1,6 @@
 // Characters
 p_char       = _{ (!(NEWLINE | comment | code | bold_italic | italic | bold | strikethrough | latex | " ") ~ ANY)+ }
+t_char       = _{ (!(NEWLINE | comment | code | bold_italic | italic | bold | strikethrough | latex | " " | "|") ~ ANY)+ }
 c_char       = _{ (!(NEWLINE | " " | "`") ~ ANY)+ }
 i_char       = _{ (!(NEWLINE | comment | " " | "_" | "*") ~ ANY)+ }
 b_char       = _{ (!(NEWLINE | comment | " " | "**") ~ ANY)+ }
@@ -16,7 +17,7 @@ word               = {
     !(forbidden_sentence_prefix | latex | bold_italic | bold | italic | strikethrough | code | link) ~ NEWLINE? ~ " "* ~ p_char+
 }
 t_word             = {
-    !(forbidden_sentence_prefix | latex | bold_italic | bold | italic | strikethrough | code | link) ~ NEWLINE? ~ " "* ~ p_char+ ~ " "?
+    !(forbidden_sentence_prefix | latex | bold_italic | bold | italic | strikethrough | code | link) ~ NEWLINE? ~ " "* ~ t_char+
 }
 h_word             = { p_char+ ~ " "? }
 italic_word        = { i_char+ ~ " "? }
@@ -67,7 +68,7 @@ o_list_counter       =  { digit+ ~ ". " }
 sentence   = _{ (latex | code | link | bold_italic | italic | bold | strikethrough | normal+)+ }
 t_sentence = _{ (!"|" ~ (latex | code | link | italic | bold | strikethrough | t_normal))+ }
 
-table_cell      = { "|" ~ " "* ~ t_sentence+ }
+table_cell      = { "|" ~ " "* ~ t_sentence+ ~ " "* ~ ("|" ~ " "* ~ NEWLINE)? }
 table_seperator = { ("|"? ~ (" " | ":")? ~ "-"+ ~ (" " | ":")? ~ "|") }
 
 u_list = { indent ~ ("-" | "*") ~ " " ~ sentence+ }
