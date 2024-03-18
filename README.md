@@ -5,13 +5,14 @@
 - [MD-TUI](#md-tui)
   - [Installation](#installation)
   - [Key binds](#key-binds)
+  - [Configuration](#configuration)
   - [Contributions](#contributions)
 
 <!--toc:end-->
 
 ## Installation
 
-Using cargo: `cargo install md-tui`
+Using cargo: `cargo install md-tui --locked`
 
 Using AUR: `yay -S md-tui-bin`
 
@@ -35,6 +36,41 @@ Using AUR: `yay -S md-tui-bin`
 | `d`        | Go down half a page                                                    |
 | `u`        | Go up half a page                                                      |
 | `q`        | Quit the application                                                   |
+
+## Configuration
+
+The program checks the file `~/.config/mdt/config.toml` at startup. The
+following parameters and their defaults is written below.
+
+```toml
+# General settings
+width = 80
+
+# Inline styling
+italic_color = "reset"
+bold_color = "reset"
+strikethrough_color = "reset"
+code_fg_color = "red"
+code_bg_color = "#2A2A2A"
+link_color = "blue"
+link_selected_fg_color = "green"
+link_selected_bg_color = "darkgrey"
+
+# Block styling
+h_bg_color = "blue"
+h_fg_color = "black"
+quote_bg_color = "#2A2A2A"
+code_block_fg_color = "red" #Will change when tree-sitter gets implemented
+code_block_bg_color = "#2A2A2A"
+table_header_fg_color = "yellow"
+table_header_bg_color = "reset"
+
+# File tree
+file_tree_selected_fg_color = "lightgreen"
+file_tree_page_count_color = "lightgreen"
+file_tree_name_color = "blue"
+file_tree_path_color = "gray"
+```
 
 ## Contributions
 

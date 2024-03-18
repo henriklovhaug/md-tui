@@ -1,11 +1,14 @@
-use std::io;
+use std::{io, str::FromStr};
 
+use config::{Config, File};
 use crossterm::{
     cursor,
     event::DisableMouseCapture,
     execute,
     terminal::{disable_raw_mode, LeaveAlternateScreen},
 };
+use lazy_static::lazy_static;
+use ratatui::style::Color;
 
 use crate::boxes::{errorbox::ErrorBox, help_box::HelpBox, searchbox::SearchBox};
 
@@ -132,6 +135,146 @@ impl Default for JumpHistory {
 pub enum Jump {
     File(String),
     FileTree,
+}
+
+#[derive(Debug)]
+pub struct MdConfig {
+    // General settings
+    pub width: u16,
+
+    // Inline styles
+    pub italic_color: Color,
+    pub bold_color: Color,
+    pub striketrough_color: Color,
+    pub code_fg_color: Color,
+    pub code_bg_color: Color,
+    pub link_color: Color,
+    pub link_selected_fg_color: Color,
+    pub link_selected_bg_color: Color,
+
+    // Block styles
+    pub code_block_fg_color: Color,
+    pub code_block_bg_color: Color,
+    pub heading_fg_color: Color,
+    pub heading_bg_color: Color,
+    pub table_header_fg_color: Color,
+    pub table_header_bg_color: Color,
+    pub quote_bg_color: Color,
+
+    // File tree
+    pub file_tree_selected_fg_color: Color,
+    pub file_tree_page_count_color: Color,
+    pub file_tree_name_color: Color,
+    pub file_tree_path_color: Color,
+}
+
+lazy_static! {
+    pub static ref CONFIG: MdConfig = {
+        let config_dir = dirs::home_dir().unwrap();
+        let config_file = config_dir.join(".config").join("mdt").join("config.toml");
+        let settings = Config::builder()
+            .add_source(File::with_name(config_file.to_str().unwrap()).required(false))
+            .build()
+            .unwrap();
+
+        MdConfig {
+            width: settings.get::<u16>("width").unwrap_or(80),
+            heading_bg_color: Color::from_str(
+                &settings.get::<String>("h_bg_color").unwrap_or_default(),
+            )
+            .unwrap_or(Color::Blue),
+            heading_fg_color: Color::from_str(
+                &settings.get::<String>("h_fg_color").unwrap_or_default(),
+            )
+            .unwrap_or(Color::Black),
+            italic_color: Color::from_str(
+                &settings.get::<String>("italic_color").unwrap_or_default(),
+            )
+            .unwrap_or(Color::Reset),
+            bold_color: Color::from_str(&settings.get::<String>("bold_color").unwrap_or_default())
+                .unwrap_or(Color::Reset),
+            striketrough_color: Color::from_str(
+                &settings
+                    .get_string("striketrough_color")
+                    .unwrap_or_default(),
+            )
+            .unwrap_or(Color::Reset),
+            quote_bg_color: Color::from_str(
+                &settings.get::<String>("quote_bg_color").unwrap_or_default(),
+            )
+            .unwrap_or(Color::Rgb(48, 48, 48)),
+            code_fg_color: Color::from_str(
+                &settings.get::<String>("code_fg_color").unwrap_or_default(),
+            )
+            .unwrap_or(Color::Red),
+            code_bg_color: Color::from_str(
+                &settings.get::<String>("code_bg_color").unwrap_or_default(),
+            )
+            .unwrap_or(Color::Rgb(48, 48, 48)),
+            code_block_fg_color: Color::from_str(
+                &settings
+                    .get::<String>("code_block_fg_color")
+                    .unwrap_or_default(),
+            )
+            .unwrap_or(Color::Red),
+            code_block_bg_color: Color::from_str(
+                &settings
+                    .get::<String>("code_block_bg_color")
+                    .unwrap_or_default(),
+            )
+            .unwrap_or(Color::Rgb(48, 48, 48)),
+            link_color: Color::from_str(&settings.get::<String>("link_color").unwrap_or_default())
+                .unwrap_or(Color::Blue),
+            link_selected_fg_color: Color::from_str(
+                &settings
+                    .get::<String>("link_selected_fg_color")
+                    .unwrap_or_default(),
+            )
+            .unwrap_or(Color::Green),
+            link_selected_bg_color: Color::from_str(
+                &settings
+                    .get::<String>("link_selected_bg_color")
+                    .unwrap_or_default(),
+            )
+            .unwrap_or(Color::DarkGray),
+            table_header_fg_color: Color::from_str(
+                &settings
+                    .get::<String>("table_header_fg_color")
+                    .unwrap_or_default(),
+            )
+            .unwrap_or(Color::Yellow),
+            table_header_bg_color: Color::from_str(
+                &settings
+                    .get::<String>("table_header_bg_color")
+                    .unwrap_or_default(),
+            )
+            .unwrap_or(Color::Reset),
+            file_tree_selected_fg_color: Color::from_str(
+                &settings
+                    .get::<String>("file_tree_selected_fg_color")
+                    .unwrap_or_default(),
+            )
+            .unwrap_or(Color::LightGreen),
+            file_tree_page_count_color: Color::from_str(
+                &settings
+                    .get::<String>("file_tree_page_count_color")
+                    .unwrap_or_default(),
+            )
+            .unwrap_or(Color::LightGreen),
+            file_tree_name_color: Color::from_str(
+                &settings
+                    .get::<String>("file_tree_name_color")
+                    .unwrap_or_default(),
+            )
+            .unwrap_or(Color::Blue),
+            file_tree_path_color: Color::from_str(
+                &settings
+                    .get::<String>("file_tree_path_color")
+                    .unwrap_or_default(),
+            )
+            .unwrap_or(Color::DarkGray),
+        }
+    };
 }
 
 #[cfg(test)]

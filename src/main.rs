@@ -24,7 +24,7 @@ use ratatui::{
     Frame, Terminal,
 };
 use search::find_md_files;
-use util::{destruct_terminal, App, Boxes, Mode};
+use util::{destruct_terminal, App, Boxes, Mode, CONFIG};
 
 pub mod boxes;
 mod event_handler;
@@ -104,7 +104,7 @@ fn run_app<B: Backend>(
     }
 
     let mut markdown = parse_markdown(None, EMPTY_FILE);
-    let mut width = cmp::min(terminal.size()?.width, 80);
+    let mut width = cmp::min(terminal.size()?.width, CONFIG.width);
     markdown.transform(width);
 
     let args: Vec<String> = std::env::args().collect();
@@ -122,7 +122,7 @@ fn run_app<B: Backend>(
     }
 
     loop {
-        let new_width = cmp::min(terminal.size()?.width, 80);
+        let new_width = cmp::min(terminal.size()?.width, CONFIG.width);
         if new_width != width {
             let url = if let Some(url) = markdown.file_name() {
                 url
@@ -221,14 +221,14 @@ fn render_file_tree(f: &mut Frame, app: &App, file_tree: FileTree) {
             x: 4,
             y: size.height - 13,
             height: 10,
-            width: 80,
+            width: CONFIG.width,
         }
     } else {
         Rect {
             x: 4,
             y: size.height - 4,
             height: 3,
-            width: 80,
+            width: CONFIG.width,
         }
     };
 
@@ -252,14 +252,14 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: RenderRoot) {
         Rect {
             y: size.height - 4,
             height: 3,
-            width: 80,
+            width: CONFIG.width,
             ..area
         }
     } else {
         Rect {
             y: size.height - 17,
             height: 16,
-            width: 80,
+            width: CONFIG.width,
             ..area
         }
     };
@@ -272,14 +272,14 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: RenderRoot) {
             x: 4,
             y: size.height - 16,
             height: 14,
-            width: 80,
+            width: CONFIG.width,
         }
     } else {
         Rect {
             x: 4,
             y: size.height - 3,
             height: 3,
-            width: 80,
+            width: CONFIG.width,
         }
     };
 

@@ -7,11 +7,12 @@ use ratatui::style::Stylize;
 use ratatui::text::Text;
 use ratatui::widgets::{HighlightSpacing, Widget};
 use ratatui::{
-    style::{Color, Modifier, Style},
+    style::{Modifier, Style},
     widgets::{Block, List, ListItem, ListState, StatefulWidget},
 };
 
 use crate::search::find_files;
+use crate::util::CONFIG;
 
 #[derive(Debug, Clone)]
 enum MdFileComponent {
@@ -43,8 +44,8 @@ impl From<MdFile> for ListItem<'_> {
     fn from(val: MdFile) -> Self {
         let mut text = Text::default();
         text.extend([
-            val.name.to_owned().blue(),
-            val.path.to_owned().italic().gray(),
+            val.name.to_owned().fg(CONFIG.file_tree_name_color),
+            val.path.to_owned().italic().fg(CONFIG.file_tree_path_color),
         ]);
         ListItem::new(text)
     }
@@ -318,7 +319,10 @@ impl Widget for FileTree {
 
         let page_count = format!("  {}/{}", self.page + 1, file_len / partition + 1);
 
-        let paragraph = Text::styled(page_count, Style::default().fg(Color::LightGreen));
+        let paragraph = Text::styled(
+            page_count,
+            Style::default().fg(CONFIG.file_tree_page_count_color),
+        );
 
         let items = List::new(items)
             .block(
@@ -329,7 +333,7 @@ impl Widget for FileTree {
             )
             .highlight_style(
                 Style::default()
-                    .fg(Color::LightGreen)
+                    .fg(CONFIG.file_tree_selected_fg_color)
                     .add_modifier(Modifier::BOLD),
             )
             .highlight_symbol("\u{02503} ")

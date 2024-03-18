@@ -1,4 +1,10 @@
-# v0.3.2
+# Version 0.4.0
+
+## New features
+
+- Adds configuration for custom coloring and width (#4)
+
+# Version 0.3.2
 
 ## Fixes
 

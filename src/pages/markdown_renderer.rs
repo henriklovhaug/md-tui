@@ -8,7 +8,10 @@ use ratatui::{
     widgets::{Block, Cell, List, ListItem, Paragraph, Row, Table, Widget},
 };
 
-use crate::nodes::{RenderComponent, RenderNode, Word, WordType};
+use crate::{
+    nodes::{RenderComponent, RenderNode, Word, WordType},
+    util::CONFIG,
+};
 
 fn clips_upper_bound(_area: Rect, component: &RenderComponent) -> bool {
     component.scroll_offset() > component.y_offset()
@@ -92,19 +95,26 @@ fn style_word(word: &Word) -> Span<'_> {
         WordType::MetaInfo(_) | WordType::LinkData => unreachable!(),
         WordType::Selected => Span::styled(
             word.content(),
-            Style::default().fg(Color::Green).bg(Color::DarkGray),
+            Style::default()
+                .fg(CONFIG.link_selected_fg_color)
+                .bg(CONFIG.link_selected_bg_color),
         ),
         WordType::Normal => Span::raw(word.content()),
-        WordType::Code => Span::styled(word.content(), Style::default().fg(Color::Red)),
-        WordType::Link => Span::styled(word.content(), Style::default().fg(Color::Blue)),
-        WordType::Italic => {
-            Span::styled(word.content(), Style::default().fg(Color::Green).italic())
-        }
-        WordType::Bold => Span::styled(word.content(), Style::default().fg(Color::Green).bold()),
+        WordType::Code => Span::styled(word.content(), Style::default().fg(CONFIG.code_fg_color))
+            .bg(CONFIG.code_bg_color),
+        WordType::Link => Span::styled(word.content(), Style::default().fg(CONFIG.link_color)),
+        WordType::Italic => Span::styled(
+            word.content(),
+            Style::default().fg(CONFIG.italic_color).italic(),
+        ),
+        WordType::Bold => Span::styled(
+            word.content(),
+            Style::default().fg(CONFIG.bold_color).bold(),
+        ),
         WordType::Strikethrough => Span::styled(
             word.content(),
             Style::default()
-                .fg(Color::Green)
+                .fg(CONFIG.striketrough_color)
                 .add_modifier(Modifier::CROSSED_OUT),
         ),
         WordType::White => Span::styled(word.content(), Style::default().fg(Color::White)),
@@ -136,10 +146,10 @@ fn render_quote(area: Rect, buf: &mut Buffer, content: Vec<Vec<Word>>, clip: Cli
         .collect::<Vec<_>>();
 
     let paragraph = Paragraph::new(lines)
-        .block(Block::default().style(Style::default().bg(Color::Rgb(48, 48, 48))));
+        .block(Block::default().style(Style::default().bg(CONFIG.quote_bg_color)));
 
     let area = Rect {
-        width: cmp::min(area.width, 80),
+        width: cmp::min(area.width, CONFIG.width),
         ..area
     };
 
@@ -150,15 +160,15 @@ fn render_heading(area: Rect, buf: &mut Buffer, content: Vec<Vec<Word>>) {
     let content: Vec<Span<'_>> = content
         .iter()
         .flatten()
-        .map(|c| Span::styled(c.content(), Style::default().fg(Color::Black)))
+        .map(|c| Span::styled(c.content(), Style::default().fg(CONFIG.heading_fg_color)))
         .collect();
 
     let paragraph = Paragraph::new(Line::from(content))
-        .block(Block::default().style(Style::default().bg(Color::Blue)))
+        .block(Block::default().style(Style::default().bg(CONFIG.heading_bg_color)))
         .alignment(Alignment::Center);
 
     let area = Rect {
-        width: cmp::min(area.width, 80),
+        width: cmp::min(area.width, CONFIG.width),
         ..area
     };
 
@@ -229,7 +239,9 @@ fn render_code_block(area: Rect, buf: &mut Buffer, content: Vec<Vec<Word>>, clip
         .map(|c| {
             Line::from(
                 c.iter()
-                    .map(|i| Span::styled(i.content(), Style::default().fg(Color::Red)))
+                    .map(|i| {
+                        Span::styled(i.content(), Style::default().fg(CONFIG.code_block_fg_color))
+                    })
                     .collect::<Vec<_>>(),
             )
         })
@@ -250,12 +262,12 @@ fn render_code_block(area: Rect, buf: &mut Buffer, content: Vec<Vec<Word>>, clip
 
     let area = Rect {
         x: area.x + 1,
-        width: cmp::min(area.width - 2, 80),
+        width: cmp::min(area.width - 2, CONFIG.width),
         ..area
     };
 
     let paragraph = Paragraph::new(content)
-        .block(Block::default().style(Style::default().bg(Color::Rgb(48, 48, 48))));
+        .block(Block::default().style(Style::default().bg(CONFIG.code_block_bg_color)));
 
     paragraph.render(area, buf);
 }
@@ -322,7 +334,13 @@ fn render_table(
     }
 
     let table = Table::new(rows, &widths)
-        .header(header.style(Style::default().fg(Color::Yellow)))
+        .header(
+            header.style(
+                Style::default()
+                    .fg(CONFIG.table_header_fg_color)
+                    .bg(CONFIG.table_header_bg_color),
+            ),
+        )
         .block(Block::default())
         .column_spacing(1);
 
@@ -383,7 +401,9 @@ fn render_task(
 }
 
 fn render_horizontal_seperator(area: Rect, buf: &mut Buffer) {
-    let paragraph = Paragraph::new(Line::from(vec![Span::raw("\u{2014}".repeat(80))]));
+    let paragraph = Paragraph::new(Line::from(vec![Span::raw(
+        "\u{2014}".repeat(CONFIG.width.into()),
+    )]));
 
     paragraph.render(area, buf);
 }
