@@ -6,7 +6,7 @@ use ratatui::{
     widgets::{Row, Table, Widget},
 };
 
-use crate::util::Mode;
+use crate::util::{Mode, CONFIG};
 
 #[derive(Debug, Clone, Copy, Default)]
 pub struct HelpBox {
@@ -75,7 +75,7 @@ fn render_file_tree_help(expanded: bool, area: Rect, buf: &mut Buffer) {
 
     let widths = [10, 20];
 
-    let table = Table::new(key_actions, widths).header(header);
+    let table = Table::new(key_actions, widths).header(header.fg(CONFIG.table_header_fg_color));
     table.render(area, buf);
 }
 
@@ -106,7 +106,7 @@ fn render_markdown_help(expandend: bool, area: Rect, buf: &mut Buffer) {
 
     let widths = [10, 20];
 
-    let table = Table::new(key_actions, widths).header(header);
+    let table = Table::new(key_actions, widths).header(header.fg(CONFIG.table_header_fg_color));
 
     table.render(area, buf);
 }

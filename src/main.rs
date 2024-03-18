@@ -219,6 +219,24 @@ fn render_file_tree(f: &mut Frame, app: &App, file_tree: FileTree) {
     let area = if app.help_box.expanded() {
         Rect {
             x: 4,
+            y: size.height - 14,
+            height: 13,
+            width: CONFIG.width,
+        }
+    } else {
+        Rect {
+            x: 4,
+            y: size.height - 4,
+            height: 3,
+            width: CONFIG.width,
+        }
+    };
+
+    f.render_widget(Clear, area);
+
+    let area = if app.help_box.expanded() {
+        Rect {
+            x: 4,
             y: size.height - 13,
             height: 10,
             width: CONFIG.width,
@@ -232,7 +250,6 @@ fn render_file_tree(f: &mut Frame, app: &App, file_tree: FileTree) {
         }
     };
 
-    f.render_widget(Clear, area);
     f.render_widget(app.help_box, area);
 }
 
