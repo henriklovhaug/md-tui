@@ -1,3 +1,10 @@
+# Version 0.4.1
+
+## Fixes
+
+- #52 Code no longer does an unnecessary division
+- #53 Programming language in code block is now optional
+
 # Version 0.4.0
 
 ## New features
