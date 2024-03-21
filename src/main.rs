@@ -88,20 +88,11 @@ fn run_app<B: Backend>(
 ) -> io::Result<()> {
     let mut last_tick = Instant::now();
 
-    let mut file_tree = FileTree::default();
-
     terminal.draw(|f| {
         render_loading(f, &app);
     })?;
 
-    if let Ok(files) = find_md_files() {
-        file_tree = files;
-    } else {
-        app.error_box
-            .set_message("MDT does not have permissions to view directories".to_string());
-        app.boxes = Boxes::Error;
-        app.mode = Mode::FileTree;
-    }
+    let mut file_tree = find_md_files();
 
     let mut markdown = parse_markdown(None, EMPTY_FILE);
     let mut width = cmp::min(terminal.size()?.width, CONFIG.width);

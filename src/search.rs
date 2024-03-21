@@ -1,5 +1,3 @@
-use std::io;
-
 use itertools::Itertools;
 use strsim::damerau_levenshtein;
 
@@ -8,7 +6,7 @@ use crate::{
     pages::file_explorer::{FileTree, MdFile},
 };
 
-pub fn find_md_files() -> Result<FileTree, io::Error> {
+pub fn find_md_files() -> FileTree {
     let mut tree = FileTree::new();
     let mut stack = vec![std::path::PathBuf::from(".")];
     while let Some(path) = stack.pop() {
@@ -32,7 +30,7 @@ pub fn find_md_files() -> Result<FileTree, io::Error> {
         }
     }
     tree.sort_2();
-    Ok(tree)
+    tree
 }
 
 pub fn find_files(files: &[MdFile], query: &str) -> Vec<MdFile> {
