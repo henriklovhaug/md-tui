@@ -12,9 +12,16 @@ pub fn find_md_files() -> Result<FileTree, io::Error> {
     let mut tree = FileTree::new();
     let mut stack = vec![std::path::PathBuf::from(".")];
     while let Some(path) = stack.pop() {
-        for entry in std::fs::read_dir(path)? {
-            let entry = entry?;
-            let path = entry.path();
+        for entry in if let Ok(entries) = std::fs::read_dir(&path) {
+            entries
+        } else {
+            continue;
+        } {
+            let path = if let Ok(path) = entry {
+                path.path()
+            } else {
+                continue;
+            };
             if path.is_dir() {
                 stack.push(path);
             } else if path.extension().unwrap_or_default() == "md" {
