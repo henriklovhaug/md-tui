@@ -169,6 +169,16 @@ fn run_app<B: Backend>(
                 };
                 f.render_widget(Clear, error_area);
                 f.render_widget(app.error_box.clone(), error_area);
+            } else if app.boxes == Boxes::LinkPreview {
+                let (link_height, link_width) = app.link_box.dimensions();
+                let link_area = Rect {
+                    x: height / 2,
+                    y: height / 2,
+                    width: link_width,
+                    height: link_height,
+                };
+                f.render_widget(Clear, link_area);
+                f.render_widget(app.link_box.clone(), link_area);
             }
         })?;
 

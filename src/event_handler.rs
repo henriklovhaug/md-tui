@@ -165,6 +165,12 @@ pub fn keyboard_mode_file_tree(
             }
             _ => {}
         },
+        Boxes::LinkPreview => match key {
+            KeyCode::Esc => {
+                app.boxes = Boxes::None;
+            }
+            _ => {}
+        },
     }
 
     KeyBoardAction::Continue
@@ -288,7 +294,13 @@ fn keyboard_mode_view(
             }
 
             KeyCode::Char('h') => {
-                app.vertical_scroll = app.vertical_scroll.saturating_sub(height);
+                if !app.selected {
+                    app.vertical_scroll = app.vertical_scroll.saturating_sub(height);
+                } else {
+                    let link = markdown.selected();
+                    app.link_box.set_message(link.to_string());
+                    app.boxes = Boxes::LinkPreview;
+                }
             }
 
             KeyCode::Char('s') => {
@@ -414,6 +426,12 @@ fn keyboard_mode_view(
 
             KeyCode::Char('?') => {
                 app.help_box.toggle();
+            }
+            _ => {}
+        },
+        Boxes::LinkPreview => match key {
+            KeyCode::Esc => {
+                app.boxes = Boxes::None;
             }
             _ => {}
         },
