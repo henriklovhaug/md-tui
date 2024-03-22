@@ -165,12 +165,11 @@ pub fn keyboard_mode_file_tree(
             }
             _ => {}
         },
-        Boxes::LinkPreview => match key {
-            KeyCode::Esc => {
+        Boxes::LinkPreview => {
+            if key == KeyCode::Esc {
                 app.boxes = Boxes::None;
             }
-            _ => {}
-        },
+        }
     }
 
     KeyBoardAction::Continue
@@ -436,12 +435,11 @@ fn keyboard_mode_view(
             }
             _ => {}
         },
-        Boxes::LinkPreview => match key {
-            KeyCode::Esc => {
+        Boxes::LinkPreview => {
+            if key == KeyCode::Esc {
                 app.boxes = Boxes::None;
             }
-            _ => {}
-        },
+        }
     }
     KeyBoardAction::Continue
 }
