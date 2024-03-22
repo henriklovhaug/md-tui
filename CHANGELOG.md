@@ -1,5 +1,9 @@
 # Version 0.4.2
 
+## New features
+
+- When in link mode, you can press `h` to hover/see where the link goes (#35)
+
 ## New behavior
 
 - It continues to find markdown files even if it meets a directory it's not
