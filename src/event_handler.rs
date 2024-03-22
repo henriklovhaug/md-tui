@@ -165,6 +165,11 @@ pub fn keyboard_mode_file_tree(
             }
             _ => {}
         },
+        Boxes::LinkPreview => {
+            if key == KeyCode::Esc {
+                app.boxes = Boxes::None;
+            }
+        }
     }
 
     KeyBoardAction::Continue
@@ -288,7 +293,20 @@ fn keyboard_mode_view(
             }
 
             KeyCode::Char('h') => {
-                app.vertical_scroll = app.vertical_scroll.saturating_sub(height);
+                if !app.selected {
+                    app.vertical_scroll = app.vertical_scroll.saturating_sub(height);
+                } else {
+                    let link = markdown.selected();
+
+                    let message = match LinkType::from(link) {
+                        LinkType::Internal(e) => format!("Internal link: {}", e),
+                        LinkType::External(e) => format!("External link: {}", e),
+                        LinkType::MarkdownFile(e) => format!("Markdown file: {}", e),
+                    };
+
+                    app.link_box.set_message(message);
+                    app.boxes = Boxes::LinkPreview;
+                }
             }
 
             KeyCode::Char('s') => {
@@ -417,6 +435,11 @@ fn keyboard_mode_view(
             }
             _ => {}
         },
+        Boxes::LinkPreview => {
+            if key == KeyCode::Esc {
+                app.boxes = Boxes::None;
+            }
+        }
     }
     KeyBoardAction::Continue
 }

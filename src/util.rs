@@ -10,7 +10,7 @@ use crossterm::{
 use lazy_static::lazy_static;
 use ratatui::style::Color;
 
-use crate::boxes::{errorbox::ErrorBox, help_box::HelpBox, searchbox::SearchBox};
+use crate::boxes::{errorbox::ErrorBox, help_box::HelpBox, linkbox::LinkBox, searchbox::SearchBox};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Mode {
@@ -22,6 +22,7 @@ pub enum Mode {
 pub enum Boxes {
     Error,
     Search,
+    LinkPreview,
     None,
 }
 
@@ -60,6 +61,7 @@ pub struct App {
     pub search_box: SearchBox,
     pub error_box: ErrorBox,
     pub help_box: HelpBox,
+    pub link_box: LinkBox,
 }
 
 impl App {
