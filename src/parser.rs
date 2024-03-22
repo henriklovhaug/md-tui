@@ -24,7 +24,11 @@ pub fn parse_markdown(name: Option<&str>, file: &str) -> RenderRoot {
     let children = children.iter().dedup().cloned().collect();
     let parse_root = ParseRoot::new(name.map(str::to_string), children);
 
-    node_to_component(parse_root)
+    let mut root = node_to_component(parse_root);
+
+    root.add_missing_components();
+
+    root
 }
 
 fn parse_text(pair: Pair<'_, Rule>) -> ParseNode {
@@ -98,6 +102,9 @@ fn parse_component(parse_node: ParseNode) -> RenderComponent {
                 } else {
                     words.push(Word::new(content, word_type));
                 }
+            }
+            if let Some(w) = words.first_mut() {
+                w.set_content(w.content().trim_start().to_owned());
             }
             match kind {
                 MdParseEnum::Paragraph => RenderComponent::new(RenderNode::Paragraph, words),

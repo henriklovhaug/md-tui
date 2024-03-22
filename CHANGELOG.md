@@ -1,3 +1,15 @@
+# Version 0.4.2
+
+## New behavior
+
+- It continues to find markdown files even if it meets a directory it's not
+  allowed to read (#51)
+
+## Fixes
+
+- Support multiline comments (#56)
+- Paragraphs after table don't look weird anymore (#48)
+
 # Version 0.4.1
 
 ## Fixes
