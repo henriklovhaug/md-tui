@@ -4,9 +4,24 @@ use strsim::damerau_levenshtein;
 use crate::{
     nodes::Word,
     pages::file_explorer::{FileTree, MdFile},
+    util::CONFIG,
 };
 
 pub fn find_md_files() -> FileTree {
+    let mut ignored_files = Vec::new();
+
+    if CONFIG.gitignore {
+        let gitignore = std::fs::read_to_string(".gitignore");
+        if let Ok(gitignore) = gitignore {
+            for line in gitignore.lines() {
+                if line.starts_with("#") || line.is_empty() {
+                    continue;
+                }
+                ignored_files.push(line.to_string());
+            }
+        }
+    }
+
     let mut tree = FileTree::new();
     let mut stack = vec![std::path::PathBuf::from(".")];
     while let Some(path) = stack.pop() {
@@ -23,6 +38,14 @@ pub fn find_md_files() -> FileTree {
             if path.is_dir() {
                 stack.push(path);
             } else if path.extension().unwrap_or_default() == "md" {
+                // Check if the file is in the ignored files list
+                if ignored_files
+                    .iter()
+                    .any(|ignored_file| path.to_str().unwrap().contains(ignored_file))
+                {
+                    continue;
+                }
+
                 let name = path.file_name().unwrap().to_str().unwrap().to_string();
                 let path = path.to_str().unwrap().to_string();
                 tree.add_file(MdFile::new(path, name));
