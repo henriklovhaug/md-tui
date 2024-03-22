@@ -298,7 +298,14 @@ fn keyboard_mode_view(
                     app.vertical_scroll = app.vertical_scroll.saturating_sub(height);
                 } else {
                     let link = markdown.selected();
-                    app.link_box.set_message(link.to_string());
+
+                    let message = match LinkType::from(link) {
+                        LinkType::Internal(e) => format!("Internal link: {}", e),
+                        LinkType::External(e) => format!("External link: {}", e),
+                        LinkType::MarkdownFile(e) => format!("Markdown file: {}", e),
+                    };
+
+                    app.link_box.set_message(message);
                     app.boxes = Boxes::LinkPreview;
                 }
             }

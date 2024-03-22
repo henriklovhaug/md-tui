@@ -15,7 +15,7 @@ impl LinkBox {
     }
 
     pub fn dimensions(&self) -> (u16, u16) {
-        ((self.message.len() / 30) as u16 + 4, 30)
+        ((self.message.len() / 30) as u16 + 4, 50)
     }
 
     pub fn consume(&mut self) -> String {
