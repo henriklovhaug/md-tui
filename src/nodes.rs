@@ -123,6 +123,24 @@ impl RenderRoot {
         }
     }
 
+    /// Because of the parsing, every table has a missing newline at the end
+    pub fn add_missing_components(&mut self) {
+        let mut components = Vec::new();
+        let mut iter = self.components.iter().peekable();
+        while let Some(component) = iter.next() {
+            components.push(component.clone());
+            if let Some(next) = iter.peek() {
+                if component.kind() == RenderNode::Table
+                    && next.kind() != RenderNode::Table
+                    && next.kind() != RenderNode::LineBreak
+                {
+                    components.push(RenderComponent::new(RenderNode::LineBreak, Vec::new()));
+                }
+            }
+        }
+        self.components = components;
+    }
+
     pub fn height(&self) -> u16 {
         self.components.iter().map(|c| c.height()).sum()
     }
@@ -548,7 +566,7 @@ impl RenderComponent {
                 let mut lines = Vec::new();
                 let mut line = Vec::new();
                 if self.kind() == RenderNode::Quote {
-                    let filler = Word::new(" ".to_string(), WordType::Normal);
+                    let filler = Word::new(" ".repeat(2), WordType::Normal);
                     line.push(filler);
                 }
                 let iter = self.content.iter().flatten();
