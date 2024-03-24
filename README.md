@@ -74,6 +74,7 @@ file_tree_selected_fg_color = "lightgreen"
 file_tree_page_count_color = "lightgreen"
 file_tree_name_color = "blue"
 file_tree_path_color = "gray"
+gitignore = false
 ```
 
 ## Contributions

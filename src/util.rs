@@ -169,6 +169,7 @@ pub struct MdConfig {
     pub file_tree_page_count_color: Color,
     pub file_tree_name_color: Color,
     pub file_tree_path_color: Color,
+    pub gitignore: bool,
 }
 
 lazy_static! {
@@ -282,6 +283,7 @@ lazy_static! {
                     .unwrap_or_default(),
             )
             .unwrap_or(Color::Reset),
+            gitignore: settings.get::<bool>("gitignore").unwrap_or_default(),
         }
     };
 }

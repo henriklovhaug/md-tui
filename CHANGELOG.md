@@ -2,6 +2,8 @@
 
 ## New features
 
+- Added new option `gitignore` which, when set to true (default false), does not
+  load files from `.gitignore`.
 - When in link mode, you can press `h` to hover/see where the link goes (#35)
 
 ## New behavior
