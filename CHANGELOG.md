@@ -1,5 +1,10 @@
 # Version 0.4.2
 
+## New features
+
+- Added new option `gitignore` which, when set to true (default false), does not
+  load files from gitignore.
+
 ## New behavior
 
 - It continues to find markdown files even if it meets a directory it's not

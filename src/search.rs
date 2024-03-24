@@ -38,17 +38,24 @@ pub fn find_md_files() -> FileTree {
             if path.is_dir() {
                 stack.push(path);
             } else if path.extension().unwrap_or_default() == "md" {
+                let (path_str, path_name) =
+                    if let (Some(path_str), Some(path_name)) = (path.to_str(), path.file_name()) {
+                        (
+                            path_str,
+                            path_name.to_str().unwrap_or("UNKNOWN").to_string(),
+                        )
+                    } else {
+                        continue;
+                    };
                 // Check if the file is in the ignored files list
                 if ignored_files
                     .iter()
-                    .any(|ignored_file| path.to_str().unwrap().contains(ignored_file))
+                    .any(|ignored_file| !find(ignored_file, path_str, 0).is_empty())
                 {
                     continue;
                 }
 
-                let name = path.file_name().unwrap().to_str().unwrap().to_string();
-                let path = path.to_str().unwrap().to_string();
-                tree.add_file(MdFile::new(path, name));
+                tree.add_file(MdFile::new(path_str.to_string(), path_name));
             }
         }
     }
