@@ -14,7 +14,7 @@ pub fn find_md_files() -> FileTree {
         let gitignore = std::fs::read_to_string(".gitignore");
         if let Ok(gitignore) = gitignore {
             for line in gitignore.lines() {
-                if line.starts_with("#") || line.is_empty() {
+                if line.starts_with('#') || line.is_empty() {
                     continue;
                 }
                 ignored_files.push(line.to_string());
