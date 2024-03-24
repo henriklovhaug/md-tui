@@ -3,7 +3,7 @@
 ## New features
 
 - Added new option `gitignore` which, when set to true (default false), does not
-  load files from gitignore.
+  load files from `.gitignore`.
 
 ## New behavior
 
