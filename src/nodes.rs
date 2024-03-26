@@ -1,6 +1,7 @@
 use std::usize;
 
 use crate::{parser::MdParseEnum, search::compare_heading};
+use itertools::Itertools;
 use ratatui::{buffer::Buffer, layout::Rect, widgets::Widget};
 
 #[derive(Debug, Clone)]
@@ -354,10 +355,28 @@ impl RenderComponent {
     }
 
     pub fn content_as_lines(&self) -> Vec<String> {
-        self.content
-            .iter()
-            .map(|c| c.iter().map(|c| c.content()).collect::<Vec<_>>().join(""))
-            .collect()
+        if self.kind == RenderNode::Table {
+            let column_count = self.meta_info.len();
+
+            let moved_content = self.content.chunks(column_count).collect::<Vec<_>>();
+
+            let mut lines = Vec::new();
+
+            moved_content.iter().for_each(|line| {
+                let noe = line
+                    .iter()
+                    .map(|c| c.iter().map(|word| word.content()).join(""))
+                    .join(" ");
+                lines.push(noe);
+            });
+
+            lines
+        } else {
+            self.content
+                .iter()
+                .map(|c| c.iter().map(|c| c.content()).collect::<Vec<_>>().join(""))
+                .collect()
+        }
     }
 
     pub fn content_mut(&mut self) -> &mut Vec<Vec<Word>> {
@@ -432,6 +451,10 @@ impl RenderComponent {
     }
 
     pub fn mark_word(&mut self, height: usize, index: usize, length: usize) -> Result<(), String> {
+        if self.kind == RenderNode::Table {
+            return self.mark_word_table(height, index, length);
+        }
+
         let line = self.content.get_mut(height).ok_or("index out of bounds")?;
         let mut skip_while = 0;
         let mut take_while = 0;
@@ -446,11 +469,44 @@ impl RenderComponent {
                 take_while < length + k.content().len()
             })
             .for_each(|word| {
-                // if word.content() != " " {
-                //     word.set_kind(WordType::Selected);
-                // }
                 word.set_kind(WordType::Selected);
             });
+        Ok(())
+    }
+
+    pub fn mark_word_table(
+        &mut self,
+        height: usize,
+        index: usize,
+        length: usize,
+    ) -> Result<(), String> {
+        let column_count = self.meta_info.len();
+
+        let line = self
+            .content
+            .chunks_mut(column_count)
+            .nth(height)
+            .ok_or("index out of bounds")?;
+
+        let mut skip_while = 0;
+        let mut take_while = 0;
+
+        line.iter_mut().for_each(|word| {
+            word.iter_mut()
+                .by_ref()
+                .skip_while(|c| {
+                    skip_while += c.content().len();
+                    skip_while <= index + c.content().len() / 2
+                })
+                .take_while(|k| {
+                    take_while += k.content().len();
+                    take_while < length + k.content().len()
+                })
+                .for_each(|word| {
+                    word.set_kind(WordType::Selected);
+                });
+        });
+
         Ok(())
     }
 

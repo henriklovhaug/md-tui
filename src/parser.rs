@@ -87,6 +87,7 @@ fn parse_component(parse_node: ParseNode) -> RenderComponent {
             RenderComponent::new(RenderNode::Task, words)
         }
 
+
         MdParseEnum::Paragraph | MdParseEnum::Heading | MdParseEnum::Quote => {
             let kind = parse_node.kind();
             let leaf_nodes = get_leaf_nodes(parse_node);
@@ -94,11 +95,11 @@ fn parse_component(parse_node: ParseNode) -> RenderComponent {
             for node in leaf_nodes {
                 let word_type = WordType::from(node.kind());
                 let mut content = node.content().to_owned();
-                if content.ends_with(' ') {
-                    content.pop();
-                    words.push(Word::new(content, word_type));
+                if content.starts_with(' ') {
+                    content.remove(0);
                     let comp = Word::new(" ".to_owned(), word_type);
                     words.push(comp);
+                    words.push(Word::new(content, word_type));
                 } else {
                     words.push(Word::new(content, word_type));
                 }
