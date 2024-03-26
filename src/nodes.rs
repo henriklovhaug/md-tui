@@ -606,9 +606,7 @@ impl RenderComponent {
                     .cloned()
                     .collect::<Vec<_>>();
 
-                content.pop();
-
-                self.content = content;
+                content.insert(0, vec![Word::new("".to_string(), WordType::Code)]);
 
                 let height = self.content.len() as u16;
                 self.height = height;

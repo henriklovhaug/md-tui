@@ -309,12 +309,21 @@ fn render_code_block(area: Rect, buf: &mut Buffer, component: RenderComponent, c
     }
 
     let area = Rect {
+        width: cmp::min(area.width, CONFIG.width),
+        ..area
+    };
+
+    let block = Block::default().style(Style::default().bg(CONFIG.code_block_bg_color));
+
+    block.render(area, buf);
+
+    let area = Rect {
+        x: area.x + 1,
         width: cmp::min(area.width - 2, CONFIG.width),
         ..area
     };
 
-    let paragraph = Paragraph::new(content)
-        .block(Block::default().style(Style::default().bg(CONFIG.code_block_bg_color)));
+    let paragraph = Paragraph::new(content);
 
     paragraph.render(area, buf);
 }
