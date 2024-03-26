@@ -1,3 +1,10 @@
+# Version 0.4.3 (unreleased)
+
+## Fixes
+
+- #64 Tables and codeblocks destroyed search marking for every block type
+  following.
+
 # Version 0.4.2
 
 ## New features
