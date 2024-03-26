@@ -309,7 +309,6 @@ fn render_code_block(area: Rect, buf: &mut Buffer, component: RenderComponent, c
     }
 
     let area = Rect {
-        x: area.x + 1,
         width: cmp::min(area.width - 2, CONFIG.width),
         ..area
     };
