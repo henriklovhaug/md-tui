@@ -75,18 +75,15 @@ fn parse_component(parse_node: ParseNode) -> RenderComponent {
                     .dedup_by(|x, y| *x == ' ' && *y == ' ')
                     .collect();
 
-                if content.ends_with(' ') {
+                if content.starts_with(' ') {
                     content.pop();
-                    words.push(Word::new(content, word_type));
                     let comp = Word::new(" ".to_owned(), word_type);
                     words.push(comp);
-                } else {
-                    words.push(Word::new(content, word_type));
                 }
+                words.push(Word::new(content, word_type));
             }
             RenderComponent::new(RenderNode::Task, words)
         }
-
 
         MdParseEnum::Paragraph | MdParseEnum::Heading | MdParseEnum::Quote => {
             let kind = parse_node.kind();
@@ -99,10 +96,8 @@ fn parse_component(parse_node: ParseNode) -> RenderComponent {
                     content.remove(0);
                     let comp = Word::new(" ".to_owned(), word_type);
                     words.push(comp);
-                    words.push(Word::new(content, word_type));
-                } else {
-                    words.push(Word::new(content, word_type));
                 }
+                words.push(Word::new(content, word_type));
             }
             if let Some(w) = words.first_mut() {
                 w.set_content(w.content().trim_start().to_owned());
@@ -135,7 +130,7 @@ fn parse_component(parse_node: ParseNode) -> RenderComponent {
                 for node in leaf_nodes {
                     let word_type = WordType::from(node.kind());
 
-                    let content = match node.kind() {
+                    let mut content = match node.kind() {
                         MdParseEnum::Indent => node.content().to_owned(),
                         _ => node
                             .content()
@@ -143,6 +138,13 @@ fn parse_component(parse_node: ParseNode) -> RenderComponent {
                             .dedup_by(|x, y| *x == ' ' && *y == ' ')
                             .collect(),
                     };
+
+                    if content.starts_with(' ') {
+                        content.remove(0);
+                        let comp = Word::new(" ".to_owned(), word_type);
+                        inner_words.push(comp);
+                    }
+
                     inner_words.push(Word::new(content, word_type));
                 }
                 if kind == MdParseEnum::UnorderedList {

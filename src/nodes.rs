@@ -599,16 +599,18 @@ impl RenderComponent {
                 self.content = lines;
             }
             RenderNode::CodeBlock => {
-                let content = self
+                let mut content = self
                     .content
                     .iter()
                     .filter(|c| c.iter().any(|x| x.is_renderable()))
                     .cloned()
                     .collect::<Vec<_>>();
 
+                content.pop();
+
                 self.content = content;
 
-                let height = self.content.len() as u16 - 1;
+                let height = self.content.len() as u16;
                 self.height = height;
             }
             RenderNode::Paragraph | RenderNode::Task | RenderNode::Quote => {
