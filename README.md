@@ -83,5 +83,6 @@ Both PRs and issues are appreciated!
 
 ## Versioning
 
-Until 1.0.0 release, every minor increase adds new features. Patches fixes
-something that the program should support, but doesn't yet for some reason.
+Until 1.0.0 release, every minor increase adds new features and is very likely
+to also break current implementation. Patches fixes may also add new features in
+a breaking way. It's wild west in terms of semver until 1.0.0.
