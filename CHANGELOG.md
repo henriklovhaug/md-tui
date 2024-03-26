@@ -2,7 +2,7 @@
 
 ## Fixes
 
-- #64 Tables and codeblocks destroyed search marking for every block type
+- #64 Tables and code blocks destroyed search marking for every block type
   following.
 
 # Version 0.4.2
@@ -20,7 +20,7 @@
 
 ## Fixes
 
-- Support multiline comments (#56)
+- Support multi-line comments (#56)
 - Paragraphs after table don't look weird anymore (#48)
 
 # Version 0.4.1
