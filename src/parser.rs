@@ -347,7 +347,7 @@ impl From<Rule> for MdParseEnum {
             Rule::strikethrough | Rule::strikethrough_word => Self::Strikethrough,
             Rule::code_word | Rule::code => Self::Code,
             Rule::programming_language => Self::PLanguage,
-            Rule::link_word | Rule::markdown_link | Rule::external_link | Rule::link => Self::Link,
+            Rule::link_word | Rule::link_line | Rule::link => Self::Link,
             Rule::o_list_counter | Rule::digit => Self::Digit,
             Rule::task_open => Self::TaskOpen,
             Rule::task_complete => Self::TaskClosed,
