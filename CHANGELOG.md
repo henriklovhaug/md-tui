@@ -5,6 +5,7 @@
 - #64 Tables and code blocks destroyed search marking for every block type
   following.
 - Gave code blocks a bit more space.
+- #68 Improve link parsing.
 
 # Version 0.4.2
 

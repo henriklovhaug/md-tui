@@ -49,9 +49,8 @@ programming_language =  { ASCII_ALPHA+ }
 code_line            =  { NEWLINE ~ (c_line_char | " ")* }
 normal               = _{ word+ }
 t_normal             = _{ t_word+ }
-markdown_link        = _{ "[" ~ link_word+ ~ "]" ~ "(#" ~ link_data+ ~ ")" }
-external_link        = _{ "[" ~ link_word+ ~ "]" ~ "(" ~ link_data+ ~ ")" }
-link                 =  { NEWLINE? ~ " "* ~ (markdown_link | external_link) }
+link_line            = _{ "[" ~ link_word+ ~ "]" ~ "(" ~ link_data+ ~ ")" }
+link                 =  { NEWLINE? ~ " "* ~ link_line }
 italic               =  {
     (NEWLINE? ~ " "* ~ !"\\" ~ "*" ~ (italic_word | NEWLINE)+ ~ "*")
   | ((NEWLINE | " ") ~ " "* ~ !"\\" ~ "_" ~ (italic_word | NEWLINE)+ ~ "_")

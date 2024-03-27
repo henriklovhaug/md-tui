@@ -378,7 +378,8 @@ fn keyboard_mode_view(
                     }
                     LinkType::MarkdownFile(url) => {
                         // Remove the first character, which is a '/'
-                        let url = &url[1..];
+
+                        let url = if url.starts_with('/') { &url[1..] } else { url };
                         if !url.ends_with("md") {
                             let _ = open::that(url);
                             return KeyBoardAction::Continue;

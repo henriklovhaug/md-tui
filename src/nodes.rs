@@ -76,7 +76,7 @@ impl RenderRoot {
         let mut y_offset = 0;
         for component in self.components.iter() {
             if component.kind() == RenderNode::Heading
-                && compare_heading(heading, component.content())
+                && compare_heading(&heading[1..], component.content())
             {
                 return Ok(y_offset);
             }
