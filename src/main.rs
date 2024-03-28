@@ -270,14 +270,14 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: RenderRoot) {
         Rect {
             y: size.height - 4,
             height: 3,
-            width: CONFIG.width,
+            width: size.width - 2,
             ..area
         }
     } else {
         Rect {
             y: size.height - 17,
             height: 16,
-            width: CONFIG.width,
+            width: size.width - 2,
             ..area
         }
     };
