@@ -95,5 +95,5 @@ horizontal_sep = { NEWLINE? ~ "---" ~ "-"* }
 comment = _{ "<!--" ~ (NEWLINE | comment_char)+ ~ "-->" }
 
 txt = {
-    (horizontal_sep | task | comment | table | quote | list_container | code_block | heading | paragraph | block_sep+ | " ")+
+    (horizontal_sep | task | comment | table | quote | list_container | code_block | heading | paragraph | block_sep | " ")+
 }
