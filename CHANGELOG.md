@@ -6,6 +6,7 @@
   following.
 - Gave code blocks a bit more space.
 - #68 Improve link parsing.
+- #72 If paragraphs started with italic modifier, it didn't work. Now fixed.
 
 # Version 0.4.2
 
