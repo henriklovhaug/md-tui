@@ -4,6 +4,7 @@
 
 - [MD-TUI](#md-tui)
   - [Installation](#installation)
+  - [Usage](#usage)
   - [Key binds](#key-binds)
   - [Configuration](#configuration)
   - [Contributions](#contributions)
@@ -16,6 +17,12 @@
 Using cargo: `cargo install md-tui --locked`
 
 Using AUR: `yay -S md-tui-bin`
+
+## Usage
+
+Start the program running `mdt <file.md>` or just `mdt`. The latter will search
+recursively from where it was invoked for any markdown file and show it in a
+_file tree_.
 
 ## Key binds
 
