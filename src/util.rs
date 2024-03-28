@@ -82,7 +82,7 @@ pub enum LinkType<'a> {
 
 impl<'a> From<&'a str> for LinkType<'a> {
     fn from(s: &'a str) -> Self {
-        if s.starts_with("#") {
+        if s.starts_with('#') {
             return Self::Internal(s);
         }
         if s.ends_with("md") {

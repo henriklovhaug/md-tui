@@ -8,6 +8,10 @@
 - #68 Improve link parsing.
 - #72 If paragraphs started with italic modifier, it didn't work. Now fixed.
 
+## New features
+
+- #33 Able to jump the next or previous search result.
+
 # Version 0.4.2
 
 ## New features

@@ -53,6 +53,10 @@ impl SearchBox {
         text
     }
 
+    pub fn content_str(&self) -> &str {
+        &self.text
+    }
+
     pub fn content(&self) -> Option<&str> {
         if self.text.is_empty() {
             None

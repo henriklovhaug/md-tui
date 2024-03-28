@@ -194,10 +194,10 @@ fn keyboard_mode_view(
                 app.boxes = Boxes::None;
             }
             KeyCode::Enter => {
-                let query = app.search_box.consume();
+                let query = app.search_box.content_str();
                 let lines = markdown.content();
                 let search =
-                    find_line_match_and_index(&query, lines.iter().map(|s| &**s).collect(), 0);
+                    find_line_match_and_index(query, lines.iter().map(|s| &**s).collect(), 0);
                 if search.is_empty() {
                     app.error_box
                         .set_message(format!("No results for {}", query));
@@ -318,6 +318,7 @@ fn keyboard_mode_view(
                 };
             }
             KeyCode::Char('f') | KeyCode::Char('/') => {
+                app.search_box.clear();
                 app.search_box.set_position(2, height - 3);
                 app.search_box.set_width(CONFIG.width);
                 app.boxes = Boxes::Search;
@@ -330,6 +331,84 @@ fn keyboard_mode_view(
                     app.history.push(Jump::File(file.to_string()));
                 }
                 app.reset();
+            }
+
+            KeyCode::Char('n') => {
+                let query = if let Some(query) = app.search_box.content() {
+                    query
+                } else {
+                    app.error_box.set_message("No search query".to_string());
+                    app.boxes = Boxes::Error;
+                    return KeyBoardAction::Continue;
+                };
+
+                let lines = markdown.content();
+                let search =
+                    find_line_match_and_index(query, lines.iter().map(|s| &**s).collect(), 1);
+                if search.is_empty() {
+                    app.error_box
+                        .set_message(format!("No results for {}", query));
+                    app.boxes = Boxes::Error;
+                    return KeyBoardAction::Continue;
+                }
+
+                markdown.deselect();
+
+                let next = search.iter().find(|(index, _)| {
+                    *index > (app.vertical_scroll as usize + height as usize / 2)
+                });
+
+                if let Some((index, _)) = next {
+                    app.vertical_scroll = cmp::min(
+                        (*index as u16).saturating_sub(height / 2),
+                        markdown.height().saturating_sub(height / 2),
+                    );
+                }
+
+                for ele in search.iter() {
+                    let _ = markdown.mark_word(ele.0, ele.1, query.len());
+                }
+
+                app.boxes = Boxes::None;
+            }
+
+            KeyCode::Char('N') => {
+                let query = if let Some(query) = app.search_box.content() {
+                    query
+                } else {
+                    app.error_box.set_message("No search query".to_string());
+                    app.boxes = Boxes::Error;
+                    return KeyBoardAction::Continue;
+                };
+
+                let lines = markdown.content();
+                let search =
+                    find_line_match_and_index(query, lines.iter().map(|s| &**s).collect(), 1);
+                if search.is_empty() {
+                    app.error_box
+                        .set_message(format!("No results for {}", query));
+                    app.boxes = Boxes::Error;
+                    return KeyBoardAction::Continue;
+                }
+
+                markdown.deselect();
+
+                let next = search.iter().rev().find(|(index, _)| {
+                    *index < (app.vertical_scroll as usize + height as usize / 2)
+                });
+
+                if let Some((index, _)) = next {
+                    app.vertical_scroll = cmp::min(
+                        (*index as u16).saturating_sub(height / 2),
+                        markdown.height().saturating_sub(height / 2),
+                    );
+                }
+
+                for ele in search.iter() {
+                    let _ = markdown.mark_word(ele.0, ele.1, query.len());
+                }
+
+                app.boxes = Boxes::None;
             }
             KeyCode::Char('r') => {
                 let url = if let Some(url) = markdown.file_name() {
@@ -379,7 +458,11 @@ fn keyboard_mode_view(
                     LinkType::MarkdownFile(url) => {
                         // Remove the first character, which is a '/'
 
-                        let url = if url.starts_with('/') { &url[1..] } else { url };
+                        let url = if let Some(url) = url.strip_prefix('/') {
+                            url
+                        } else {
+                            url
+                        };
                         if !url.ends_with("md") {
                             let _ = open::that(url);
                             return KeyBoardAction::Continue;

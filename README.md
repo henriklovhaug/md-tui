@@ -34,6 +34,7 @@ _file tree_.
 | `h`        | Scroll one page up                                                     |
 | `r`        | Reload file                                                            |
 | `f` or `/` | Search                                                                 |
+| `n` or `N` | Jump to next or previous search result                                 |
 | `s`        | Enter select link mode                                                 |
 | `Enter`    | Select. Depending on which mode it can: open file, select link, search |
 | `Esc`      | Go back to _normal_ mode                                               |
