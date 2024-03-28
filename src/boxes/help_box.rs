@@ -97,6 +97,7 @@ fn render_markdown_help(expandend: bool, area: Rect, buf: &mut Buffer) {
         Row::new(vec!["G", "Move to bottom"]),
         Row::new(vec!["d", "Move half page down"]),
         Row::new(vec!["u", "Move half page up"]),
+        Row::new(vec!["r", "Reload file"]),
         Row::new(vec!["/ or f", "Search"]),
         Row::new(vec!["t", "Toggle file tree"]),
         Row::new(vec!["s", "Enter select mode"]),
