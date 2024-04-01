@@ -5,7 +5,7 @@
 - #64 Tables and code blocks destroyed search marking for every block type
   following.
 - Gave code blocks a bit more space.
-- #68 Improve link parsing.
+- #68 Improve link parsing. Root counts from where `mdt` was invoked.
 - #72 If paragraphs started with italic modifier, it didn't work. Now fixed.
 
 ## New features
