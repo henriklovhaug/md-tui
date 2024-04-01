@@ -85,12 +85,12 @@ file_tree_path_color = "gray"
 gitignore = false
 
 # Quote bar
-quote_important = "lightred",
-quote_warning = "LightYellow",
-quote_tip: "lightgreen",
-quote_note: "lightblue",
-quote_caution: "lightmagenta",
-quote_default: "white",
+quote_important = "lightred"
+quote_warning = "LightYellow"
+quote_tip: "lightgreen"
+quote_note: "lightblue"
+quote_caution: "lightmagenta"
+quote_default: "white"
 ```
 
 ## Contributions
