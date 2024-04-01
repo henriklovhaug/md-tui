@@ -1,4 +1,4 @@
-# Version 0.4.3 (unreleased)
+# Version 0.5.0 (unreleased)
 
 ## Fixes
 
@@ -11,6 +11,7 @@
 ## New features
 
 - #33 Able to jump the next or previous search result.
+- #65 Quote markings supported.
 
 # Version 0.4.2
 

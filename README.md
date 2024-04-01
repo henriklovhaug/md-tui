@@ -71,7 +71,7 @@ link_selected_bg_color = "darkgrey"
 # Block styling
 h_bg_color = "blue"
 h_fg_color = "black"
-quote_bg_color = "#2A2A2A"
+quote_bg_color = "reset"
 code_block_fg_color = "red" #Will change when tree-sitter gets implemented
 code_block_bg_color = "#2A2A2A"
 table_header_fg_color = "yellow"
@@ -83,6 +83,14 @@ file_tree_page_count_color = "lightgreen"
 file_tree_name_color = "blue"
 file_tree_path_color = "gray"
 gitignore = false
+
+# Quote bar
+pub quote_important = "lightred",
+pub quote_warning = "LightYellow",
+pub quote_tip: "lightgreen",
+pub quote_note: "lightblue",
+pub quote_caution: "lightmagenta",
+pub quote_default: "white",
 ```
 
 ## Contributions

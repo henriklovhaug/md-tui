@@ -166,6 +166,11 @@ pub enum MetaData {
     PLanguage,
     Other,
     ColumnsCount,
+    Important,
+    Note,
+    Tip,
+    Warning,
+    Caution,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -209,6 +214,11 @@ impl From<MdParseEnum> for WordType {
             | MdParseEnum::Word => WordType::Normal,
 
             MdParseEnum::LinkData => WordType::LinkData,
+            MdParseEnum::Imortant => WordType::MetaInfo(MetaData::Important),
+            MdParseEnum::Note => WordType::MetaInfo(MetaData::Note),
+            MdParseEnum::Tip => WordType::MetaInfo(MetaData::Tip),
+            MdParseEnum::Warning => WordType::MetaInfo(MetaData::Warning),
+            MdParseEnum::Caution => WordType::MetaInfo(MetaData::Caution),
 
             MdParseEnum::Heading
             | MdParseEnum::Task
@@ -621,8 +631,8 @@ impl RenderComponent {
                 let mut len = 0;
                 let mut lines = Vec::new();
                 let mut line = Vec::new();
-                if self.kind() == RenderNode::Quote {
-                    let filler = Word::new(" ".repeat(2), WordType::Normal);
+                if self.kind() == RenderNode::Quote && self.meta_info().is_empty() {
+                    let filler = Word::new(" ".to_string(), WordType::Normal);
                     line.push(filler);
                 }
                 let iter = self.content.iter().flatten();
@@ -637,7 +647,7 @@ impl RenderComponent {
                         let content = word.content.trim_start().to_owned();
                         word.set_content(content);
                         if self.kind() == RenderNode::Quote {
-                            let filler = Word::new(" ".repeat(2), WordType::Normal);
+                            let filler = Word::new(" ".to_string(), WordType::Normal);
                             line = vec![filler, word];
                         } else {
                             line = vec![word];

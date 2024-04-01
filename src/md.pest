@@ -81,13 +81,22 @@ h4 = _{ "#### " ~ (h_word | " ")+ }
 h5 = _{ "##### " ~ (h_word | " ")+ }
 h6 = _{ "###### " ~ (h_word | " ")+ }
 
+// Quote markings
+important = { ^"[!important]" }
+note      = { ^"[!note]" }
+tip       = { ^"[!tip]" }
+warning   = { ^"[!warning]" }
+caution   = { ^"[!caution]" }
+
+quote_marking = _{ " "* ~ (important | note | tip | warning | caution) }
+
 // Blocks
 heading        = { (h1 | h2 | h3 | h4 | h5 | h6) }
 list_container = { (NEWLINE? ~ !comment ~ (u_list | o_list))+ }
 paragraph      = { sentence+ }
 code_block     = { "```" ~ programming_language? ~ code_line+ ~ "```" }
 table          = { (NEWLINE? ~ (table_seperator | table_cell))+ }
-quote          = { (NEWLINE? ~ ">" ~ (sentence | " ")+)+ }
+quote          = { (NEWLINE? ~ ">" ~ (quote_marking | sentence | " ")*)+ }
 task           = { NEWLINE? ~ task_prefix ~ sentence }
 block_sep      = { NEWLINE }
 horizontal_sep = { NEWLINE? ~ "---" ~ "-"* }

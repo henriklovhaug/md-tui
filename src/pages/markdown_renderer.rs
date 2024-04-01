@@ -139,6 +139,9 @@ fn render_quote(area: Rect, buf: &mut Buffer, component: RenderComponent, clip: 
     let top = component
         .scroll_offset()
         .saturating_sub(component.y_offset());
+
+    let meta = component.meta_info().to_owned();
+
     let mut content = component.content_owned();
     let content = match clip {
         Clipping::Both => {
@@ -167,10 +170,39 @@ fn render_quote(area: Rect, buf: &mut Buffer, component: RenderComponent, clip: 
         .map(|c| Line::from(c.iter().map(|i| style_word(i)).collect::<Vec<_>>()))
         .collect::<Vec<_>>();
 
+    let bar_color = if let Some(meta) = meta.first() {
+        meta.content()
+            .split_whitespace()
+            .next()
+            .map(|c| c.to_lowercase())
+            .map(|c| match c.as_str() {
+                "[!tip]" => CONFIG.quote_tip,
+                "[!warning]" => CONFIG.quote_warning,
+                "[!caution]" => CONFIG.quote_caution,
+                "[!important]" => CONFIG.quote_important,
+                "[!note]" => CONFIG.quote_note,
+                _ => Color::White,
+            })
+            .unwrap_or(CONFIG.quote_bg_color)
+    } else {
+        Color::White
+    };
+    let vertical_marker = Span::styled("\u{2588}", Style::default().fg(bar_color));
+
+    let area = Rect {
+        width: cmp::min(area.width, CONFIG.width),
+        ..area
+    };
+
+    let marker_paragraph =
+        Paragraph::new(vec![Line::from(vertical_marker); content.len()]).bg(CONFIG.quote_bg_color);
+    marker_paragraph.render(area, buf);
+
     let paragraph = Paragraph::new(lines)
         .block(Block::default().style(Style::default().bg(CONFIG.quote_bg_color)));
 
     let area = Rect {
+        x: area.x + 1,
         width: cmp::min(area.width, CONFIG.width),
         ..area
     };
