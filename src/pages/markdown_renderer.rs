@@ -203,7 +203,7 @@ fn render_quote(area: Rect, buf: &mut Buffer, component: RenderComponent, clip: 
 
     let area = Rect {
         x: area.x + 1,
-        width: cmp::min(area.width, CONFIG.width),
+        width: cmp::min(area.width, CONFIG.width) - 1,
         ..area
     };
 
