@@ -85,7 +85,26 @@ fn parse_component(parse_node: ParseNode) -> RenderComponent {
             RenderComponent::new(RenderNode::Task, words)
         }
 
-        MdParseEnum::Paragraph | MdParseEnum::Heading | MdParseEnum::Quote => {
+        MdParseEnum::Quote => {
+            let leaf_nodes = get_leaf_nodes(parse_node);
+            let mut words = Vec::new();
+            for node in leaf_nodes {
+                let word_type = WordType::from(node.kind());
+                let mut content = node.content().to_owned();
+                if content.starts_with(' ') {
+                    content.remove(0);
+                    let comp = Word::new(" ".to_owned(), word_type);
+                    words.push(comp);
+                }
+                words.push(Word::new(content, word_type));
+            }
+            if let Some(w) = words.first_mut() {
+                w.set_content(w.content().trim_start().to_owned());
+            }
+            RenderComponent::new(RenderNode::Quote, words)
+        }
+
+        MdParseEnum::Paragraph | MdParseEnum::Heading => {
             let kind = parse_node.kind();
             let leaf_nodes = get_leaf_nodes(parse_node);
             let mut words = Vec::new();
@@ -105,7 +124,6 @@ fn parse_component(parse_node: ParseNode) -> RenderComponent {
             match kind {
                 MdParseEnum::Paragraph => RenderComponent::new(RenderNode::Paragraph, words),
                 MdParseEnum::Heading => RenderComponent::new(RenderNode::Heading, words),
-                MdParseEnum::Quote => RenderComponent::new(RenderNode::Quote, words),
                 _ => unreachable!(),
             }
         }
@@ -334,6 +352,11 @@ pub enum MdParseEnum {
     Strikethrough,
     HorizontalSeperator,
     Indent,
+    Imortant,
+    Note,
+    Tip,
+    Warning,
+    Caution,
 }
 
 impl From<Rule> for MdParseEnum {
@@ -369,6 +392,12 @@ impl From<Rule> for MdParseEnum {
             Rule::horizontal_sep => Self::HorizontalSeperator,
             Rule::link_data => Self::LinkData,
 
+            Rule::warning => Self::Warning,
+            Rule::note => Self::Note,
+            Rule::tip => Self::Tip,
+            Rule::important => Self::Imortant,
+            Rule::caution => Self::Caution,
+
             Rule::p_char
             | Rule::t_char
             | Rule::link_char
@@ -391,7 +420,8 @@ impl From<Rule> for MdParseEnum {
             | Rule::b_char
             | Rule::s_char
             | Rule::comment_char
-            | Rule::c_line_char => todo!(),
+            | Rule::c_line_char
+            | Rule::quote_marking => todo!(),
         }
     }
 }

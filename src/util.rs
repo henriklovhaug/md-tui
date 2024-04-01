@@ -170,6 +170,14 @@ pub struct MdConfig {
     pub file_tree_name_color: Color,
     pub file_tree_path_color: Color,
     pub gitignore: bool,
+
+    // Quote markings
+    pub quote_important: Color,
+    pub quote_warning: Color,
+    pub quote_tip: Color,
+    pub quote_note: Color,
+    pub quote_caution: Color,
+    pub quote_default: Color,
 }
 
 lazy_static! {
@@ -206,7 +214,7 @@ lazy_static! {
             quote_bg_color: Color::from_str(
                 &settings.get::<String>("quote_bg_color").unwrap_or_default(),
             )
-            .unwrap_or(Color::Rgb(48, 48, 48)),
+            .unwrap_or(Color::Reset),
             code_fg_color: Color::from_str(
                 &settings.get::<String>("code_fg_color").unwrap_or_default(),
             )
@@ -284,6 +292,32 @@ lazy_static! {
             )
             .unwrap_or(Color::Reset),
             gitignore: settings.get::<bool>("gitignore").unwrap_or_default(),
+            quote_important: Color::from_str(
+                &settings
+                    .get::<String>("quote_important")
+                    .unwrap_or_default(),
+            )
+            .unwrap_or(Color::LightRed),
+            quote_warning: Color::from_str(
+                &settings.get::<String>("quote_warning").unwrap_or_default(),
+            )
+            .unwrap_or(Color::LightYellow),
+
+            quote_tip: Color::from_str(&settings.get::<String>("quote_tip").unwrap_or_default())
+                .unwrap_or(Color::LightGreen),
+
+            quote_note: Color::from_str(&settings.get::<String>("quote_note").unwrap_or_default())
+                .unwrap_or(Color::LightBlue),
+
+            quote_caution: Color::from_str(
+                &settings.get::<String>("quote_caution").unwrap_or_default(),
+            )
+            .unwrap_or(Color::LightMagenta),
+
+            quote_default: Color::from_str(
+                &settings.get::<String>("quote_default").unwrap_or_default(),
+            )
+            .unwrap_or(Color::White),
         }
     };
 }

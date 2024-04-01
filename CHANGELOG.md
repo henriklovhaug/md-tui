@@ -1,16 +1,17 @@
-# Version 0.4.3 (unreleased)
+# Version 0.5.0 (unreleased)
 
 ## Fixes
 
 - #64 Tables and code blocks destroyed search marking for every block type
   following.
 - Gave code blocks a bit more space.
-- #68 Improve link parsing.
+- #68 Improve link parsing. Root counts from where `mdt` was invoked.
 - #72 If paragraphs started with italic modifier, it didn't work. Now fixed.
 
 ## New features
 
 - #33 Able to jump the next or previous search result.
+- #65 Quote markings supported.
 
 # Version 0.4.2
 
