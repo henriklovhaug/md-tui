@@ -1,4 +1,4 @@
-# Version 0.5.0 (unreleased)
+# Version 0.5.0
 
 ## Fixes
 
@@ -14,6 +14,7 @@
 
 - #33 Able to jump the next or previous search result.
 - #65 Quote markings supported.
+- #75 Wiki links. `[[linkToSomething]]` or `[[URL|Some title]]` is supported.
 
 # Version 0.4.2
 

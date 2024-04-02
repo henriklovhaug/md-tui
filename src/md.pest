@@ -1,16 +1,17 @@
 // Characters
-p_char       = _{ (!(NEWLINE | comment | code | bold_italic | italic | bold | strikethrough | latex | " ") ~ ANY)+ }
-t_char       = _{ (!(NEWLINE | comment | code | bold_italic | italic | bold | strikethrough | latex | " " | "|") ~ ANY)+ }
-c_char       = _{ (!(NEWLINE | " " | "`") ~ ANY)+ }
-i_char       = _{ (!(NEWLINE | comment | " " | "_" | "*") ~ ANY)+ }
-b_char       = _{ (!(NEWLINE | comment | " " | "**") ~ ANY)+ }
-s_char       = _{ (!(NEWLINE | comment | " " | "~~") ~ ANY)+ }
-c_line_char  = _{ (!(NEWLINE | "```") ~ ANY)+ }
-comment_char = _{ (!(NEWLINE | "-->") ~ ANY)+ }
-link_char    = _{ (!(NEWLINE | " " | "[" | "]" | "(" | ")") ~ ANY)+ }
-latex_char   = _{ (!(NEWLINE | " " | "$") ~ ANY)+ }
-digit        = _{ '0'..'9' }
-indent       =  { " "* }
+p_char         = _{ (!(NEWLINE | comment | code | bold_italic | italic | bold | strikethrough | latex | " ") ~ ANY)+ }
+t_char         = _{ (!(NEWLINE | comment | code | bold_italic | italic | bold | strikethrough | latex | " " | "|") ~ ANY)+ }
+c_char         = _{ (!(NEWLINE | " " | "`") ~ ANY)+ }
+i_char         = _{ (!(NEWLINE | comment | " " | "_" | "*") ~ ANY)+ }
+b_char         = _{ (!(NEWLINE | comment | " " | "**") ~ ANY)+ }
+s_char         = _{ (!(NEWLINE | comment | " " | "~~") ~ ANY)+ }
+c_line_char    = _{ (!(NEWLINE | "```") ~ ANY)+ }
+comment_char   = _{ (!(NEWLINE | "-->") ~ ANY)+ }
+link_char      = _{ (!(NEWLINE | " " | "[" | "]" | "(" | ")") ~ ANY)+ }
+wiki_link_char = _{ (!(NEWLINE | " " | "|" | "[[" | "]]") ~ ANY)+ }
+latex_char     = _{ (!(NEWLINE | " " | "$") ~ ANY)+ }
+digit          = _{ '0'..'9' }
+indent         =  { " "* }
 
 // Words
 word               = {
@@ -27,6 +28,9 @@ strikethrough_word = { s_char+ ~ " "? }
 code_word          = { c_char+ ~ " "? }
 latex_word         = { latex_char+ ~ " "? }
 link_word          = { (link_char | " " | "(" | ")")+ }
+wiki_link_word     = { (link_char | " ")+ }
+wiki_link_data     = { wiki_link_char+ }
+wiki_link_alone    = { wiki_link_char+ }
 link_data          = { link_char+ }
 
 // Prefixes
@@ -50,7 +54,8 @@ code_line            =  { NEWLINE ~ (c_line_char | " ")* }
 normal               = _{ word+ }
 t_normal             = _{ t_word+ }
 link_line            = _{ "[" ~ link_word+ ~ "]" ~ "(" ~ link_data+ ~ ")" }
-link                 =  { NEWLINE? ~ " "* ~ link_line }
+wiki_link            = _{ ("[[" ~ wiki_link_alone+ ~ "]]") | ("[[" ~ wiki_link_data+ ~ "|" ~ wiki_link_word+ ~ "]]") }
+link                 =  { NEWLINE? ~ " "* ~ (link_line | wiki_link) }
 italic               =  {
     (NEWLINE? ~ " "* ~ !"\\" ~ "*" ~ (italic_word | NEWLINE)+ ~ "*")
   | ((NEWLINE | " ") ~ " "* ~ !"\\" ~ "_" ~ (italic_word | NEWLINE)+ ~ "_")
