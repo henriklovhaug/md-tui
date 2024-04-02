@@ -7,6 +7,7 @@
   - [Usage](#usage)
   - [Key binds](#key-binds)
   - [Configuration](#configuration)
+  - [Links](#links)
   - [Contributions](#contributions)
   - [Versioning](#versioning)
 
@@ -92,6 +93,11 @@ quote_note = "lightblue"
 quote_caution = "lightmagenta"
 quote_default = "white"
 ```
+
+## Links
+
+MD-TUI currently supports `[text](url)`, `[[link]]`, and `[[link|Some title]]`
+for links.
 
 ## Contributions
 
