@@ -203,7 +203,7 @@ impl From<MdParseEnum> for WordType {
             MdParseEnum::Bold => WordType::Bold,
             MdParseEnum::Italic => WordType::Italic,
             MdParseEnum::Strikethrough => WordType::Strikethrough,
-            MdParseEnum::Link => WordType::Link,
+            MdParseEnum::Link | MdParseEnum::WikiLink => WordType::Link,
             MdParseEnum::BoldItalic => WordType::BoldItalic,
 
             MdParseEnum::Digit => WordType::ListMarker,

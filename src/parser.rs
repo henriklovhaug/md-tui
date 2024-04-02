@@ -69,11 +69,17 @@ fn parse_component(parse_node: ParseNode) -> RenderComponent {
             let mut words = Vec::new();
             for node in leaf_nodes {
                 let word_type = WordType::from(node.kind());
+
                 let mut content: String = node
                     .content()
                     .chars()
                     .dedup_by(|x, y| *x == ' ' && *y == ' ')
                     .collect();
+
+                if node.kind() == MdParseEnum::WikiLink {
+                    let comp = Word::new(content.clone(), WordType::LinkData);
+                    words.push(comp);
+                }
 
                 if content.starts_with(' ') {
                     content.pop();
@@ -91,6 +97,11 @@ fn parse_component(parse_node: ParseNode) -> RenderComponent {
             for node in leaf_nodes {
                 let word_type = WordType::from(node.kind());
                 let mut content = node.content().to_owned();
+
+                if node.kind() == MdParseEnum::WikiLink {
+                    let comp = Word::new(content.clone(), WordType::LinkData);
+                    words.push(comp);
+                }
                 if content.starts_with(' ') {
                     content.remove(0);
                     let comp = Word::new(" ".to_owned(), word_type);
@@ -111,6 +122,12 @@ fn parse_component(parse_node: ParseNode) -> RenderComponent {
             for node in leaf_nodes {
                 let word_type = WordType::from(node.kind());
                 let mut content = node.content().to_owned();
+
+                if node.kind() == MdParseEnum::WikiLink {
+                    let comp = Word::new(content.clone(), WordType::LinkData);
+                    words.push(comp);
+                }
+
                 if content.starts_with(' ') {
                     content.remove(0);
                     let comp = Word::new(" ".to_owned(), word_type);
@@ -157,6 +174,11 @@ fn parse_component(parse_node: ParseNode) -> RenderComponent {
                             .collect(),
                     };
 
+                    if node.kind() == MdParseEnum::WikiLink {
+                        let comp = Word::new(content.clone(), WordType::LinkData);
+                        inner_words.push(comp);
+                    }
+
                     inner_words.push(Word::new(content, word_type));
                 }
                 if kind == MdParseEnum::UnorderedList {
@@ -191,6 +213,11 @@ fn parse_component(parse_node: ParseNode) -> RenderComponent {
                 for word in get_leaf_nodes(row) {
                     let word_type = WordType::from(word.kind());
                     let content = word.content().to_owned();
+
+                    if word.kind() == MdParseEnum::WikiLink {
+                        let comp = Word::new(content.clone(), WordType::LinkData);
+                        inner_words.push(comp);
+                    }
                     inner_words.push(Word::new(content, word_type));
                 }
                 words.push(inner_words);
@@ -332,6 +359,7 @@ pub enum MdParseEnum {
     Code,
     Paragraph,
     Link,
+    WikiLink,
     LinkData,
     Quote,
     Table,
@@ -365,7 +393,8 @@ impl From<Rule> for MdParseEnum {
             Rule::strikethrough | Rule::strikethrough_word => Self::Strikethrough,
             Rule::code_word | Rule::code => Self::Code,
             Rule::programming_language => Self::PLanguage,
-            Rule::link_word | Rule::link_line | Rule::link => Self::Link,
+            Rule::link_word | Rule::link_line | Rule::link | Rule::wiki_link_word => Self::Link,
+            Rule::wiki_link_alone => Self::WikiLink,
             Rule::o_list_counter | Rule::digit => Self::Digit,
             Rule::task_open => Self::TaskOpen,
             Rule::task_complete => Self::TaskClosed,
@@ -385,7 +414,7 @@ impl From<Rule> for MdParseEnum {
             Rule::task => Self::Task,
             Rule::block_sep => Self::BlockSeperator,
             Rule::horizontal_sep => Self::HorizontalSeperator,
-            Rule::link_data => Self::LinkData,
+            Rule::link_data | Rule::wiki_link_data => Self::LinkData,
 
             Rule::warning => Self::Warning,
             Rule::note => Self::Note,
@@ -396,6 +425,7 @@ impl From<Rule> for MdParseEnum {
             Rule::p_char
             | Rule::t_char
             | Rule::link_char
+            | Rule::wiki_link_char
             | Rule::normal
             | Rule::t_normal
             | Rule::latex
@@ -416,6 +446,7 @@ impl From<Rule> for MdParseEnum {
             | Rule::s_char
             | Rule::comment_char
             | Rule::c_line_char
+            | Rule::wiki_link
             | Rule::quote_marking => todo!(),
         }
     }
