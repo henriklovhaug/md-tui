@@ -13,6 +13,12 @@
 
 <!--toc:end-->
 
+`MD-TUI` is a TUI application for viewing markdown files directly in your
+terminal. I created it because I wasn't happy with how alternatives handled
+links in their applications. While the full markdown specification is not yet
+supported, it will slowly get there. It's a good solution for quickly viewing
+your markdown notes, or opening external links from someones README.
+
 ## Installation
 
 Using cargo: `cargo install md-tui --locked`
