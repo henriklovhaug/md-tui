@@ -7,6 +7,7 @@
 - Gave code blocks a bit more space.
 - #68 Improve link parsing. Root counts from where `mdt` was invoked.
 - #72 If paragraphs started with italic modifier, it didn't work. Now fixed.
+- Bold&italic had an issue of consuming its preceding whitespace.
 
 ## New features
 
