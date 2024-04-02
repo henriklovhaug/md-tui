@@ -87,7 +87,7 @@ gitignore = false
 
 # Quote bar
 quote_important = "lightred"
-quote_warning = "LightYellow"
+quote_warning = "lightYellow"
 quote_tip = "lightgreen"
 quote_note = "lightblue"
 quote_caution = "lightmagenta"
