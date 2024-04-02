@@ -62,6 +62,24 @@ impl RenderRoot {
         }
     }
 
+    pub fn link_index_and_height(&self) -> Vec<(usize, u16)> {
+        let mut indexes = Vec::new();
+        let mut count = 0;
+        self.components.iter().for_each(|comp| {
+            let height = comp.y_offset();
+            comp.content().iter().enumerate().for_each(|(index, row)| {
+                row.iter().for_each(|c| {
+                    if c.kind() == WordType::Link || c.kind() == WordType::Selected {
+                        indexes.push((count, height + index as u16));
+                        count += 1;
+                    }
+                })
+            });
+        });
+
+        indexes
+    }
+
     /// Sets the y offset of the components
     pub fn set_scroll(&mut self, scroll: u16) {
         let mut y_offset = 0;

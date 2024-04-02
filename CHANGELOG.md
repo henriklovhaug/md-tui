@@ -1,3 +1,15 @@
+# Version 0.5.1 (unreleased)
+
+## Breaking change
+
+- `s` key now tries to find the top link in view. It searches downward, but
+  selects the last one link if it doesn't find any.
+
+## Added key
+
+- The `S` key does the same as `s` but searches from two thirds up and does the
+  search both ways.
+
 # Version 0.5.0
 
 ## Fixes
