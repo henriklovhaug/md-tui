@@ -148,7 +148,7 @@ fn parse_component(parse_node: ParseNode) -> RenderComponent {
                 for node in leaf_nodes {
                     let word_type = WordType::from(node.kind());
 
-                    let mut content = match node.kind() {
+                    let content = match node.kind() {
                         MdParseEnum::Indent => node.content().to_owned(),
                         _ => node
                             .content()
@@ -156,12 +156,6 @@ fn parse_component(parse_node: ParseNode) -> RenderComponent {
                             .dedup_by(|x, y| *x == ' ' && *y == ' ')
                             .collect(),
                     };
-
-                    if content.starts_with(' ') {
-                        content.remove(0);
-                        let comp = Word::new(" ".to_owned(), word_type);
-                        inner_words.push(comp);
-                    }
 
                     inner_words.push(Word::new(content, word_type));
                 }
