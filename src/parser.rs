@@ -165,7 +165,7 @@ fn parse_component(parse_node: ParseNode) -> RenderComponent {
                 for node in leaf_nodes {
                     let word_type = WordType::from(node.kind());
 
-                    let content = match node.kind() {
+                    let mut content = match node.kind() {
                         MdParseEnum::Indent => node.content().to_owned(),
                         _ => node
                             .content()
@@ -176,6 +176,11 @@ fn parse_component(parse_node: ParseNode) -> RenderComponent {
 
                     if node.kind() == MdParseEnum::WikiLink {
                         let comp = Word::new(content.clone(), WordType::LinkData);
+                        inner_words.push(comp);
+                    }
+                    if content.starts_with(' ') && node.kind() != MdParseEnum::Indent {
+                        content.remove(0);
+                        let comp = Word::new(" ".to_owned(), word_type);
                         inner_words.push(comp);
                     }
 

@@ -149,8 +149,7 @@ impl RenderRoot {
         while let Some(component) = iter.next() {
             components.push(component.to_owned());
             if let Some(next) = iter.peek() {
-                if component.kind() != RenderNode::LineBreak
-                    && next.kind() != RenderNode::LineBreak
+                if component.kind() != RenderNode::LineBreak && next.kind() != RenderNode::LineBreak
                 {
                     components.push(RenderComponent::new(RenderNode::LineBreak, Vec::new()));
                 }

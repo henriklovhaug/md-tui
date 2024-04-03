@@ -394,7 +394,7 @@ fn keyboard_mode_view(
 
                 let lines = markdown.content();
                 let search =
-                    find_line_match_and_index(query, lines.iter().map(|s| &**s).collect(), 1);
+                    find_line_match_and_index(query, lines.iter().map(|s| &**s).collect(), 0);
                 if search.is_empty() {
                     app.error_box
                         .set_message(format!("No results for {}", query));
@@ -433,7 +433,7 @@ fn keyboard_mode_view(
 
                 let lines = markdown.content();
                 let search =
-                    find_line_match_and_index(query, lines.iter().map(|s| &**s).collect(), 1);
+                    find_line_match_and_index(query, lines.iter().map(|s| &**s).collect(), 0);
                 if search.is_empty() {
                     app.error_box
                         .set_message(format!("No results for {}", query));
