@@ -147,10 +147,9 @@ impl RenderRoot {
         let mut components = Vec::new();
         let mut iter = self.components.iter().peekable();
         while let Some(component) = iter.next() {
-            components.push(component.clone());
+            components.push(component.to_owned());
             if let Some(next) = iter.peek() {
-                if component.kind() == RenderNode::Table
-                    && next.kind() != RenderNode::Table
+                if component.kind() != RenderNode::LineBreak
                     && next.kind() != RenderNode::LineBreak
                 {
                     components.push(RenderComponent::new(RenderNode::LineBreak, Vec::new()));
