@@ -82,7 +82,7 @@ fn parse_component(parse_node: ParseNode) -> RenderComponent {
                 }
 
                 if content.starts_with(' ') {
-                    content.pop();
+                    content.remove(0);
                     let comp = Word::new(" ".to_owned(), word_type);
                     words.push(comp);
                 }
