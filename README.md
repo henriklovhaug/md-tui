@@ -42,7 +42,7 @@ _file tree_.
 | `r`        | Reload file                                                            |
 | `f` or `/` | Search                                                                 |
 | `n` or `N` | Jump to next or previous search result                                 |
-| `s` or `S` | Enter select link mode. Different behavior.                            |
+| `s` or `S` | Enter select link mode. Different selection strategy.                  |
 | `Enter`    | Select. Depending on which mode it can: open file, select link, search |
 | `Esc`      | Go back to _normal_ mode                                               |
 | `t`        | Go back to files                                                       |
