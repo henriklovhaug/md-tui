@@ -10,6 +10,11 @@
 - The `S` key does the same as `s` but searches from two thirds up and does the
   search both ways.
 
+## Fixes
+
+- Every block now has a newline between them regardless of users formatting.
+- Fixed tasks which was parsed incorrectly.
+
 # Version 0.5.0
 
 ## Fixes
