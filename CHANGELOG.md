@@ -1,3 +1,21 @@
+# Version 0.5.1 (unreleased)
+
+## Breaking change
+
+- `s` key now tries to find the top link in view. It searches downward, but
+  selects the last one link if it doesn't find any.
+
+## Added key
+
+- The `S` key does the same as `s` but searches from two thirds up and does the
+  search both ways.
+
+## Fixes
+
+- Every block now has a newline between them regardless of users formatting.
+- Fixed tasks which was parsed incorrectly.
+- Changed how spaces are parsed in lists so search markings can become nicer.
+
 # Version 0.5.0
 
 ## Fixes

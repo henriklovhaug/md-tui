@@ -309,14 +309,64 @@ fn keyboard_mode_view(
                 }
             }
 
-            KeyCode::Char('s') => {
-                app.vertical_scroll = if let Ok(scroll) = markdown.select(app.select_index) {
+            // Find the link closest to the middle, searching both ways
+            KeyCode::Char('S') => {
+                let links = markdown.link_index_and_height();
+                if links.is_empty() {
+                    app.error_box.set_message("No links found".to_string());
+                    app.boxes = Boxes::Error;
+                    return KeyBoardAction::Continue;
+                }
+
+                let next = links.iter().min_by_key(|(_, row)| {
+                    if *row > (app.vertical_scroll + height / 3) {
+                        *row - (app.vertical_scroll + height / 3)
+                    } else {
+                        (app.vertical_scroll + height / 3) - *row
+                    }
+                });
+
+                if let Some((index, _)) = next {
+                    app.vertical_scroll = if let Ok(scroll) = markdown.select(*index) {
+                        app.select_index = *index;
+                        scroll.saturating_sub(height / 3)
+                    } else {
+                        app.vertical_scroll
+                    };
                     app.selected = true;
+                } else {
+                    // Something weird must have happened at this point
+                    markdown.deselect();
+                }
+            }
+
+            // Find the link closest to the to the top, searching downwards
+            KeyCode::Char('s') => {
+                let mut links = markdown.link_index_and_height();
+                if links.is_empty() {
+                    app.error_box.set_message("No links found".to_string());
+                    app.boxes = Boxes::Error;
+                    return KeyBoardAction::Continue;
+                }
+
+                let mut index = usize::MAX;
+                while let Some(top) = links.pop() {
+                    if top.1 >= app.vertical_scroll || index == usize::MAX {
+                        index = top.0;
+                    } else {
+                        break;
+                    }
+                }
+
+                app.select_index = index;
+                app.selected = true;
+                app.vertical_scroll = if let Ok(scroll) = markdown.select(app.select_index) {
                     scroll.saturating_sub(height / 3)
                 } else {
                     app.vertical_scroll
                 };
             }
+
             KeyCode::Char('f') | KeyCode::Char('/') => {
                 app.search_box.clear();
                 app.search_box.set_position(2, height - 3);
@@ -344,7 +394,7 @@ fn keyboard_mode_view(
 
                 let lines = markdown.content();
                 let search =
-                    find_line_match_and_index(query, lines.iter().map(|s| &**s).collect(), 1);
+                    find_line_match_and_index(query, lines.iter().map(|s| &**s).collect(), 0);
                 if search.is_empty() {
                     app.error_box
                         .set_message(format!("No results for {}", query));
@@ -383,7 +433,7 @@ fn keyboard_mode_view(
 
                 let lines = markdown.content();
                 let search =
-                    find_line_match_and_index(query, lines.iter().map(|s| &**s).collect(), 1);
+                    find_line_match_and_index(query, lines.iter().map(|s| &**s).collect(), 0);
                 if search.is_empty() {
                     app.error_box
                         .set_message(format!("No results for {}", query));

@@ -452,7 +452,7 @@ fn render_task(
     const CHECKBOX: &str = "✅ ";
     const UNCHECKED: &str = "❌ ";
 
-    let checkbox = if meta_info.content() == "- [ ]" {
+    let checkbox = if meta_info.content() == "- [ ] " {
         UNCHECKED
     } else {
         CHECKBOX
