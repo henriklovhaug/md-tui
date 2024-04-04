@@ -2,7 +2,7 @@ use itertools::Itertools;
 use strsim::damerau_levenshtein;
 
 use crate::{
-    nodes::{RenderComponent, RenderNode, RenderRoot, Word, WordType},
+    nodes::Word,
     pages::file_explorer::{FileTree, MdFile},
     util::CONFIG,
 };
@@ -150,26 +150,19 @@ pub fn line_match_and_index(
 }
 
 pub fn find_with_ref<'a>(query: &str, text: Vec<&'a Word>) -> Vec<&'a Word> {
-    let mut query_words = query.split_whitespace().collect::<Vec<&str>>();
+    let window_size = query
+        .split_whitespace()
+        .fold(0usize, |acc, _| acc + 2)
+        .saturating_sub(1);
 
-    // Add back spaces in between each word
-    if query_words.len() > 1 {
-        let mut list = Vec::new();
-        for word in query_words {
-            list.push(word);
-            list.push(" ");
-        }
-        list.pop();
-        query_words = list;
+    if window_size == 0 {
+        return Vec::new();
     }
 
-    // let words_to_be_marked = Vec::new();
-
     let noe = text
-        .windows(query_words.len())
+        .windows(window_size)
         .into_iter()
         .filter(|word| {
-            let query = query_words.join("");
             let mut words = word.iter().map(|c| c.content()).join("");
             let case_sensitive = query.chars().any(|c| c.is_uppercase());
 
@@ -216,134 +209,141 @@ pub fn compare_heading(link_header: &str, header: &[Vec<Word>]) -> bool {
 }
 
 #[cfg(test)]
-#[test]
-fn test_find() {
-    let text = "Hello, world!";
-    let query = "world";
-    let precision = 0;
-    let result = find(query, text, precision);
-    assert_eq!(result, vec![7]);
-}
+mod tests {
 
-#[test]
-fn test_find_with_backoff() {
-    let text = "Hello, world!";
-    let query = "world";
-    let result = find_with_backoff(query, text);
-    assert_eq!(result, vec![7]);
-}
+    use crate::nodes::{RenderComponent, RenderNode, RenderRoot, WordType};
 
-#[test]
-fn test_find_with_backoff_with_typo() {
-    let text = "Hello, world!";
-    let query = "wrold";
-    let result = find_with_backoff(query, text);
-    assert_eq!(result, vec![7]);
-}
+    use super::*;
 
-#[test]
-fn test_vec_find() {
-    let text = vec!["Hello", "hello", "world", "World"];
-    let query = "world";
-    let precision = 0;
-    let result = line_match(query, text, precision);
-    assert_eq!(result, vec![2, 3]);
-}
+    #[test]
+    fn test_find() {
+        let text = "Hello, world!";
+        let query = "world";
+        let precision = 0;
+        let result = find(query, text, precision);
+        assert_eq!(result, vec![7]);
+    }
 
-#[test]
-fn test_vec_find_less_precision() {
-    let text = vec!["Hello", "hello", "world", "World"];
-    let query = "world";
-    let precision = 1;
-    let result = line_match(query, text, precision);
-    assert_eq!(result, vec![2, 3]);
-}
+    #[test]
+    fn test_find_with_backoff() {
+        let text = "Hello, world!";
+        let query = "world";
+        let result = find_with_backoff(query, text);
+        assert_eq!(result, vec![7]);
+    }
 
-#[test]
-fn test_vec_find_with_typo() {
-    let text = vec!["Hello", "hello", "world", "World"];
-    let query = "wrold";
-    let precision = 2;
-    let result = line_match(query, text, precision);
-    assert_eq!(result, vec![2, 3]);
-}
+    #[test]
+    fn test_find_with_backoff_with_typo() {
+        let text = "Hello, world!";
+        let query = "wrold";
+        let result = find_with_backoff(query, text);
+        assert_eq!(result, vec![7]);
+    }
 
-#[test]
-fn test_find_line_match_and_index() {
-    let text = vec!["Hello", "hello", "world", "hello world"];
-    let query = "world";
-    let precision = 0;
-    let result = line_match_and_index(query, text, precision);
-    assert_eq!(result, vec![(2, 0), (3, 6)]);
-}
+    #[test]
+    fn test_vec_find() {
+        let text = vec!["Hello", "hello", "world", "World"];
+        let query = "world";
+        let precision = 0;
+        let result = line_match(query, text, precision);
+        assert_eq!(result, vec![2, 3]);
+    }
 
-#[test]
-fn test_find_line_match_and_index_with_typo() {
-    let text = vec!["Hello", "hello", "world", "hello world"];
-    let query = "wrold";
-    let precision = 2;
-    let result = line_match_and_index(query, text, precision);
-    assert_eq!(result, vec![(2, 0), (3, 6)]);
-}
+    #[test]
+    fn test_vec_find_less_precision() {
+        let text = vec!["Hello", "hello", "world", "World"];
+        let query = "world";
+        let precision = 1;
+        let result = line_match(query, text, precision);
+        assert_eq!(result, vec![2, 3]);
+    }
 
-#[test]
-fn test_find_line_match_and_index_with_leading_space() {
-    let text = vec!["Hello", "hello", "world", " hello world"];
-    let query = "world";
-    let precision = 0;
-    let result = line_match_and_index(query, text, precision);
-    assert_eq!(result, vec![(2, 0), (3, 7)]);
-}
+    #[test]
+    fn test_vec_find_with_typo() {
+        let text = vec!["Hello", "hello", "world", "World"];
+        let query = "wrold";
+        let precision = 2;
+        let result = line_match(query, text, precision);
+        assert_eq!(result, vec![2, 3]);
+    }
 
-#[test]
-fn test_word_by_ref() {
-    let text = vec![
-        Word::new("Hello".to_string(), WordType::Bold),
-        Word::new("hello".to_string(), WordType::White),
-        Word::new("world".to_string(), WordType::Normal),
-        Word::new("World".to_string(), WordType::BoldItalic),
-    ];
+    #[test]
+    fn test_find_line_match_and_index() {
+        let text = vec!["Hello", "hello", "world", "hello world"];
+        let query = "world";
+        let precision = 0;
+        let result = line_match_and_index(query, text, precision);
+        assert_eq!(result, vec![(2, 0), (3, 6)]);
+    }
 
-    let componet = RenderComponent::new(RenderNode::Paragraph, text);
-    let root = RenderRoot::new(None, vec![componet]);
-    let query = "world";
-    let result = find_with_ref(query, root.words());
-    assert_eq!(result.len(), 2);
-}
-#[test]
-fn test_word_by_ref_span_multiple_words() {
-    let text = vec![
-        Word::new("Hello".to_string(), WordType::Bold),
-        Word::new("hello".to_string(), WordType::White),
-        Word::new(" ".to_string(), WordType::White),
-        Word::new("world".to_string(), WordType::Normal),
-        Word::new("World".to_string(), WordType::BoldItalic),
-    ];
+    #[test]
+    fn test_find_line_match_and_index_with_typo() {
+        let text = vec!["Hello", "hello", "world", "hello world"];
+        let query = "wrold";
+        let precision = 2;
+        let result = line_match_and_index(query, text, precision);
+        assert_eq!(result, vec![(2, 0), (3, 6)]);
+    }
 
-    let componet = RenderComponent::new(RenderNode::Paragraph, text);
-    let root = RenderRoot::new(None, vec![componet]);
-    let query = "hello world";
-    let result = find_with_ref(query, root.words());
-    assert_eq!(result.len(), 3);
-}
+    #[test]
+    fn test_find_line_match_and_index_with_leading_space() {
+        let text = vec!["Hello", "hello", "world", " hello world"];
+        let query = "world";
+        let precision = 0;
+        let result = line_match_and_index(query, text, precision);
+        assert_eq!(result, vec![(2, 0), (3, 7)]);
+    }
 
-#[test]
-fn test_word_by_ref_span_multiple_words_using_reference() {
-    let text = vec![
-        Word::new("Hello".to_string(), WordType::Bold),
-        Word::new("hello".to_string(), WordType::White),
-        Word::new(" ".to_string(), WordType::White),
-        Word::new("world".to_string(), WordType::Normal),
-        Word::new("World".to_string(), WordType::BoldItalic),
-    ];
+    #[test]
+    fn test_word_by_ref() {
+        let text = vec![
+            Word::new("Hello".to_string(), WordType::Bold),
+            Word::new("hello".to_string(), WordType::White),
+            Word::new("world".to_string(), WordType::Normal),
+            Word::new("World".to_string(), WordType::BoldItalic),
+        ];
 
-    let componet = RenderComponent::new(RenderNode::Paragraph, text);
-    let root = RenderRoot::new(None, vec![componet]);
-    let query = "hello world";
-    let result = find_with_ref(query, root.words());
+        let componet = RenderComponent::new(RenderNode::Paragraph, text);
+        let root = RenderRoot::new(None, vec![componet]);
+        let query = "world";
+        let result = find_with_ref(query, root.words());
+        assert_eq!(result.len(), 2);
+    }
+    #[test]
+    fn test_word_by_ref_span_multiple_words() {
+        let text = vec![
+            Word::new("Hello".to_string(), WordType::Bold),
+            Word::new("hello".to_string(), WordType::White),
+            Word::new(" ".to_string(), WordType::White),
+            Word::new("world".to_string(), WordType::Normal),
+            Word::new("World".to_string(), WordType::BoldItalic),
+        ];
 
-    assert_ne!(result[0], root.words()[0]);
-    assert_eq!(result[0], root.words()[1]);
-    assert_eq!(result[1], root.words()[2]);
-    assert_eq!(result[2], root.words()[3]);
+        let componet = RenderComponent::new(RenderNode::Paragraph, text);
+        let root = RenderRoot::new(None, vec![componet]);
+        let query = "hello world";
+        let result = find_with_ref(query, root.words());
+        assert_eq!(result.len(), 3);
+    }
+
+    #[test]
+    fn test_word_by_ref_span_multiple_words_using_reference() {
+        let text = vec![
+            Word::new("Hello".to_string(), WordType::Bold),
+            Word::new("hello".to_string(), WordType::White),
+            Word::new(" ".to_string(), WordType::White),
+            Word::new("world".to_string(), WordType::Normal),
+            Word::new("World".to_string(), WordType::BoldItalic),
+        ];
+
+        let componet = RenderComponent::new(RenderNode::Paragraph, text);
+        let root = RenderRoot::new(None, vec![componet]);
+        let query = "hello world";
+        let result = find_with_ref(query, root.words());
+
+        assert_ne!(result[0], root.words()[0]);
+        assert_eq!(result[0], root.words()[1]);
+        assert_eq!(result[1], root.words()[2]);
+        assert_eq!(result[2], root.words()[3]);
+    }
 }
