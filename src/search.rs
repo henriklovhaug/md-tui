@@ -2,7 +2,7 @@ use itertools::Itertools;
 use strsim::damerau_levenshtein;
 
 use crate::{
-    nodes::Word,
+    nodes::{RenderComponent, RenderNode, RenderRoot, Word, WordType},
     pages::file_explorer::{FileTree, MdFile},
     util::CONFIG,
 };
@@ -149,6 +149,45 @@ pub fn line_match_and_index(
         .collect()
 }
 
+pub fn find_with_ref<'a>(query: &str, text: Vec<&'a Word>) -> Vec<&'a Word> {
+    let mut query_words = query.split_whitespace().collect::<Vec<&str>>();
+
+    // Add back spaces in between each word
+    if query_words.len() > 1 {
+        let mut list = Vec::new();
+        for word in query_words {
+            list.push(word);
+            list.push(" ");
+        }
+        list.pop();
+        query_words = list;
+    }
+
+    // let words_to_be_marked = Vec::new();
+
+    let noe = text
+        .windows(query_words.len())
+        .into_iter()
+        .filter(|word| {
+            let query = query_words.join("");
+            let mut words = word.iter().map(|c| c.content()).join("");
+            let case_sensitive = query.chars().any(|c| c.is_uppercase());
+
+            words = if case_sensitive {
+                words.to_owned()
+            } else {
+                words.to_lowercase()
+            };
+
+            damerau_levenshtein(&query, &words) == 0
+        })
+        .flatten()
+        .map(|f| *f)
+        .collect::<Vec<_>>();
+
+    noe
+}
+
 fn char_windows(src: &str, win_size: usize) -> impl Iterator<Item = &'_ str> {
     src.char_indices().flat_map(move |(from, _)| {
         src[from..]
@@ -234,6 +273,77 @@ fn test_find_line_match_and_index() {
     let text = vec!["Hello", "hello", "world", "hello world"];
     let query = "world";
     let precision = 0;
-    let result = find_line_match_and_index(query, text, precision);
+    let result = line_match_and_index(query, text, precision);
     assert_eq!(result, vec![(2, 0), (3, 6)]);
+}
+
+#[test]
+fn test_find_line_match_and_index_with_typo() {
+    let text = vec!["Hello", "hello", "world", "hello world"];
+    let query = "wrold";
+    let precision = 2;
+    let result = line_match_and_index(query, text, precision);
+    assert_eq!(result, vec![(2, 0), (3, 6)]);
+}
+
+#[test]
+fn test_find_line_match_and_index_with_leading_space() {
+    let text = vec!["Hello", "hello", "world", " hello world"];
+    let query = "world";
+    let precision = 0;
+    let result = line_match_and_index(query, text, precision);
+    assert_eq!(result, vec![(2, 0), (3, 7)]);
+}
+
+#[test]
+fn test_word_by_ref() {
+    let text = vec![
+        Word::new("Hello".to_string(), WordType::Bold),
+        Word::new("hello".to_string(), WordType::White),
+        Word::new("world".to_string(), WordType::Normal),
+        Word::new("World".to_string(), WordType::BoldItalic),
+    ];
+
+    let componet = RenderComponent::new(RenderNode::Paragraph, text);
+    let root = RenderRoot::new(None, vec![componet]);
+    let query = "world";
+    let result = find_with_ref(query, root.words());
+    assert_eq!(result.len(), 2);
+}
+#[test]
+fn test_word_by_ref_span_multiple_words() {
+    let text = vec![
+        Word::new("Hello".to_string(), WordType::Bold),
+        Word::new("hello".to_string(), WordType::White),
+        Word::new(" ".to_string(), WordType::White),
+        Word::new("world".to_string(), WordType::Normal),
+        Word::new("World".to_string(), WordType::BoldItalic),
+    ];
+
+    let componet = RenderComponent::new(RenderNode::Paragraph, text);
+    let root = RenderRoot::new(None, vec![componet]);
+    let query = "hello world";
+    let result = find_with_ref(query, root.words());
+    assert_eq!(result.len(), 3);
+}
+
+#[test]
+fn test_word_by_ref_span_multiple_words_using_reference() {
+    let text = vec![
+        Word::new("Hello".to_string(), WordType::Bold),
+        Word::new("hello".to_string(), WordType::White),
+        Word::new(" ".to_string(), WordType::White),
+        Word::new("world".to_string(), WordType::Normal),
+        Word::new("World".to_string(), WordType::BoldItalic),
+    ];
+
+    let componet = RenderComponent::new(RenderNode::Paragraph, text);
+    let root = RenderRoot::new(None, vec![componet]);
+    let query = "hello world";
+    let result = find_with_ref(query, root.words());
+
+    assert_ne!(result[0], root.words()[0]);
+    assert_eq!(result[0], root.words()[1]);
+    assert_eq!(result[1], root.words()[2]);
+    assert_eq!(result[2], root.words()[3]);
 }
