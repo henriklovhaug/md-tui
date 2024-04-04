@@ -6,7 +6,7 @@ use crate::{
     nodes::RenderRoot,
     pages::file_explorer::FileTree,
     parser::parse_markdown,
-    search::find_line_match_and_index,
+    search::line_match_and_index,
     util::{App, Boxes, Jump, LinkType, Mode, CONFIG},
 };
 
@@ -197,7 +197,7 @@ fn keyboard_mode_view(
                 let query = app.search_box.content_str();
                 let lines = markdown.content();
                 let search =
-                    find_line_match_and_index(query, lines.iter().map(|s| &**s).collect(), 0);
+                    line_match_and_index(query, lines.iter().map(|s| &**s).collect(), 0);
                 if search.is_empty() {
                     app.error_box
                         .set_message(format!("No results for {}", query));
@@ -394,7 +394,7 @@ fn keyboard_mode_view(
 
                 let lines = markdown.content();
                 let search =
-                    find_line_match_and_index(query, lines.iter().map(|s| &**s).collect(), 0);
+                    line_match_and_index(query, lines.iter().map(|s| &**s).collect(), 0);
                 if search.is_empty() {
                     app.error_box
                         .set_message(format!("No results for {}", query));
@@ -433,7 +433,7 @@ fn keyboard_mode_view(
 
                 let lines = markdown.content();
                 let search =
-                    find_line_match_and_index(query, lines.iter().map(|s| &**s).collect(), 0);
+                    line_match_and_index(query, lines.iter().map(|s| &**s).collect(), 0);
                 if search.is_empty() {
                     app.error_box
                         .set_message(format!("No results for {}", query));

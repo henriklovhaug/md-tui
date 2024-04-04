@@ -133,7 +133,7 @@ pub fn line_match(query: &str, text: Vec<&str>, precision: usize) -> Vec<usize> 
         .collect()
 }
 
-pub fn find_line_match_and_index(
+pub fn line_match_and_index(
     query: &str,
     lines: Vec<&str>,
     precision: usize,
