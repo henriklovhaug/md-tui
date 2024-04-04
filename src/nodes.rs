@@ -36,6 +36,13 @@ impl RenderRoot {
         self.file_name.as_deref()
     }
 
+    pub fn words(&self) -> Vec<&Word> {
+        self.components
+            .iter()
+            .flat_map(|c| c.content().iter().flatten())
+            .collect()
+    }
+
     pub fn clear(&mut self) {
         self.file_name = None;
         self.components.clear();
