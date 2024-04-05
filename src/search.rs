@@ -181,6 +181,44 @@ pub fn find_with_ref<'a>(query: &str, text: Vec<&'a Word>) -> Vec<&'a Word> {
     noe
 }
 
+pub fn find_and_mark<'a>(query: &str, text: &'a mut Vec<&'a mut Word>) {
+    let window_size = query
+        .split_whitespace()
+        .fold(0usize, |acc, _| acc + 2)
+        .saturating_sub(1);
+
+    if window_size == 0 {
+        return;
+    }
+
+    windows_mut_each(text.as_mut_slice(), window_size, |window| {
+        let mut words = window.iter().map(|c| c.content()).join("");
+        let case_sensitive = query.chars().any(|c| c.is_uppercase());
+
+        words = if case_sensitive {
+            words.to_owned()
+        } else {
+            words.to_lowercase()
+        };
+
+        if damerau_levenshtein(&query, &words) == 0 {
+            window
+                .iter_mut()
+                .for_each(|word| word.set_kind(crate::nodes::WordType::Selected));
+        }
+    })
+}
+
+fn windows_mut_each<T>(v: &mut [T], n: usize, mut f: impl FnMut(&mut [T])) {
+    let mut start = 0;
+    let mut end = n;
+    while end <= v.len() {
+        f(&mut v[start..end]);
+        start += 1;
+        end += 1;
+    }
+}
+
 fn char_windows(src: &str, win_size: usize) -> impl Iterator<Item = &'_ str> {
     src.char_indices().flat_map(move |(from, _)| {
         src[from..]
@@ -211,7 +249,10 @@ pub fn compare_heading(link_header: &str, header: &[Vec<Word>]) -> bool {
 #[cfg(test)]
 mod tests {
 
-    use crate::nodes::{RenderComponent, RenderNode, RenderRoot, WordType};
+    use crate::{
+        nodes::{RenderComponent, RenderNode, RenderRoot, WordType},
+        parser::parse_markdown,
+    };
 
     use super::*;
 
@@ -345,5 +386,48 @@ mod tests {
         assert_eq!(result[0], root.words()[1]);
         assert_eq!(result[1], root.words()[2]);
         assert_eq!(result[2], root.words()[3]);
+    }
+
+    #[test]
+    fn test_word_by_ref_span_multiple_words_using_reference_and_clone() {
+        let text = vec![
+            Word::new("Hello".to_string(), WordType::Bold),
+            Word::new("hello".to_string(), WordType::White),
+            Word::new(" ".to_string(), WordType::White),
+            Word::new("world".to_string(), WordType::Normal),
+            Word::new("World".to_string(), WordType::BoldItalic),
+        ];
+
+        let componet = RenderComponent::new(RenderNode::Paragraph, text);
+        let root = RenderRoot::new(None, vec![componet]);
+        let query = "hello world";
+        let result = find_with_ref(query, root.words());
+
+        let root_clone = root.clone();
+
+        assert_ne!(result[0], root_clone.words()[0]);
+        assert_eq!(result[0], root_clone.words()[1]);
+        assert_eq!(result[1], root_clone.words()[2]);
+        assert_eq!(result[2], root_clone.words()[3]);
+    }
+
+    #[test]
+    fn test_long_match() {
+        let text = "`MD-TUI` is a TUI application for viewing markdown files directly in your
+terminal. I created it because I wasn't happy with how alternatives handled
+links in their applications. While the full markdown specification is not yet
+supported, it will slowly get there. It's a good solution for quickly viewing
+your markdown notes, or opening external links from someones README.
+";
+
+        let mut markdown = parse_markdown(None, text);
+        markdown.transform(80);
+
+        let result = find_with_ref("in", markdown.words());
+        dbg!(&result);
+        assert_eq!(result.len(), 2);
+
+        let result = find_with_ref("markdown notes,", markdown.words());
+        assert_eq!(result.len(), 3);
     }
 }
