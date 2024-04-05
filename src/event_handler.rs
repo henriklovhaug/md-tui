@@ -394,6 +394,7 @@ fn keyboard_mode_view(
 
                 let next = heights
                     .iter()
+                    .rev()
                     .find(|row| **row < (app.vertical_scroll as usize + height as usize / 2));
 
                 if let Some(index) = next {
