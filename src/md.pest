@@ -37,7 +37,7 @@ link_data          = { link_char+ }
 task_open         =  { "- [ ] " }
 task_complete     =  { "- [x] " | "- [X] " }
 task_prefix       = _{ task_open | task_complete }
-quote_prefix      =  { ">" }
+quote_prefix      = _{ ">" }
 code_block_prefix =  { "```" }
 table_prefix      =  { "|" }
 list_prefix       =  { (" "* ~ "-") | (NUMBER+ ~ ". ") }
@@ -57,16 +57,16 @@ link_line            = _{ "[" ~ link_word+ ~ "]" ~ "(" ~ link_data+ ~ ")" }
 wiki_link            = _{ ("[[" ~ wiki_link_alone+ ~ "]]") | ("[[" ~ wiki_link_data+ ~ "|" ~ wiki_link_word+ ~ "]]") }
 link                 =  { NEWLINE? ~ " "* ~ (link_line | wiki_link) }
 italic               =  {
-    (NEWLINE? ~ " "* ~ !"\\" ~ "*" ~ (italic_word | NEWLINE)+ ~ "*")
-  | ((NEWLINE | " ") ~ " "* ~ !"\\" ~ "_" ~ (italic_word | NEWLINE)+ ~ "_")
+    (NEWLINE? ~ " "* ~ !"\\" ~ "*" ~ (italic_word | (NEWLINE ~ (quote_prefix ~ " ")?))+ ~ "*")
+  | ((NEWLINE | " ") ~ " "* ~ !"\\" ~ "_" ~ (italic_word | (NEWLINE ~ (quote_prefix ~ " ")?))+ ~ "_")
 }
-bold                 =  { NEWLINE? ~ " "* ~ !"\\" ~ "**" ~ (bold_word | NEWLINE)+ ~ "**" }
+bold                 =  { NEWLINE? ~ " "* ~ !"\\" ~ "**" ~ (bold_word | (NEWLINE ~ (quote_prefix ~ " ")?))+ ~ "**" }
 bold_italic          =  {
-    (NEWLINE? ~ " "* ~ !"\\" ~ "***" ~ (bold_italic_word | NEWLINE)+ ~ "***")
-  | ((NEWLINE | " ") ~ " "* ~ !"\\" ~ "_**" ~ (bold_italic_word | NEWLINE)+ ~ "**_")
+    (NEWLINE? ~ " "* ~ !"\\" ~ "***" ~ (bold_italic_word | (NEWLINE ~ (quote_prefix ~ " ")?))+ ~ "***")
+  | ((NEWLINE | " ") ~ " "* ~ !"\\" ~ "_**" ~ (bold_italic_word | (NEWLINE ~ (quote_prefix ~ " ")?))+ ~ "**_")
 }
-strikethrough        =  { NEWLINE? ~ " "* ~ !"\\" ~ "~~" ~ (strikethrough_word | NEWLINE)+ ~ "~~" }
-latex                =  { NEWLINE? ~ " "* ~ !"\\" ~ "$"+ ~ " "? ~ (latex_word | NEWLINE)+ ~ "$"+ }
+strikethrough        =  { NEWLINE? ~ " "* ~ !"\\" ~ "~~" ~ (strikethrough_word | (NEWLINE ~ (quote_prefix ~ " ")?))+ ~ "~~" }
+latex                =  { NEWLINE? ~ " "* ~ !"\\" ~ "$"+ ~ " "? ~ (latex_word | (NEWLINE ~ (quote_prefix ~ " ")?))+ ~ "$"+ }
 o_list_counter       =  { digit+ ~ ". " }
 
 sentence   = _{ (latex | code | link | bold_italic | italic | bold | strikethrough | normal+)+ }
