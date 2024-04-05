@@ -1,3 +1,9 @@
+# Version 0.5.2
+
+## Fixes
+
+- Fix parsing of word modifiers after last version broke them.
+
 # Version 0.5.1
 
 ## Breaking change
