@@ -741,11 +741,6 @@ impl RenderComponent {
             }
             RenderNode::Table => {
                 self.content.retain(|c| !c.is_empty());
-                self.content.iter_mut().for_each(|c| {
-                    if let Some(first) = c.first_mut() {
-                        first.content = first.content.trim_start().to_string();
-                    }
-                });
                 let height = (self.content.len() / self.meta_info().len()) as u16;
                 self.height = height;
             }
