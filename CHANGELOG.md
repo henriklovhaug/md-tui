@@ -1,4 +1,4 @@
-# Version 0.5.1 (unreleased)
+# Version 0.5.1
 
 ## Breaking change
 
@@ -20,6 +20,7 @@
   match end of sentence like `something.` or `something,`.
 - (#84) Changed parsing grammar to allow italic/bold/strike through words to
   wrap newline in quote blocks.
+- Other minor changes to parsing.
 
 # Version 0.5.0
 
