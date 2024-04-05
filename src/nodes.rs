@@ -1,6 +1,9 @@
 use std::usize;
 
-use crate::{parser::MdParseEnum, search::compare_heading};
+use crate::{
+    parser::MdParseEnum,
+    search::{compare_heading, find_and_mark},
+};
 use itertools::Itertools;
 use ratatui::{buffer::Buffer, layout::Rect, widgets::Widget};
 
@@ -34,6 +37,33 @@ impl RenderRoot {
 
     pub fn file_name(&self) -> Option<&str> {
         self.file_name.as_deref()
+    }
+
+    pub fn words(&self) -> Vec<&Word> {
+        self.components
+            .iter()
+            .flat_map(|c| c.content().iter().flatten())
+            .collect()
+    }
+
+    pub fn find_and_mark(&mut self, search: &str) {
+        let mut words = self
+            .components
+            .iter_mut()
+            .flat_map(|c| c.words_mut())
+            .collect::<Vec<_>>();
+        find_and_mark(search, &mut words)
+    }
+
+    pub fn search_results_heights(&self) -> Vec<usize> {
+        self.components
+            .iter()
+            .flat_map(|c| {
+                let mut heights = c.selected_heights();
+                heights.iter_mut().for_each(|h| *h += c.y_offset() as usize);
+                heights
+            })
+            .collect()
     }
 
     pub fn clear(&mut self) {
@@ -405,10 +435,6 @@ impl RenderComponent {
         }
     }
 
-    pub fn content_mut(&mut self) -> &mut Vec<Vec<Word>> {
-        &mut self.content
-    }
-
     pub fn meta_info(&self) -> &Vec<Word> {
         &self.meta_info
     }
@@ -568,6 +594,36 @@ impl RenderComponent {
             .iter()
             .filter(|c| c.kind() == WordType::LinkData)
             .count()
+    }
+
+    pub fn selected_heights(&self) -> Vec<usize> {
+        let mut heights = Vec::new();
+
+        if self.kind() == RenderNode::Table {
+            let column_count = self.meta_info.len();
+            let iter = self.content.chunks(column_count).enumerate();
+
+            for (i, line) in iter {
+                if line
+                    .iter()
+                    .any(|c| c.iter().any(|x| x.kind() == WordType::Selected))
+                {
+                    heights.push(i);
+                }
+            }
+            return heights;
+        }
+
+        for (i, line) in self.content.iter().enumerate() {
+            if line.iter().any(|c| c.kind() == WordType::Selected) {
+                heights.push(i);
+            }
+        }
+        heights
+    }
+
+    fn words_mut(&mut self) -> Vec<&mut Word> {
+        self.content.iter_mut().flatten().collect()
     }
 
     pub fn transform(&mut self, width: u16) {

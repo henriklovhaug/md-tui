@@ -133,7 +133,7 @@ pub fn line_match(query: &str, text: Vec<&str>, precision: usize) -> Vec<usize> 
         .collect()
 }
 
-pub fn find_line_match_and_index(
+pub fn line_match_and_index(
     query: &str,
     lines: Vec<&str>,
     precision: usize,
@@ -147,6 +147,72 @@ pub fn find_line_match_and_index(
                 .map(move |j| (i, j))
         })
         .collect()
+}
+
+pub fn find_with_ref<'a>(query: &str, text: Vec<&'a Word>) -> Vec<&'a Word> {
+    let window_size = query
+        .split_whitespace()
+        .fold(0usize, |acc, _| acc + 2)
+        .saturating_sub(1);
+
+    if window_size == 0 {
+        return Vec::new();
+    }
+
+    text.windows(window_size)
+        .filter(|word| {
+            let mut words = word.iter().map(|c| c.content()).join("");
+            let case_sensitive = query.chars().any(|c| c.is_uppercase());
+
+            words = if case_sensitive {
+                words.to_owned()
+            } else {
+                words.to_lowercase()
+            };
+
+            damerau_levenshtein(query, &words) == 0
+        })
+        .flatten()
+        .copied()
+        .collect::<Vec<_>>()
+}
+
+pub fn find_and_mark<'a>(query: &str, text: &'a mut Vec<&'a mut Word>) {
+    let window_size = query
+        .split_whitespace()
+        .fold(0usize, |acc, _| acc + 2)
+        .saturating_sub(1);
+
+    if window_size == 0 {
+        return;
+    }
+
+    windows_mut_for_each(text.as_mut_slice(), window_size, |window| {
+        let mut words = window.iter().map(|c| c.content()).join("");
+        let case_sensitive = query.chars().any(|c| c.is_uppercase());
+
+        words = if case_sensitive {
+            words.to_owned()
+        } else {
+            words.to_lowercase()
+        };
+
+        if damerau_levenshtein(query, &words) == 0 {
+            window
+                .iter_mut()
+                .for_each(|word| word.set_kind(crate::nodes::WordType::Selected));
+        }
+    })
+}
+
+fn windows_mut_for_each<T>(v: &mut [T], n: usize, mut f: impl FnMut(&mut [T])) {
+    let mut start = 0;
+    let mut end = n;
+    while end <= v.len() {
+        f(&mut v[start..end]);
+        start += 1;
+        end += 1;
+    }
 }
 
 fn char_windows(src: &str, win_size: usize) -> impl Iterator<Item = &'_ str> {
@@ -177,63 +243,187 @@ pub fn compare_heading(link_header: &str, header: &[Vec<Word>]) -> bool {
 }
 
 #[cfg(test)]
-#[test]
-fn test_find() {
-    let text = "Hello, world!";
-    let query = "world";
-    let precision = 0;
-    let result = find(query, text, precision);
-    assert_eq!(result, vec![7]);
-}
+mod tests {
 
-#[test]
-fn test_find_with_backoff() {
-    let text = "Hello, world!";
-    let query = "world";
-    let result = find_with_backoff(query, text);
-    assert_eq!(result, vec![7]);
-}
+    use crate::{
+        nodes::{RenderComponent, RenderNode, RenderRoot, WordType},
+        parser::parse_markdown,
+    };
 
-#[test]
-fn test_find_with_backoff_with_typo() {
-    let text = "Hello, world!";
-    let query = "wrold";
-    let result = find_with_backoff(query, text);
-    assert_eq!(result, vec![7]);
-}
+    use super::*;
 
-#[test]
-fn test_vec_find() {
-    let text = vec!["Hello", "hello", "world", "World"];
-    let query = "world";
-    let precision = 0;
-    let result = line_match(query, text, precision);
-    assert_eq!(result, vec![2, 3]);
-}
+    #[test]
+    fn test_find() {
+        let text = "Hello, world!";
+        let query = "world";
+        let precision = 0;
+        let result = find(query, text, precision);
+        assert_eq!(result, vec![7]);
+    }
 
-#[test]
-fn test_vec_find_less_precision() {
-    let text = vec!["Hello", "hello", "world", "World"];
-    let query = "world";
-    let precision = 1;
-    let result = line_match(query, text, precision);
-    assert_eq!(result, vec![2, 3]);
-}
+    #[test]
+    fn test_find_with_backoff() {
+        let text = "Hello, world!";
+        let query = "world";
+        let result = find_with_backoff(query, text);
+        assert_eq!(result, vec![7]);
+    }
 
-#[test]
-fn test_vec_find_with_typo() {
-    let text = vec!["Hello", "hello", "world", "World"];
-    let query = "wrold";
-    let precision = 2;
-    let result = line_match(query, text, precision);
-    assert_eq!(result, vec![2, 3]);
-}
+    #[test]
+    fn test_find_with_backoff_with_typo() {
+        let text = "Hello, world!";
+        let query = "wrold";
+        let result = find_with_backoff(query, text);
+        assert_eq!(result, vec![7]);
+    }
 
-#[test]
-fn test_find_line_match_and_index() {
-    let text = vec!["Hello", "hello", "world", "hello world"];
-    let query = "world";
-    let precision = 0;
-    let result = find_line_match_and_index(query, text, precision);
-    assert_eq!(result, vec![(2, 0), (3, 6)]);
+    #[test]
+    fn test_vec_find() {
+        let text = vec!["Hello", "hello", "world", "World"];
+        let query = "world";
+        let precision = 0;
+        let result = line_match(query, text, precision);
+        assert_eq!(result, vec![2, 3]);
+    }
+
+    #[test]
+    fn test_vec_find_less_precision() {
+        let text = vec!["Hello", "hello", "world", "World"];
+        let query = "world";
+        let precision = 1;
+        let result = line_match(query, text, precision);
+        assert_eq!(result, vec![2, 3]);
+    }
+
+    #[test]
+    fn test_vec_find_with_typo() {
+        let text = vec!["Hello", "hello", "world", "World"];
+        let query = "wrold";
+        let precision = 2;
+        let result = line_match(query, text, precision);
+        assert_eq!(result, vec![2, 3]);
+    }
+
+    #[test]
+    fn test_find_line_match_and_index() {
+        let text = vec!["Hello", "hello", "world", "hello world"];
+        let query = "world";
+        let precision = 0;
+        let result = line_match_and_index(query, text, precision);
+        assert_eq!(result, vec![(2, 0), (3, 6)]);
+    }
+
+    #[test]
+    fn test_find_line_match_and_index_with_typo() {
+        let text = vec!["Hello", "hello", "world", "hello world"];
+        let query = "wrold";
+        let precision = 2;
+        let result = line_match_and_index(query, text, precision);
+        assert_eq!(result, vec![(2, 0), (3, 6)]);
+    }
+
+    #[test]
+    fn test_find_line_match_and_index_with_leading_space() {
+        let text = vec!["Hello", "hello", "world", " hello world"];
+        let query = "world";
+        let precision = 0;
+        let result = line_match_and_index(query, text, precision);
+        assert_eq!(result, vec![(2, 0), (3, 7)]);
+    }
+
+    #[test]
+    fn test_word_by_ref() {
+        let text = vec![
+            Word::new("Hello".to_string(), WordType::Bold),
+            Word::new("hello".to_string(), WordType::White),
+            Word::new("world".to_string(), WordType::Normal),
+            Word::new("World".to_string(), WordType::BoldItalic),
+        ];
+
+        let componet = RenderComponent::new(RenderNode::Paragraph, text);
+        let root = RenderRoot::new(None, vec![componet]);
+        let query = "world";
+        let result = find_with_ref(query, root.words());
+        assert_eq!(result.len(), 2);
+    }
+    #[test]
+    fn test_word_by_ref_span_multiple_words() {
+        let text = vec![
+            Word::new("Hello".to_string(), WordType::Bold),
+            Word::new("hello".to_string(), WordType::White),
+            Word::new(" ".to_string(), WordType::White),
+            Word::new("world".to_string(), WordType::Normal),
+            Word::new("World".to_string(), WordType::BoldItalic),
+        ];
+
+        let componet = RenderComponent::new(RenderNode::Paragraph, text);
+        let root = RenderRoot::new(None, vec![componet]);
+        let query = "hello world";
+        let result = find_with_ref(query, root.words());
+        assert_eq!(result.len(), 3);
+    }
+
+    #[test]
+    fn test_word_by_ref_span_multiple_words_using_reference() {
+        let text = vec![
+            Word::new("Hello".to_string(), WordType::Bold),
+            Word::new("hello".to_string(), WordType::White),
+            Word::new(" ".to_string(), WordType::White),
+            Word::new("world".to_string(), WordType::Normal),
+            Word::new("World".to_string(), WordType::BoldItalic),
+        ];
+
+        let componet = RenderComponent::new(RenderNode::Paragraph, text);
+        let root = RenderRoot::new(None, vec![componet]);
+        let query = "hello world";
+        let result = find_with_ref(query, root.words());
+
+        assert_ne!(result[0], root.words()[0]);
+        assert_eq!(result[0], root.words()[1]);
+        assert_eq!(result[1], root.words()[2]);
+        assert_eq!(result[2], root.words()[3]);
+    }
+
+    #[test]
+    fn test_word_by_ref_span_multiple_words_using_reference_and_clone() {
+        let text = vec![
+            Word::new("Hello".to_string(), WordType::Bold),
+            Word::new("hello".to_string(), WordType::White),
+            Word::new(" ".to_string(), WordType::White),
+            Word::new("world".to_string(), WordType::Normal),
+            Word::new("World".to_string(), WordType::BoldItalic),
+        ];
+
+        let componet = RenderComponent::new(RenderNode::Paragraph, text);
+        let root = RenderRoot::new(None, vec![componet]);
+        let query = "hello world";
+        let result = find_with_ref(query, root.words());
+
+        let root_clone = root.clone();
+
+        assert_ne!(result[0], root_clone.words()[0]);
+        assert_eq!(result[0], root_clone.words()[1]);
+        assert_eq!(result[1], root_clone.words()[2]);
+        assert_eq!(result[2], root_clone.words()[3]);
+    }
+
+    #[test]
+    fn test_long_match() {
+        let text = "`MD-TUI` is a TUI application for viewing markdown files directly in your
+terminal. I created it because I wasn't happy with how alternatives handled
+links in their applications. While the full markdown specification is not yet
+supported, it will slowly get there. It's a good solution for quickly viewing
+your markdown notes, or opening external links from someones README.
+";
+
+        let mut markdown = parse_markdown(None, text);
+        markdown.transform(80);
+
+        let result = find_with_ref("in", markdown.words());
+        dbg!(&result);
+        assert_eq!(result.len(), 2);
+
+        let result = find_with_ref("markdown notes,", markdown.words());
+        assert_eq!(result.len(), 3);
+    }
 }

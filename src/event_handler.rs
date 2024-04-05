@@ -6,7 +6,6 @@ use crate::{
     nodes::RenderRoot,
     pages::file_explorer::FileTree,
     parser::parse_markdown,
-    search::find_line_match_and_index,
     util::{App, Boxes, Jump, LinkType, Mode, CONFIG},
 };
 
@@ -195,36 +194,28 @@ fn keyboard_mode_view(
             }
             KeyCode::Enter => {
                 let query = app.search_box.content_str();
-                let lines = markdown.content();
-                let search =
-                    find_line_match_and_index(query, lines.iter().map(|s| &**s).collect(), 0);
-                if search.is_empty() {
-                    app.error_box
-                        .set_message(format!("No results for {}", query));
+
+                markdown.deselect();
+
+                markdown.find_and_mark(query);
+
+                let heights = markdown.search_results_heights();
+
+                if heights.is_empty() {
+                    app.error_box.set_message("No results found".to_string());
                     app.boxes = Boxes::Error;
                     return KeyBoardAction::Continue;
                 }
 
-                markdown.deselect();
+                let next = heights
+                    .iter()
+                    .find(|row| **row >= (app.vertical_scroll as usize + height as usize / 2));
 
-                let closest = search.iter().min_by_key(|(index, _)| {
-                    if *index as u16 > app.vertical_scroll + height / 2 {
-                        *index as u16 - app.vertical_scroll - height / 2
-                    } else {
-                        app.vertical_scroll + height / 2 - *index as u16
-                    }
-                });
-
-                if let Some((index, _)) = closest {
+                if let Some(index) = next {
                     app.vertical_scroll = cmp::min(
                         (*index as u16).saturating_sub(height / 2),
                         markdown.height().saturating_sub(height / 2),
                     );
-                }
-
-                for ele in search.iter() {
-                    let _ = markdown.mark_word(ele.0, ele.1, query.len());
-                    // Scroll to closest match
                 }
 
                 app.boxes = Boxes::None;
@@ -384,81 +375,34 @@ fn keyboard_mode_view(
             }
 
             KeyCode::Char('n') => {
-                let query = if let Some(query) = app.search_box.content() {
-                    query
-                } else {
-                    app.error_box.set_message("No search query".to_string());
-                    app.boxes = Boxes::Error;
-                    return KeyBoardAction::Continue;
-                };
+                let heights = markdown.search_results_heights();
 
-                let lines = markdown.content();
-                let search =
-                    find_line_match_and_index(query, lines.iter().map(|s| &**s).collect(), 0);
-                if search.is_empty() {
-                    app.error_box
-                        .set_message(format!("No results for {}", query));
-                    app.boxes = Boxes::Error;
-                    return KeyBoardAction::Continue;
-                }
+                let next = heights
+                    .iter()
+                    .find(|row| **row > (app.vertical_scroll as usize + height as usize / 2));
 
-                markdown.deselect();
-
-                let next = search.iter().find(|(index, _)| {
-                    *index > (app.vertical_scroll as usize + height as usize / 2)
-                });
-
-                if let Some((index, _)) = next {
+                if let Some(index) = next {
                     app.vertical_scroll = cmp::min(
                         (*index as u16).saturating_sub(height / 2),
                         markdown.height().saturating_sub(height / 2),
                     );
                 }
-
-                for ele in search.iter() {
-                    let _ = markdown.mark_word(ele.0, ele.1, query.len());
-                }
-
-                app.boxes = Boxes::None;
             }
 
             KeyCode::Char('N') => {
-                let query = if let Some(query) = app.search_box.content() {
-                    query
-                } else {
-                    app.error_box.set_message("No search query".to_string());
-                    app.boxes = Boxes::Error;
-                    return KeyBoardAction::Continue;
-                };
+                let heights = markdown.search_results_heights();
 
-                let lines = markdown.content();
-                let search =
-                    find_line_match_and_index(query, lines.iter().map(|s| &**s).collect(), 0);
-                if search.is_empty() {
-                    app.error_box
-                        .set_message(format!("No results for {}", query));
-                    app.boxes = Boxes::Error;
-                    return KeyBoardAction::Continue;
-                }
+                let next = heights
+                    .iter()
+                    .rev()
+                    .find(|row| **row < (app.vertical_scroll as usize + height as usize / 2));
 
-                markdown.deselect();
-
-                let next = search.iter().rev().find(|(index, _)| {
-                    *index < (app.vertical_scroll as usize + height as usize / 2)
-                });
-
-                if let Some((index, _)) = next {
+                if let Some(index) = next {
                     app.vertical_scroll = cmp::min(
                         (*index as u16).saturating_sub(height / 2),
                         markdown.height().saturating_sub(height / 2),
                     );
                 }
-
-                for ele in search.iter() {
-                    let _ = markdown.mark_word(ele.0, ele.1, query.len());
-                }
-
-                app.boxes = Boxes::None;
             }
             KeyCode::Char('r') => {
                 let url = if let Some(url) = markdown.file_name() {

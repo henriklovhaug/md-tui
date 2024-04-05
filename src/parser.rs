@@ -217,10 +217,15 @@ fn parse_component(parse_node: ParseNode) -> RenderComponent {
                 let mut inner_words = Vec::new();
                 for word in get_leaf_nodes(row) {
                     let word_type = WordType::from(word.kind());
-                    let content = word.content().to_owned();
+                    let mut content = word.content().to_owned();
 
                     if word.kind() == MdParseEnum::WikiLink {
                         let comp = Word::new(content.clone(), WordType::LinkData);
+                        inner_words.push(comp);
+                    }
+                    if content.starts_with(' ') {
+                        content.remove(0);
+                        let comp = Word::new(" ".to_owned(), word_type);
                         inner_words.push(comp);
                     }
                     inner_words.push(Word::new(content, word_type));
@@ -279,7 +284,7 @@ fn print_component(component: &RenderComponent, _depth: usize) {
     });
     component.content().iter().for_each(|w| {
         w.iter().for_each(|w| {
-            println!("Content: {}, kind: {:?}", w.content(), w.kind());
+            println!("Content:{}, kind: {:?}", w.content(), w.kind());
         });
     });
 }
