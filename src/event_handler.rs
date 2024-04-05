@@ -199,6 +199,25 @@ fn keyboard_mode_view(
 
                 markdown.find_and_mark(query);
 
+                let heights = markdown.search_results_heights();
+
+                if heights.is_empty() {
+                    app.error_box.set_message("No results found".to_string());
+                    app.boxes = Boxes::Error;
+                    return KeyBoardAction::Continue;
+                }
+
+                let next = heights
+                    .iter()
+                    .find(|row| **row >= (app.vertical_scroll as usize + height as usize / 2));
+
+                if let Some(index) = next {
+                    app.vertical_scroll = cmp::min(
+                        (*index as u16).saturating_sub(height / 2),
+                        markdown.height().saturating_sub(height / 2),
+                    );
+                }
+
                 app.boxes = Boxes::None;
             }
             KeyCode::Char(c) => {
