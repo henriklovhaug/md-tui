@@ -159,9 +159,7 @@ pub fn find_with_ref<'a>(query: &str, text: Vec<&'a Word>) -> Vec<&'a Word> {
         return Vec::new();
     }
 
-    let noe = text
-        .windows(window_size)
-        .into_iter()
+    text.windows(window_size)
         .filter(|word| {
             let mut words = word.iter().map(|c| c.content()).join("");
             let case_sensitive = query.chars().any(|c| c.is_uppercase());
@@ -172,13 +170,11 @@ pub fn find_with_ref<'a>(query: &str, text: Vec<&'a Word>) -> Vec<&'a Word> {
                 words.to_lowercase()
             };
 
-            damerau_levenshtein(&query, &words) == 0
+            damerau_levenshtein(query, &words) == 0
         })
         .flatten()
-        .map(|f| *f)
-        .collect::<Vec<_>>();
-
-    noe
+        .copied()
+        .collect::<Vec<_>>()
 }
 
 pub fn find_and_mark<'a>(query: &str, text: &'a mut Vec<&'a mut Word>) {
@@ -191,7 +187,7 @@ pub fn find_and_mark<'a>(query: &str, text: &'a mut Vec<&'a mut Word>) {
         return;
     }
 
-    windows_mut_each(text.as_mut_slice(), window_size, |window| {
+    windows_mut_for_each(text.as_mut_slice(), window_size, |window| {
         let mut words = window.iter().map(|c| c.content()).join("");
         let case_sensitive = query.chars().any(|c| c.is_uppercase());
 
@@ -201,7 +197,7 @@ pub fn find_and_mark<'a>(query: &str, text: &'a mut Vec<&'a mut Word>) {
             words.to_lowercase()
         };
 
-        if damerau_levenshtein(&query, &words) == 0 {
+        if damerau_levenshtein(query, &words) == 0 {
             window
                 .iter_mut()
                 .for_each(|word| word.set_kind(crate::nodes::WordType::Selected));
@@ -209,7 +205,7 @@ pub fn find_and_mark<'a>(query: &str, text: &'a mut Vec<&'a mut Word>) {
     })
 }
 
-fn windows_mut_each<T>(v: &mut [T], n: usize, mut f: impl FnMut(&mut [T])) {
+fn windows_mut_for_each<T>(v: &mut [T], n: usize, mut f: impl FnMut(&mut [T])) {
     let mut start = 0;
     let mut end = n;
     while end <= v.len() {
