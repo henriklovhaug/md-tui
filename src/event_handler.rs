@@ -1,4 +1,4 @@
-use std::{cmp, fs::read_to_string, usize};
+use std::{cmp, fs::read_to_string};
 
 use crossterm::event::KeyCode;
 
