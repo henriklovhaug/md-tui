@@ -1,3 +1,10 @@
+# Version 0.5.3 (Unreleased)
+
+## Fixes
+
+- Crash when number of markdown files where exactly at page limit at user tried
+  to scroll to the last one using `j` or `k`.
+
 # Version 0.5.2
 
 ## Fixes
