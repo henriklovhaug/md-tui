@@ -18,6 +18,8 @@
 - (#83) Search markings vastly improved. Both in performance and multiple word
   capturing. It is however slightly more strict. The search `something` will not
   match end of sentence like `something.` or `something,`.
+- (#84) Changed parsing grammar to allow italic/bold/strike through words to
+  wrap newline in quote blocks.
 
 # Version 0.5.0
 
