@@ -44,7 +44,7 @@ list_prefix       =  { (" "* ~ "-") | (NUMBER+ ~ ". ") }
 heading_prefix    =  { "#" }
 
 forbidden_sentence_prefix = {
-    NEWLINE ~ (task_prefix | quote_prefix | code_block_prefix | table_prefix | list_prefix | heading_prefix)
+    NEWLINE ~ " "* ~ (task_prefix | quote_prefix | code_block_prefix | table_prefix | list_prefix | heading_prefix)
 }
 
 // Lines
