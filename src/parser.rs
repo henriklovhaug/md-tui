@@ -223,11 +223,13 @@ fn parse_component(parse_node: ParseNode) -> RenderComponent {
                         let comp = Word::new(content.clone(), WordType::LinkData);
                         inner_words.push(comp);
                     }
+
                     if content.starts_with(' ') {
                         content.remove(0);
                         let comp = Word::new(" ".to_owned(), word_type);
                         inner_words.push(comp);
                     }
+
                     inner_words.push(Word::new(content, word_type));
                 }
                 words.push(inner_words);
@@ -245,17 +247,20 @@ fn parse_component(parse_node: ParseNode) -> RenderComponent {
 
 fn get_leaf_nodes(node: ParseNode) -> Vec<ParseNode> {
     let mut leaf_nodes = Vec::new();
-    if (node.kind() == MdParseEnum::Code
-        || node.kind() == MdParseEnum::Italic
-        || node.kind() == MdParseEnum::Strikethrough
-        || node.kind() == MdParseEnum::Bold
-        || node.kind() == MdParseEnum::BoldItalic)
-        && !node.content().starts_with(' ')
-    {
+    if node.kind() == MdParseEnum::Link && node.content().starts_with(' ') {
         let comp = ParseNode::new(MdParseEnum::Word, " ".to_owned());
         leaf_nodes.push(comp);
     }
-    if node.kind() == MdParseEnum::Link && node.content().starts_with(' ') {
+
+    if matches!(
+        node.kind(),
+        MdParseEnum::CodeStr
+            | MdParseEnum::ItalicStr
+            | MdParseEnum::BoldStr
+            | MdParseEnum::BoldItalicStr
+            | MdParseEnum::StrikethroughStr
+    ) && node.content().starts_with(' ')
+    {
         let comp = ParseNode::new(MdParseEnum::Word, " ".to_owned());
         leaf_nodes.push(comp);
     }
@@ -384,9 +389,13 @@ pub enum MdParseEnum {
     BlockSeperator,
     Sentence,
     Bold,
+    BoldStr,
     Italic,
+    ItalicStr,
     BoldItalic,
+    BoldItalicStr,
     Strikethrough,
+    StrikethroughStr,
     HorizontalSeperator,
     Indent,
     Imortant,
@@ -401,11 +410,16 @@ impl From<Rule> for MdParseEnum {
         match value {
             Rule::word | Rule::h_word | Rule::latex_word | Rule::t_word => Self::Word,
             Rule::indent => Self::Indent,
-            Rule::italic | Rule::italic_word => Self::Italic,
-            Rule::bold | Rule::bold_word => Self::Bold,
-            Rule::bold_italic | Rule::bold_italic_word => Self::BoldItalic,
-            Rule::strikethrough | Rule::strikethrough_word => Self::Strikethrough,
-            Rule::code_word | Rule::code => Self::Code,
+            Rule::italic_word => Self::Italic,
+            Rule::italic => Self::ItalicStr,
+            Rule::bold_word => Self::Bold,
+            Rule::bold => Self::BoldStr,
+            Rule::bold_italic_word => Self::BoldItalic,
+            Rule::bold_italic => Self::BoldItalicStr,
+            Rule::strikethrough_word => Self::Strikethrough,
+            Rule::strikethrough => Self::StrikethroughStr,
+            Rule::code_word => Self::Code,
+            Rule::code => Self::CodeStr,
             Rule::programming_language => Self::PLanguage,
             Rule::link_word | Rule::link_line | Rule::link | Rule::wiki_link_word => Self::Link,
             Rule::wiki_link_alone => Self::WikiLink,
