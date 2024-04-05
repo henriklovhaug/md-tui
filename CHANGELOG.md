@@ -15,6 +15,9 @@
 - Every block now has a newline between them regardless of users formatting.
 - Fixed tasks which was parsed incorrectly.
 - Changed how spaces are parsed in lists so search markings can become nicer.
+- (#83) Search markings vastly improved. Both in performance and multiple word
+  capturing. It is however slightly more strict. The search `something` will not
+  match end of sentence like `something.` or `something,`.
 
 # Version 0.5.0
 
