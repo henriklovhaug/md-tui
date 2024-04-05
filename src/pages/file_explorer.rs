@@ -317,7 +317,9 @@ impl Widget for FileTree {
 
         let y_height = items.len() / 2 * 3;
 
-        let page_count = format!("  {}/{}", self.page + 1, file_len / partition + 1);
+        let total_pages = file_len / partition + (file_len / partition) % 2;
+
+        let page_count = format!("  {}/{}", self.page + 1, total_pages);
 
         let paragraph = Text::styled(
             page_count,
