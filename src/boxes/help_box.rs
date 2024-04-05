@@ -15,14 +15,6 @@ pub struct HelpBox {
 }
 
 impl HelpBox {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    pub fn expand(&mut self) {
-        self.expanded = true;
-    }
-
     pub fn close(&mut self) {
         self.expanded = false;
     }

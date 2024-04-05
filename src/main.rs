@@ -26,13 +26,13 @@ use ratatui::{
 use search::find_md_files;
 use util::{destruct_terminal, App, Boxes, Mode, CONFIG};
 
-pub mod boxes;
+mod boxes;
 mod event_handler;
 pub mod nodes;
-pub mod pages;
+mod pages;
 pub mod parser;
 pub mod search;
-pub mod util;
+mod util;
 
 const EMPTY_FILE: &str = "";
 

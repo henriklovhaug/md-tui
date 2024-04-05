@@ -121,10 +121,6 @@ impl JumpHistory {
             Jump::FileTree
         }
     }
-
-    pub fn last(&self) -> Option<&Jump> {
-        self.history.last()
-    }
 }
 
 impl Default for JumpHistory {
