@@ -21,10 +21,10 @@ t_word             = {
     !(forbidden_sentence_prefix | latex | bold_italic | bold | italic | strikethrough | code | link) ~ NEWLINE? ~ " "* ~ t_char+
 }
 h_word             = { p_char+ ~ " "? }
-italic_word        = { i_char+ ~ " "? }
-bold_word          = { b_char+ ~ " "? }
-bold_italic_word   = { b_char+ ~ " "? }
-strikethrough_word = { s_char+ ~ " "? }
+italic_word        = { " "* ~ i_char+ }
+bold_word          = { " "* ~ b_char+ }
+bold_italic_word   = { " "* ~ b_char+ }
+strikethrough_word = { " "* ~ s_char+ }
 code_word          = { c_char+ ~ " "? }
 latex_word         = { latex_char+ ~ " "? }
 link_word          = { (link_char | " " | "(" | ")")+ }
