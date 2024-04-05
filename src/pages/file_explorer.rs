@@ -162,7 +162,7 @@ impl FileTree {
     pub fn next(&mut self, height: u16) {
         let i = match self.list_state.selected() {
             Some(i) => {
-                if i >= self.files.len() {
+                if i >= self.files.len() - 2 {
                     0
                 } else {
                     i + 2
@@ -178,7 +178,7 @@ impl FileTree {
         let i = match self.list_state.selected() {
             Some(i) => {
                 if i == 0 {
-                    self.files.len()
+                    self.files.len() - 2
                 } else {
                     i.saturating_sub(2)
                 }
@@ -339,6 +339,7 @@ impl Widget for FileTree {
             .highlight_symbol("\u{02503} ")
             .repeat_highlight_symbol(true)
             .highlight_spacing(HighlightSpacing::Always);
+
         StatefulWidget::render(items, area, buf, &mut state);
 
         let area = Rect {
