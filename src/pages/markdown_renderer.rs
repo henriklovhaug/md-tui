@@ -189,11 +189,6 @@ fn render_quote(area: Rect, buf: &mut Buffer, component: RenderComponent, clip: 
     };
     let vertical_marker = Span::styled("\u{2588}", Style::default().fg(bar_color));
 
-    let area = Rect {
-        width: cmp::min(area.width, CONFIG.width),
-        ..area
-    };
-
     let marker_paragraph =
         Paragraph::new(vec![Line::from(vertical_marker); content.len()]).bg(CONFIG.quote_bg_color);
     marker_paragraph.render(area, buf);
@@ -221,11 +216,6 @@ fn render_heading(area: Rect, buf: &mut Buffer, component: RenderComponent) {
     let paragraph = Paragraph::new(Line::from(content))
         .block(Block::default().style(Style::default().bg(CONFIG.heading_bg_color)))
         .alignment(Alignment::Center);
-
-    let area = Rect {
-        width: cmp::min(area.width, CONFIG.width),
-        ..area
-    };
 
     paragraph.render(area, buf);
 }
@@ -340,18 +330,13 @@ fn render_code_block(area: Rect, buf: &mut Buffer, component: RenderComponent, c
         Clipping::None => (),
     }
 
-    let area = Rect {
-        width: cmp::min(area.width, CONFIG.width),
-        ..area
-    };
-
     let block = Block::default().style(Style::default().bg(CONFIG.code_block_bg_color));
 
     block.render(area, buf);
 
     let area = Rect {
         x: area.x + 1,
-        width: cmp::min(area.width - 2, CONFIG.width),
+        width: area.width - 1,
         ..area
     };
 

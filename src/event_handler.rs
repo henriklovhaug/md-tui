@@ -118,7 +118,7 @@ pub fn keyboard_mode_file_tree(
                 };
 
                 *markdown = parse_markdown(Some(file.path()), &text);
-                markdown.transform(CONFIG.width);
+                markdown.transform(app.width());
                 app.mode = Mode::View;
                 app.help_box.set_mode(Mode::View);
                 app.select_index = 0;
@@ -143,7 +143,7 @@ pub fn keyboard_mode_file_tree(
                         return KeyBoardAction::Continue;
                     };
                     *markdown = parse_markdown(Some(&e), &text);
-                    markdown.transform(CONFIG.width);
+                    markdown.transform(app.width());
                     app.reset();
                     app.mode = Mode::View;
                     app.help_box.set_mode(Mode::View);
@@ -422,7 +422,7 @@ fn keyboard_mode_view(
                     return KeyBoardAction::Continue;
                 };
                 *markdown = parse_markdown(markdown.file_name(), text.as_ref());
-                markdown.transform(CONFIG.width);
+                markdown.transform(app.width());
                 app.mode = Mode::View;
             }
             KeyCode::Esc => {
@@ -476,7 +476,7 @@ fn keyboard_mode_view(
                         }
 
                         *markdown = parse_markdown(Some(url), &text);
-                        markdown.transform(CONFIG.width);
+                        markdown.transform(app.width());
                         app.reset();
                     }
                 }
@@ -496,7 +496,7 @@ fn keyboard_mode_view(
                         return KeyBoardAction::Continue;
                     };
                     *markdown = parse_markdown(Some(&e), &text);
-                    markdown.transform(CONFIG.width);
+                    markdown.transform(app.width());
                     app.reset();
                     app.mode = Mode::View;
                     app.help_box.set_mode(Mode::View);

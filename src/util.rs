@@ -1,4 +1,4 @@
-use std::{io, str::FromStr};
+use std::{cmp, io, str::FromStr};
 
 use config::{Config, File};
 use crossterm::{
@@ -53,6 +53,7 @@ impl Default for Boxes {
 #[derive(Default, Clone)]
 pub struct App {
     pub vertical_scroll: u16,
+    width: u16,
     pub selected: bool,
     pub select_index: usize,
     pub mode: Mode,
@@ -71,6 +72,16 @@ impl App {
         self.select_index = 0;
         self.boxes = Boxes::None;
         self.help_box.close();
+    }
+
+    pub fn set_width(&mut self, width: u16) -> bool {
+        let temp_width = self.width;
+        self.width = cmp::min(width, CONFIG.width);
+        temp_width != self.width
+    }
+
+    pub fn width(&self) -> u16 {
+        self.width
     }
 }
 
