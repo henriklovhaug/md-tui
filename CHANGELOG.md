@@ -5,6 +5,7 @@
 - Crash when number of markdown files where exactly at page limit at user tried
   to scroll to the last one using `j` or `k`.
 - Improved resizing. Can still crash if the terminal changes too fast. (#69)
+- Improve heading parsing.
 
 # Version 0.5.2
 
