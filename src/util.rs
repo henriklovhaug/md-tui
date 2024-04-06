@@ -53,7 +53,7 @@ impl Default for Boxes {
 #[derive(Default, Clone)]
 pub struct App {
     pub vertical_scroll: u16,
-    pub width: u16,
+    width: u16,
     pub selected: bool,
     pub select_index: usize,
     pub mode: Mode,
@@ -78,6 +78,10 @@ impl App {
         let temp_width = self.width;
         self.width = cmp::min(width, CONFIG.width);
         temp_width != self.width
+    }
+
+    pub fn width(&self) -> u16 {
+        self.width
     }
 }
 

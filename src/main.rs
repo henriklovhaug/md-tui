@@ -94,13 +94,13 @@ fn run_app<B: Backend>(
 
     let mut markdown = parse_markdown(None, EMPTY_FILE);
     app.set_width(terminal.size()?.width);
-    markdown.transform(app.width);
+    markdown.transform(app.width());
 
     let args: Vec<String> = std::env::args().collect();
     if let Some(arg) = args.get(1) {
         if let Ok(file) = read_to_string(arg) {
             markdown = parse_markdown(Some(arg), &file);
-            markdown.transform(app.width);
+            markdown.transform(app.width());
             app.mode = Mode::View;
         } else {
             app.error_box
@@ -115,8 +115,6 @@ fn run_app<B: Backend>(
             let url = if let Some(url) = markdown.file_name() {
                 url
             } else {
-                app.error_box.set_message("No file".to_string());
-                app.boxes = Boxes::Error;
                 app.mode = Mode::FileTree;
                 continue;
             };
@@ -131,7 +129,7 @@ fn run_app<B: Backend>(
                 continue;
             };
             markdown = parse_markdown(markdown.file_name(), &text);
-            markdown.transform(app.width);
+            markdown.transform(app.width());
         }
         let height = terminal.size()?.height;
 
@@ -158,13 +156,16 @@ fn run_app<B: Backend>(
             } else if app.boxes == Boxes::Error {
                 let (error_height, error_width) = app.error_box.dimensions();
                 let error_area = Rect {
-                    x: height / 2,
+                    x: app.width() / 2 - error_width / 2,
                     y: height / 2,
                     width: error_width,
                     height: error_height,
                 };
-                f.render_widget(Clear, error_area);
-                f.render_widget(app.error_box.clone(), error_area);
+
+                if app.width() > error_width {
+                    f.render_widget(Clear, error_area);
+                    f.render_widget(app.error_box.clone(), error_area);
+                }
             } else if app.boxes == Boxes::LinkPreview {
                 let (link_height, link_width) = app.link_box.dimensions();
                 let link_area = Rect {
@@ -173,6 +174,7 @@ fn run_app<B: Backend>(
                     width: link_width,
                     height: link_height,
                 };
+
                 f.render_widget(Clear, link_area);
                 f.render_widget(app.link_box.clone(), link_area);
             }
@@ -208,7 +210,7 @@ fn render_file_tree(f: &mut Frame, app: &App, file_tree: FileTree) {
     let size = f.size();
     let area = Rect {
         x: 2,
-        width: app.width,
+        width: app.width() - 3,
         ..size
     };
     f.render_widget(file_tree, area);
@@ -218,14 +220,14 @@ fn render_file_tree(f: &mut Frame, app: &App, file_tree: FileTree) {
             x: 4,
             y: size.height - 14,
             height: 13,
-            width: app.width - 4,
+            width: app.width() - 5,
         }
     } else {
         Rect {
             x: 4,
             y: size.height - 4,
             height: 3,
-            width: app.width - 4,
+            width: app.width() - 5,
         }
     };
 
@@ -236,14 +238,14 @@ fn render_file_tree(f: &mut Frame, app: &App, file_tree: FileTree) {
             x: 4,
             y: size.height - 13,
             height: 10,
-            width: app.width - 4,
+            width: app.width() - 5,
         }
     } else {
         Rect {
             x: 4,
-            y: size.height - 4,
+            y: size.height - 5,
             height: 3,
-            width: app.width - 4,
+            width: app.width() - 5,
         }
     };
 
@@ -254,7 +256,7 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: RenderRoot) {
     let size = f.size();
     let area = Rect {
         x: 2,
-        width: app.width - 3,
+        width: app.width() - 3,
         height: size.height - 5,
         ..size
     };
@@ -284,14 +286,14 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: RenderRoot) {
             x: 4,
             y: size.height - 16,
             height: 14,
-            width: app.width - 4,
+            width: app.width() - 5,
         }
     } else {
         Rect {
             x: 4,
             y: size.height - 3,
             height: 3,
-            width: app.width - 4,
+            width: app.width() - 5,
         }
     };
 
@@ -304,7 +306,7 @@ fn render_loading(f: &mut Frame, _app: &App) {
     let size = f.size();
     let area = Rect {
         x: 2,
-        width: size.width - 2,
+        width: size.width - 3,
         height: size.height - 5,
         ..size
     };
