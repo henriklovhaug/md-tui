@@ -232,7 +232,9 @@ pub fn compare_heading(link_header: &str, header: &[Vec<Word>]) -> bool {
         .collect::<Vec<String>>()
         .join("-")
         .replace(
-            ['(', ')', '[', ']', '{', '}', '<', '>', '"', '\'', ' ', '/'],
+            [
+                '(', ')', '[', ']', '{', '}', '<', '>', '"', '\'', ' ', '/', '.', ',',
+            ],
             "",
         )
         .chars()
