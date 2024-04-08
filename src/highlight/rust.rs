@@ -16,7 +16,6 @@ pub fn highlight_rust(lines: &[u8]) -> Result<Vec<HighlightEvent>, String> {
     let highlights = highlither
         .highlight(&rust_config, lines, None, |_| None)
         .unwrap()
-        .into_iter()
         .collect::<Vec<_>>();
 
     // Unpack the results
