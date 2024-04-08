@@ -132,6 +132,7 @@ fn style_word(word: &Word) -> Span<'_> {
                 .add_modifier(Modifier::BOLD)
                 .add_modifier(Modifier::ITALIC),
         ),
+        WordType::CodeBlock(e) => Span::styled(word.content(), e),
     }
 }
 
@@ -300,15 +301,7 @@ fn render_code_block(area: Rect, buf: &mut Buffer, component: RenderComponent, c
     let mut content = component
         .content()
         .iter()
-        .map(|c| {
-            Line::from(
-                c.iter()
-                    .map(|i| {
-                        Span::styled(i.content(), Style::default().fg(CONFIG.code_block_fg_color))
-                    })
-                    .collect::<Vec<_>>(),
-            )
-        })
+        .map(|c| Line::from(c.iter().map(|i| style_word(i)).collect::<Vec<_>>()))
         .collect::<Vec<_>>();
 
     match clip {

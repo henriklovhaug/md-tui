@@ -1,11 +1,13 @@
-use std::usize;
+use std::{io::Write, usize};
 
 use crate::{
+    highlight::{highlight_code, HighlightInfo, COLOR_MAP},
     parser::MdParseEnum,
     search::{compare_heading, find_and_mark},
 };
 use itertools::Itertools;
-use ratatui::{buffer::Buffer, layout::Rect, widgets::Widget};
+use ratatui::{buffer::Buffer, layout::Rect, style::Color, widgets::Widget};
+use tree_sitter_highlight::HighlightEvent;
 
 #[derive(Debug, Clone)]
 pub struct RenderRoot {
@@ -226,6 +228,7 @@ pub enum WordType {
     LinkData,
     Normal,
     Code,
+    CodeBlock(Color),
     Link,
     Italic,
     Bold,
@@ -283,6 +286,7 @@ impl From<MdParseEnum> for WordType {
             | MdParseEnum::TableSeperator => {
                 unreachable!("Edit this or pest file to fix for value: {:?}", value)
             }
+            MdParseEnum::CodeBlockStr => WordType::CodeBlock(Color::Reset),
         }
     }
 }
@@ -439,12 +443,24 @@ impl RenderComponent {
         }
     }
 
-    pub fn meta_info(&self) -> &Vec<Word> {
-        &self.meta_info
+    pub fn content_as_bytes(&self) -> Vec<u8> {
+        match self.kind() {
+            RenderNode::CodeBlock => self.content_as_lines().join("").as_bytes().to_vec(),
+
+            _ => {
+                let strings = self.content_as_lines();
+                let string = strings.join("\n");
+                string.as_bytes().to_vec()
+            }
+        }
     }
 
     pub fn content_owned(self) -> Vec<Vec<Word>> {
         self.content
+    }
+
+    pub fn meta_info(&self) -> &Vec<Word> {
+        &self.meta_info
     }
 
     pub fn height(&self) -> u16 {
@@ -685,14 +701,91 @@ impl RenderComponent {
                 self.content = lines;
             }
             RenderNode::CodeBlock => {
-                let mut content = self
-                    .content
-                    .iter()
-                    .filter(|c| c.iter().any(|x| x.is_renderable()))
-                    .cloned()
-                    .collect::<Vec<_>>();
+                let language = if let Some(word) = self.meta_info().first() {
+                    word.content()
+                } else {
+                    ""
+                };
 
-                content.insert(0, vec![Word::new("".to_string(), WordType::Code)]);
+                let highlight = highlight_code(language, &self.content_as_bytes());
+
+                let content = self.content_as_lines().join("");
+
+                // panic!("{:?}", content);
+
+                let mut new_content = Vec::new();
+
+                match highlight {
+                    HighlightInfo::Highlighted(e) => {
+                        let mut color = Color::Reset;
+                        for event in e {
+                            match event {
+                                HighlightEvent::Source { start, end } => {
+                                    let word = Word::new(
+                                        content[start..end].to_string(),
+                                        WordType::CodeBlock(color),
+                                    );
+                                    new_content.push(word);
+                                }
+                                HighlightEvent::HighlightStart(index) => {
+                                    color = COLOR_MAP[index.0];
+                                }
+                                HighlightEvent::HighlightEnd => (),
+                            }
+                        }
+
+                        let mut file = std::fs::File::create("highlighted.txt").unwrap();
+
+                        for word in new_content.iter() {
+                            file.write_all(word.content().as_bytes()).unwrap();
+                        }
+
+                        // panic!("{:?}", new_content);
+
+                        // Find all the new lines to split the content correctly
+                        let mut final_content = Vec::new();
+                        let mut inner_content = Vec::new();
+                        for word in new_content {
+                            if !word.content().contains('\n') {
+                                inner_content.push(word);
+                            } else {
+                                let mut start = 0;
+                                let mut end;
+                                for (i, c) in word.content().chars().enumerate() {
+                                    if c == '\n' {
+                                        end = i;
+                                        let new_word = Word::new(
+                                            word.content()[start..end].to_string(),
+                                            word.kind(),
+                                        );
+                                        inner_content.push(new_word);
+                                        start = i + 1;
+                                        final_content.push(inner_content);
+                                        inner_content = Vec::new();
+                                    } else if i == word.content().len() - 1 {
+                                        end = i + 1;
+                                        let new_word = Word::new(
+                                            word.content()[start..end].to_string(),
+                                            word.kind(),
+                                        );
+                                        inner_content.push(new_word);
+                                    }
+                                }
+                            }
+                        }
+
+                        final_content
+                            .push(vec![Word::new("".to_string(), WordType::CodeBlock(color))]);
+
+                        self.content = final_content;
+                        // panic!("{:?}", self.content);
+                    }
+                    HighlightInfo::Unhighlighted => (),
+                }
+
+                // let highlight = highlight_code("java", &content.as_bytes());
+
+                // content.insert(0, vec![Word::new("".to_string(), WordType::Code)]);
 
                 let height = self.content.len() as u16;
                 self.height = height;

@@ -26,6 +26,7 @@ use util::{destruct_terminal, App, Boxes, Mode};
 
 mod boxes;
 mod event_handler;
+pub mod highlight;
 pub mod nodes;
 mod pages;
 pub mod parser;
