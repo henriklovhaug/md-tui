@@ -14,6 +14,7 @@ Currently adds support for (with more to come):
 - c++/c
 - json
 
+
 ## Fixes
 
 - Crash when number of markdown files where exactly at page limit at user tried
