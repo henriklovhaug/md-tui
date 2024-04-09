@@ -20,6 +20,7 @@ Currently adds support for (with more to come):
   to scroll to the last one using `j` or `k`.
 - Improved resizing. Can still crash if the terminal changes too fast. (#69)
 - Improve heading parsing.
+- Paragraphs could clip the end and last to chars of words could be clipped.
 
 # Version 0.5.2
 
