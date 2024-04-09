@@ -79,7 +79,6 @@ link_selected_bg_color = "darkgrey"
 h_bg_color = "blue"
 h_fg_color = "black"
 quote_bg_color = "reset"
-code_block_fg_color = "red" #Will change when tree-sitter gets implemented
 code_block_bg_color = "#2A2A2A"
 table_header_fg_color = "yellow"
 table_header_bg_color = "reset"

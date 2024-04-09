@@ -13,7 +13,7 @@ Currently adds support for (with more to come):
 - java
 - c++/c
 - json
-
+- JavaScript
 
 ## Fixes
 
