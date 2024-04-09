@@ -648,97 +648,13 @@ impl RenderComponent {
         match self.kind {
             RenderNode::Heading => self.height = 1,
             RenderNode::List => {
-                let mut len = 0;
-                let mut lines = Vec::new();
-                let mut line = Vec::new();
-                let indent_iter = self.meta_info.iter().filter(|c| c.content().trim() == "");
-                let list_type_iter = self.meta_info.iter().filter(|c| {
-                    matches!(
-                        c.kind(),
-                        WordType::MetaInfo(MetaData::OList) | WordType::MetaInfo(MetaData::UList)
-                    )
-                });
-
-                let mut zip_iter = indent_iter.zip(list_type_iter);
-                let mut indent = 0;
-                let mut extra_indent = 0;
-                for word in self.content.iter_mut().flatten() {
-                    if word.content().len() + len < width as usize
-                        && word.kind() != WordType::ListMarker
-                    {
-                        len += word.content().len() + 1;
-                        line.push(word.clone());
-                    } else {
-                        let filler_content = if word.kind() == WordType::ListMarker {
-                            indent = if let Some((meta, list_type)) = zip_iter.next() {
-                                if list_type.kind() == WordType::MetaInfo(MetaData::OList) {
-                                    extra_indent = 1;
-                                } else {
-                                    extra_indent = 0;
-                                }
-                                meta.content().len()
-                            } else {
-                                0
-                            };
-                            " ".repeat(indent)
-                        } else {
-                            " ".repeat(indent + 2 + extra_indent)
-                        };
-                        lines.push(line);
-                        len = word.content.len() + 1;
-                        let content = word.content.trim_start().to_owned();
-                        word.set_content(content);
-                        let filler = Word::new(filler_content, WordType::Normal);
-                        line = vec![filler, word.to_owned()];
-                    }
-                }
-                lines.push(line);
-                // Remove empty lines
-                lines.retain(|l| l.iter().any(|c| c.content() != ""));
-                self.height = lines.len() as u16;
-                self.content = lines;
+                transform_list(self, width);
             }
             RenderNode::CodeBlock => {
                 transform_codeblock(self);
             }
             RenderNode::Paragraph | RenderNode::Task | RenderNode::Quote => {
-                let width = match self.kind {
-                    RenderNode::Paragraph => width as usize,
-                    RenderNode::Task => width as usize - 4,
-                    RenderNode::Quote => width as usize - 2,
-                    _ => unreachable!(),
-                };
-                let mut len = 0;
-                let mut lines = Vec::new();
-                let mut line = Vec::new();
-                if self.kind() == RenderNode::Quote && self.meta_info().is_empty() {
-                    let filler = Word::new(" ".to_string(), WordType::Normal);
-                    line.push(filler);
-                }
-                let iter = self.content.iter().flatten();
-                for word in iter {
-                    if word.content.len() + len < width {
-                        len += word.content.len();
-                        line.push(word.clone());
-                    } else {
-                        lines.push(line);
-                        len = word.content.len() + 1;
-                        let mut word = word.clone();
-                        let content = word.content.trim_start().to_owned();
-                        word.set_content(content);
-                        if self.kind() == RenderNode::Quote {
-                            let filler = Word::new(" ".to_string(), WordType::Normal);
-                            line = vec![filler, word];
-                        } else {
-                            line = vec![word];
-                        }
-                    }
-                }
-                if !line.is_empty() {
-                    lines.push(line);
-                }
-                self.height = lines.len() as u16;
-                self.content = lines;
+                transform_paragraph(self, width);
             }
             RenderNode::LineBreak => {
                 self.height = 1;
@@ -751,6 +667,46 @@ impl RenderComponent {
             RenderNode::HorizontalSeperator => self.height = 1,
         }
     }
+}
+
+fn transform_paragraph(component: &mut RenderComponent, width: u16) {
+    let width = match component.kind {
+        RenderNode::Paragraph => width as usize,
+        RenderNode::Task => width as usize - 4,
+        RenderNode::Quote => width as usize - 2,
+        _ => unreachable!(),
+    };
+    let mut len = 0;
+    let mut lines = Vec::new();
+    let mut line = Vec::new();
+    if component.kind() == RenderNode::Quote && component.meta_info().is_empty() {
+        let filler = Word::new(" ".to_string(), WordType::Normal);
+        line.push(filler);
+    }
+    let iter = component.content.iter().flatten();
+    for word in iter {
+        if word.content.len() + len < width {
+            len += word.content.len();
+            line.push(word.clone());
+        } else {
+            lines.push(line);
+            len = word.content.len() + 1;
+            let mut word = word.clone();
+            let content = word.content.trim_start().to_owned();
+            word.set_content(content);
+            if component.kind() == RenderNode::Quote {
+                let filler = Word::new(" ".to_string(), WordType::Normal);
+                line = vec![filler, word];
+            } else {
+                line = vec![word];
+            }
+        }
+    }
+    if !line.is_empty() {
+        lines.push(line);
+    }
+    component.height = lines.len() as u16;
+    component.content = lines;
 }
 
 fn transform_codeblock(component: &mut RenderComponent) {
@@ -820,4 +776,57 @@ fn transform_codeblock(component: &mut RenderComponent) {
 
     let height = component.content.len() as u16;
     component.height = height;
+}
+
+fn transform_list(component: &mut RenderComponent, width: u16) {
+    let mut len = 0;
+    let mut lines = Vec::new();
+    let mut line = Vec::new();
+    let indent_iter = component
+        .meta_info
+        .iter()
+        .filter(|c| c.content().trim() == "");
+    let list_type_iter = component.meta_info.iter().filter(|c| {
+        matches!(
+            c.kind(),
+            WordType::MetaInfo(MetaData::OList) | WordType::MetaInfo(MetaData::UList)
+        )
+    });
+
+    let mut zip_iter = indent_iter.zip(list_type_iter);
+    let mut indent = 0;
+    let mut extra_indent = 0;
+    for word in component.content.iter_mut().flatten() {
+        if word.content().len() + len < width as usize && word.kind() != WordType::ListMarker {
+            len += word.content().len() + 1;
+            line.push(word.clone());
+        } else {
+            let filler_content = if word.kind() == WordType::ListMarker {
+                indent = if let Some((meta, list_type)) = zip_iter.next() {
+                    if list_type.kind() == WordType::MetaInfo(MetaData::OList) {
+                        extra_indent = 1;
+                    } else {
+                        extra_indent = 0;
+                    }
+                    meta.content().len()
+                } else {
+                    0
+                };
+                " ".repeat(indent)
+            } else {
+                " ".repeat(indent + 2 + extra_indent)
+            };
+            lines.push(line);
+            len = word.content.len() + 1;
+            let content = word.content.trim_start().to_owned();
+            word.set_content(content);
+            let filler = Word::new(filler_content, WordType::Normal);
+            line = vec![filler, word.to_owned()];
+        }
+    }
+    lines.push(line);
+    // Remove empty lines
+    lines.retain(|l| l.iter().any(|c| c.content() != ""));
+    component.height = lines.len() as u16;
+    component.content = lines;
 }
