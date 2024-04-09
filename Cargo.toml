@@ -40,6 +40,7 @@ ratatui = { version = "0.26.1", default-features = true, features = ["macros", "
 strsim = "0.11.1"
 tree-sitter-highlight = "0.21.0"
 tree-sitter-java = "0.21.0"
+tree-sitter-json = "0.21.0"
 tree-sitter-rust = "0.21.0"
 
 # Config for 'cargo dist'

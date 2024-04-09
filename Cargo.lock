@@ -515,6 +515,7 @@ dependencies = [
  "strsim",
  "tree-sitter-highlight",
  "tree-sitter-java",
+ "tree-sitter-json",
  "tree-sitter-rust",
 ]
 
@@ -1103,6 +1104,16 @@ name = "tree-sitter-java"
 version = "0.21.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "33bc21adf831a773c075d9d00107ab43965e6a6ea7607b47fd9ec6f3db4b481b"
+dependencies = [
+ "cc",
+ "tree-sitter",
+]
+
+[[package]]
+name = "tree-sitter-json"
+version = "0.21.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5b737dcb73c35d74b7d64a5f3dde158113c86a012bf3cee2bfdf2150d23b05db"
 dependencies = [
  "cc",
  "tree-sitter",

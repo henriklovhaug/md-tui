@@ -1,10 +1,10 @@
-use lazy_static::lazy_static;
 use ratatui::style::Color;
-use tree_sitter_highlight::{HighlightEvent, Highlighter};
+use tree_sitter_highlight::HighlightEvent;
 
-use self::{java::highlight_java, rust::highlight_rust};
+use self::{java::highlight_java, json::highlight_json, rust::highlight_rust};
 
 mod java;
+mod json;
 mod rust;
 
 static HIGHLIGHT_NAMES: [&str; 18] = [
@@ -49,10 +49,6 @@ pub static COLOR_MAP: [Color; 18] = [
     Color::White,
 ];
 
-lazy_static! {
-    static ref HIGHLIGHT: Highlighter = Highlighter::new();
-}
-
 pub enum HighlightInfo {
     Highlighted(Vec<HighlightEvent>),
     Unhighlighted,
@@ -62,6 +58,7 @@ pub fn highlight_code(language: &str, lines: &[u8]) -> HighlightInfo {
     match language {
         "java" => HighlightInfo::Highlighted(highlight_java(lines).unwrap()),
         "rust" => HighlightInfo::Highlighted(highlight_rust(lines).unwrap()),
+        "json" => HighlightInfo::Highlighted(highlight_json(lines).unwrap()),
         _ => HighlightInfo::Unhighlighted,
     }
 }
