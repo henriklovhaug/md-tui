@@ -6,6 +6,7 @@
   - [Installation](#installation)
   - [Usage](#usage)
   - [Key binds](#key-binds)
+  - [Syntax highlighting](#syntax-highlighting)
   - [Configuration](#configuration)
   - [Links](#links)
   - [Contributions](#contributions)
@@ -52,6 +53,20 @@ _file tree_.
 | `d`        | Go down half a page                                                    |
 | `u`        | Go up half a page                                                      |
 | `q`        | Quit the application                                                   |
+
+## Syntax highlighting
+
+`MD-TUI` supports syntax highlighting in code blocks for the following
+languages:
+
+- Rust
+- JavaScript
+- Java
+- Go
+- Python
+- Json
+- Bash/sh
+- C/C++
 
 ## Configuration
 
