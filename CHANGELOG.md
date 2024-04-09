@@ -1,4 +1,18 @@
-# Version 0.5.3 (Unreleased)
+# Version 0.6.0 (Unreleased)
+
+## NEW FEATURE
+
+**SYNTAX HIGHLIGHTING!**
+
+Currently adds support for (with more to come):
+
+- bash
+- rust
+- go
+- python
+- java
+- c++/c
+- json
 
 ## Fixes
 

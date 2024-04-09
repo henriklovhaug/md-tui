@@ -95,13 +95,13 @@ fn run_app<B: Backend>(
 
     let mut markdown = parse_markdown(None, EMPTY_FILE);
     app.set_width(terminal.size()?.width);
-    markdown.transform(app.width());
+    markdown.transform(app.width() - 2);
 
     let args: Vec<String> = std::env::args().collect();
     if let Some(arg) = args.get(1) {
         if let Ok(file) = read_to_string(arg) {
             markdown = parse_markdown(Some(arg), &file);
-            markdown.transform(app.width());
+            markdown.transform(app.width() - 2);
             app.mode = Mode::View;
         } else {
             app.error_box
@@ -130,7 +130,7 @@ fn run_app<B: Backend>(
                 continue;
             };
             markdown = parse_markdown(markdown.file_name(), &text);
-            markdown.transform(app.width());
+            markdown.transform(app.width() - 2);
         }
         let height = terminal.size()?.height;
 

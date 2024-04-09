@@ -38,9 +38,14 @@ pest = "2.7.9"
 pest_derive = "2.7.9"
 ratatui = { version = "0.26.1", default-features = true, features = ["macros", "all-widgets", "serde"] }
 strsim = "0.11.1"
+tree-sitter-bash = "0.21.0"
+tree-sitter-c = "0.21.0"
+tree-sitter-cpp = "0.21.0"
+tree-sitter-go = "0.21.0"
 tree-sitter-highlight = "0.21.0"
 tree-sitter-java = "0.21.0"
 tree-sitter-json = "0.21.0"
+tree-sitter-python = "0.21.0"
 tree-sitter-rust = "0.21.0"
 
 # Config for 'cargo dist'

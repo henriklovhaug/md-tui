@@ -1,10 +1,18 @@
 use ratatui::style::Color;
 use tree_sitter_highlight::HighlightEvent;
 
-use self::{java::highlight_java, json::highlight_json, rust::highlight_rust};
+use self::{
+    c::highlight_c, cpp::highlight_cpp, go::highlight_go, java::highlight_java,
+    json::highlight_json, python::highlight_python, rust::highlight_rust,
+};
 
+mod bash;
+mod c;
+mod cpp;
+mod go;
 mod java;
 mod json;
+mod python;
 mod rust;
 
 static HIGHLIGHT_NAMES: [&str; 18] = [
@@ -59,6 +67,11 @@ pub fn highlight_code(language: &str, lines: &[u8]) -> HighlightInfo {
         "java" => HighlightInfo::Highlighted(highlight_java(lines).unwrap()),
         "rust" => HighlightInfo::Highlighted(highlight_rust(lines).unwrap()),
         "json" => HighlightInfo::Highlighted(highlight_json(lines).unwrap()),
+        "python" => HighlightInfo::Highlighted(highlight_python(lines).unwrap()),
+        "bash" | "sh" => HighlightInfo::Highlighted(bash::highlight_bash(lines).unwrap()),
+        "c" => HighlightInfo::Highlighted(highlight_c(lines).unwrap()),
+        "cpp" => HighlightInfo::Highlighted(highlight_cpp(lines).unwrap()),
+        "go" => HighlightInfo::Highlighted(highlight_go(lines).unwrap()),
         _ => HighlightInfo::Unhighlighted,
     }
 }
