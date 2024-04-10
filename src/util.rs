@@ -163,7 +163,6 @@ pub struct MdConfig {
     pub link_selected_bg_color: Color,
 
     // Block styles
-    pub code_block_fg_color: Color,
     pub code_block_bg_color: Color,
     pub heading_fg_color: Color,
     pub heading_bg_color: Color,
@@ -230,12 +229,6 @@ lazy_static! {
                 &settings.get::<String>("code_bg_color").unwrap_or_default(),
             )
             .unwrap_or(Color::Rgb(48, 48, 48)),
-            code_block_fg_color: Color::from_str(
-                &settings
-                    .get::<String>("code_block_fg_color")
-                    .unwrap_or_default(),
-            )
-            .unwrap_or(Color::Red),
             code_block_bg_color: Color::from_str(
                 &settings
                     .get::<String>("code_block_bg_color")

@@ -6,10 +6,10 @@
   - [Installation](#installation)
   - [Usage](#usage)
   - [Key binds](#key-binds)
+  - [Syntax highlighting](#syntax-highlighting)
   - [Configuration](#configuration)
   - [Links](#links)
   - [Contributions](#contributions)
-  - [Versioning](#versioning)
 
 <!--toc:end-->
 
@@ -53,6 +53,22 @@ _file tree_.
 | `u`        | Go up half a page                                                      |
 | `q`        | Quit the application                                                   |
 
+## Syntax highlighting
+
+`MD-TUI` supports syntax highlighting in code blocks for the following
+languages:
+
+- Rust
+- JavaScript
+- Java
+- Go
+- Python
+- Ocaml
+- Json
+- Bash/sh
+- C/C++
+- Lua
+
 ## Configuration
 
 The program checks for the file `~/.config/mdt/config.toml` at startup. The
@@ -79,7 +95,6 @@ link_selected_bg_color = "darkgrey"
 h_bg_color = "blue"
 h_fg_color = "black"
 quote_bg_color = "reset"
-code_block_fg_color = "red" #Will change when tree-sitter gets implemented
 code_block_bg_color = "#2A2A2A"
 table_header_fg_color = "yellow"
 table_header_bg_color = "reset"
@@ -103,14 +118,8 @@ quote_default = "white"
 ## Links
 
 MD-TUI currently supports `[text](url)`, `[[link]]`, and `[[link|Some title]]`
-for links.
+type of links.
 
 ## Contributions
 
 Both PRs and issues are appreciated!
-
-## Versioning
-
-Until 1.0.0 release, every minor increase adds new features and is very likely
-to also break current implementation. Patches fixes may also add new features in
-a breaking way. It's wild west in terms of semver until 1.0.0.

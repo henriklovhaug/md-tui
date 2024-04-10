@@ -418,8 +418,7 @@ supported, it will slowly get there. It's a good solution for quickly viewing
 your markdown notes, or opening external links from someones README.
 ";
 
-        let mut markdown = parse_markdown(None, text);
-        markdown.transform(80);
+        let markdown = parse_markdown(None, text, 80);
 
         let result = find_with_ref("in", markdown.words());
         dbg!(&result);

@@ -1,6 +1,6 @@
 [package]
 name = "md-tui"
-version = "0.5.2"
+version = "0.6.0"
 edition = "2021"
 authors = ["Henrik Tøn Løvhaug"]
 description = "A terminal markdown viewer"
@@ -38,11 +38,23 @@ pest = "2.7.9"
 pest_derive = "2.7.9"
 ratatui = { version = "0.26.1", default-features = true, features = ["macros", "all-widgets", "serde"] }
 strsim = "0.11.1"
+tree-sitter-bash = "0.21.0"
+tree-sitter-c = "0.21.0"
+tree-sitter-cpp = "0.21.0"
+tree-sitter-go = "0.21.0"
+tree-sitter-highlight = "0.21.0"
+tree-sitter-java = "0.21.0"
+tree-sitter-javascript = "0.21.0"
+tree-sitter-json = "0.21.0"
+tree-sitter-lua = "0.1.0"
+tree-sitter-ocaml = "0.21.0"
+tree-sitter-python = "0.21.0"
+tree-sitter-rust = "0.21.0"
 
 # Config for 'cargo dist'
 [workspace.metadata.dist]
 # The preferred cargo-dist version to use in CI (Cargo.toml SemVer syntax)
-cargo-dist-version = "0.12.2"
+cargo-dist-version = "0.13.0"
 # CI backends to support
 ci = ["github"]
 # The installers to generate for each app

@@ -26,6 +26,7 @@ use util::{destruct_terminal, App, Boxes, Mode};
 
 mod boxes;
 mod event_handler;
+pub mod highlight;
 pub mod nodes;
 mod pages;
 pub mod parser;
@@ -92,15 +93,13 @@ fn run_app<B: Backend>(
 
     let mut file_tree = find_md_files();
 
-    let mut markdown = parse_markdown(None, EMPTY_FILE);
     app.set_width(terminal.size()?.width);
-    markdown.transform(app.width());
+    let mut markdown = parse_markdown(None, EMPTY_FILE, app.width() - 2);
 
     let args: Vec<String> = std::env::args().collect();
     if let Some(arg) = args.get(1) {
         if let Ok(file) = read_to_string(arg) {
-            markdown = parse_markdown(Some(arg), &file);
-            markdown.transform(app.width());
+            markdown = parse_markdown(Some(arg), &file, app.width() - 2);
             app.mode = Mode::View;
         } else {
             app.error_box
@@ -128,8 +127,7 @@ fn run_app<B: Backend>(
                 app.mode = Mode::FileTree;
                 continue;
             };
-            markdown = parse_markdown(markdown.file_name(), &text);
-            markdown.transform(app.width());
+            markdown = parse_markdown(markdown.file_name(), &text, app.width() - 2);
         }
         let height = terminal.size()?.height;
 

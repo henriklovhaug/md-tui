@@ -1,4 +1,21 @@
-# Version 0.5.3 (Unreleased)
+# Version 0.6.0 (Unreleased)
+
+## NEW FEATURE
+
+**SYNTAX HIGHLIGHTING!**
+
+Currently adds support for (with more to come):
+
+- Rust
+- JavaScript
+- Java
+- Go
+- Python
+- Ocaml
+- Json
+- Bash/sh
+- C/C++
+- Lua
 
 ## Fixes
 
@@ -6,6 +23,7 @@
   to scroll to the last one using `j` or `k`.
 - Improved resizing. Can still crash if the terminal changes too fast. (#69)
 - Improve heading parsing.
+- Paragraphs could clip the end and last to chars of words could be clipped.
 
 # Version 0.5.2
 

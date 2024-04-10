@@ -1,11 +1,11 @@
-use std::usize;
-
 use crate::{
+    highlight::{highlight_code, HighlightInfo, COLOR_MAP},
     parser::MdParseEnum,
     search::{compare_heading, find_and_mark},
 };
 use itertools::Itertools;
-use ratatui::{buffer::Buffer, layout::Rect, widgets::Widget};
+use ratatui::{buffer::Buffer, layout::Rect, style::Color, widgets::Widget};
+use tree_sitter_highlight::HighlightEvent;
 
 #[derive(Debug, Clone)]
 pub struct RenderRoot {
@@ -173,7 +173,7 @@ impl RenderRoot {
     }
 
     /// Because of the parsing, every table has a missing newline at the end
-    pub fn add_missing_components(&mut self) {
+    pub fn add_missing_components(self) -> Self {
         let mut components = Vec::new();
         let mut iter = self.components.iter().peekable();
         while let Some(component) = iter.next() {
@@ -185,7 +185,11 @@ impl RenderRoot {
                 }
             }
         }
-        self.components = components;
+        return Self {
+            file_name: self.file_name,
+            components,
+            is_focused: self.is_focused,
+        };
     }
 
     pub fn height(&self) -> u16 {
@@ -226,6 +230,7 @@ pub enum WordType {
     LinkData,
     Normal,
     Code,
+    CodeBlock(Color),
     Link,
     Italic,
     Bold,
@@ -283,6 +288,7 @@ impl From<MdParseEnum> for WordType {
             | MdParseEnum::TableSeperator => {
                 unreachable!("Edit this or pest file to fix for value: {:?}", value)
             }
+            MdParseEnum::CodeBlockStr => WordType::CodeBlock(Color::Reset),
         }
     }
 }
@@ -439,12 +445,24 @@ impl RenderComponent {
         }
     }
 
-    pub fn meta_info(&self) -> &Vec<Word> {
-        &self.meta_info
+    pub fn content_as_bytes(&self) -> Vec<u8> {
+        match self.kind() {
+            RenderNode::CodeBlock => self.content_as_lines().join("").as_bytes().to_vec(),
+
+            _ => {
+                let strings = self.content_as_lines();
+                let string = strings.join("\n");
+                string.as_bytes().to_vec()
+            }
+        }
     }
 
     pub fn content_owned(self) -> Vec<Vec<Word>> {
         self.content
+    }
+
+    pub fn meta_info(&self) -> &Vec<Word> {
+        &self.meta_info
     }
 
     pub fn height(&self) -> u16 {
@@ -634,107 +652,13 @@ impl RenderComponent {
         match self.kind {
             RenderNode::Heading => self.height = 1,
             RenderNode::List => {
-                let mut len = 0;
-                let mut lines = Vec::new();
-                let mut line = Vec::new();
-                let indent_iter = self.meta_info.iter().filter(|c| c.content().trim() == "");
-                let list_type_iter = self.meta_info.iter().filter(|c| {
-                    matches!(
-                        c.kind(),
-                        WordType::MetaInfo(MetaData::OList) | WordType::MetaInfo(MetaData::UList)
-                    )
-                });
-
-                let mut zip_iter = indent_iter.zip(list_type_iter);
-                let mut indent = 0;
-                let mut extra_indent = 0;
-                for word in self.content.iter_mut().flatten() {
-                    if word.content().len() + len < width as usize
-                        && word.kind() != WordType::ListMarker
-                    {
-                        len += word.content().len() + 1;
-                        line.push(word.clone());
-                    } else {
-                        let filler_content = if word.kind() == WordType::ListMarker {
-                            indent = if let Some((meta, list_type)) = zip_iter.next() {
-                                if list_type.kind() == WordType::MetaInfo(MetaData::OList) {
-                                    extra_indent = 1;
-                                } else {
-                                    extra_indent = 0;
-                                }
-                                meta.content().len()
-                            } else {
-                                0
-                            };
-                            " ".repeat(indent)
-                        } else {
-                            " ".repeat(indent + 2 + extra_indent)
-                        };
-                        lines.push(line);
-                        len = word.content.len() + 1;
-                        let content = word.content.trim_start().to_owned();
-                        word.set_content(content);
-                        let filler = Word::new(filler_content, WordType::Normal);
-                        line = vec![filler, word.to_owned()];
-                    }
-                }
-                lines.push(line);
-                // Remove empty lines
-                lines.retain(|l| l.iter().any(|c| c.content() != ""));
-                self.height = lines.len() as u16;
-                self.content = lines;
+                transform_list(self, width);
             }
             RenderNode::CodeBlock => {
-                let mut content = self
-                    .content
-                    .iter()
-                    .filter(|c| c.iter().any(|x| x.is_renderable()))
-                    .cloned()
-                    .collect::<Vec<_>>();
-
-                content.insert(0, vec![Word::new("".to_string(), WordType::Code)]);
-
-                let height = self.content.len() as u16;
-                self.height = height;
+                transform_codeblock(self);
             }
             RenderNode::Paragraph | RenderNode::Task | RenderNode::Quote => {
-                let width = match self.kind {
-                    RenderNode::Paragraph => width as usize,
-                    RenderNode::Task => width as usize - 4,
-                    RenderNode::Quote => width as usize - 2,
-                    _ => unreachable!(),
-                };
-                let mut len = 0;
-                let mut lines = Vec::new();
-                let mut line = Vec::new();
-                if self.kind() == RenderNode::Quote && self.meta_info().is_empty() {
-                    let filler = Word::new(" ".to_string(), WordType::Normal);
-                    line.push(filler);
-                }
-                let iter = self.content.iter().flatten();
-                for word in iter {
-                    if word.content.len() + len < width {
-                        len += word.content.len();
-                        line.push(word.clone());
-                    } else {
-                        lines.push(line);
-                        len = word.content.len() + 1;
-                        let mut word = word.clone();
-                        let content = word.content.trim_start().to_owned();
-                        word.set_content(content);
-                        if self.kind() == RenderNode::Quote {
-                            let filler = Word::new(" ".to_string(), WordType::Normal);
-                            line = vec![filler, word];
-                        } else {
-                            line = vec![word];
-                        }
-                    }
-                }
-                if !line.is_empty() {
-                    lines.push(line);
-                }
-                self.height = lines.len() as u16;
-                self.content = lines;
+                transform_paragraph(self, width);
             }
             RenderNode::LineBreak => {
                 self.height = 1;
@@ -747,4 +671,165 @@ impl RenderComponent {
             RenderNode::HorizontalSeperator => self.height = 1,
         }
     }
+}
+
+fn transform_paragraph(component: &mut RenderComponent, width: u16) {
+    let width = match component.kind {
+        RenderNode::Paragraph => width as usize,
+        RenderNode::Task => width as usize - 4,
+        RenderNode::Quote => width as usize - 2,
+        _ => unreachable!(),
+    };
+    let mut len = 0;
+    let mut lines = Vec::new();
+    let mut line = Vec::new();
+    if component.kind() == RenderNode::Quote && component.meta_info().is_empty() {
+        let filler = Word::new(" ".to_string(), WordType::Normal);
+        line.push(filler);
+    }
+    let iter = component.content.iter().flatten();
+    for word in iter {
+        if word.content.len() + len < width {
+            len += word.content.len();
+            line.push(word.clone());
+        } else {
+            lines.push(line);
+            len = word.content.len() + 1;
+            let mut word = word.clone();
+            let content = word.content.trim_start().to_owned();
+            word.set_content(content);
+            if component.kind() == RenderNode::Quote {
+                let filler = Word::new(" ".to_string(), WordType::Normal);
+                line = vec![filler, word];
+            } else {
+                line = vec![word];
+            }
+        }
+    }
+    if !line.is_empty() {
+        lines.push(line);
+    }
+    component.height = lines.len() as u16;
+    component.content = lines;
+}
+
+fn transform_codeblock(component: &mut RenderComponent) {
+    let language = if let Some(word) = component.meta_info().first() {
+        word.content()
+    } else {
+        ""
+    };
+
+    let highlight = highlight_code(language, &component.content_as_bytes());
+
+    let content = component.content_as_lines().join("");
+
+    let mut new_content = Vec::new();
+
+    match highlight {
+        HighlightInfo::Highlighted(e) => {
+            let mut color = Color::Reset;
+            for event in e {
+                match event {
+                    HighlightEvent::Source { start, end } => {
+                        let word =
+                            Word::new(content[start..end].to_string(), WordType::CodeBlock(color));
+                        new_content.push(word);
+                    }
+                    HighlightEvent::HighlightStart(index) => {
+                        color = COLOR_MAP[index.0];
+                    }
+                    HighlightEvent::HighlightEnd => color = Color::Reset,
+                }
+            }
+
+            // Find all the new lines to split the content correctly
+            let mut final_content = Vec::new();
+            let mut inner_content = Vec::new();
+            for word in new_content {
+                if !word.content().contains('\n') {
+                    inner_content.push(word);
+                } else {
+                    let mut start = 0;
+                    let mut end;
+                    for (i, c) in word.content().chars().enumerate() {
+                        if c == '\n' {
+                            end = i;
+                            let new_word =
+                                Word::new(word.content()[start..end].to_string(), word.kind());
+                            inner_content.push(new_word);
+                            start = i + 1;
+                            final_content.push(inner_content);
+                            inner_content = Vec::new();
+                        } else if i == word.content().len() - 1 {
+                            let new_word =
+                                Word::new(word.content()[start..].to_string(), word.kind());
+                            inner_content.push(new_word);
+                        }
+                    }
+                }
+            }
+
+            final_content.push(vec![Word::new("".to_string(), WordType::CodeBlock(color))]);
+
+            component.content = final_content;
+        }
+        HighlightInfo::Unhighlighted => (),
+    }
+
+    let height = component.content.len() as u16;
+    component.height = height;
+}
+
+fn transform_list(component: &mut RenderComponent, width: u16) {
+    let mut len = 0;
+    let mut lines = Vec::new();
+    let mut line = Vec::new();
+    let indent_iter = component
+        .meta_info
+        .iter()
+        .filter(|c| c.content().trim() == "");
+    let list_type_iter = component.meta_info.iter().filter(|c| {
+        matches!(
+            c.kind(),
+            WordType::MetaInfo(MetaData::OList) | WordType::MetaInfo(MetaData::UList)
+        )
+    });
+
+    let mut zip_iter = indent_iter.zip(list_type_iter);
+    let mut indent = 0;
+    let mut extra_indent = 0;
+    for word in component.content.iter_mut().flatten() {
+        if word.content().len() + len < width as usize && word.kind() != WordType::ListMarker {
+            len += word.content().len() + 1;
+            line.push(word.clone());
+        } else {
+            let filler_content = if word.kind() == WordType::ListMarker {
+                indent = if let Some((meta, list_type)) = zip_iter.next() {
+                    if list_type.kind() == WordType::MetaInfo(MetaData::OList) {
+                        extra_indent = 1;
+                    } else {
+                        extra_indent = 0;
+                    }
+                    meta.content().len()
+                } else {
+                    0
+                };
+                " ".repeat(indent)
+            } else {
+                " ".repeat(indent + 2 + extra_indent)
+            };
+            lines.push(line);
+            len = word.content.len() + 1;
+            let content = word.content.trim_start().to_owned();
+            word.set_content(content);
+            let filler = Word::new(filler_content, WordType::Normal);
+            line = vec![filler, word.to_owned()];
+        }
+    }
+    lines.push(line);
+    // Remove empty lines
+    lines.retain(|l| l.iter().any(|c| c.content() != ""));
+    component.height = lines.len() as u16;
+    component.content = lines;
 }

@@ -117,8 +117,7 @@ pub fn keyboard_mode_file_tree(
                     return KeyBoardAction::Continue;
                 };
 
-                *markdown = parse_markdown(Some(file.path()), &text);
-                markdown.transform(app.width());
+                *markdown = parse_markdown(Some(file.path()), &text, app.width() - 2);
                 app.mode = Mode::View;
                 app.help_box.set_mode(Mode::View);
                 app.select_index = 0;
@@ -142,8 +141,7 @@ pub fn keyboard_mode_file_tree(
                         app.boxes = Boxes::Error;
                         return KeyBoardAction::Continue;
                     };
-                    *markdown = parse_markdown(Some(&e), &text);
-                    markdown.transform(app.width());
+                    *markdown = parse_markdown(Some(&e), &text, app.width() - 2);
                     app.reset();
                     app.mode = Mode::View;
                     app.help_box.set_mode(Mode::View);
@@ -421,8 +419,7 @@ fn keyboard_mode_view(
                     app.boxes = Boxes::Error;
                     return KeyBoardAction::Continue;
                 };
-                *markdown = parse_markdown(markdown.file_name(), text.as_ref());
-                markdown.transform(app.width());
+                *markdown = parse_markdown(markdown.file_name(), text.as_ref(), app.width() - 2);
                 app.mode = Mode::View;
             }
             KeyCode::Esc => {
@@ -475,8 +472,7 @@ fn keyboard_mode_view(
                             app.history.push(Jump::File(file_name.to_string()));
                         }
 
-                        *markdown = parse_markdown(Some(url), &text);
-                        markdown.transform(app.width());
+                        *markdown = parse_markdown(Some(url), &text, app.width() - 2);
                         app.reset();
                     }
                 }
@@ -495,8 +491,7 @@ fn keyboard_mode_view(
                         app.boxes = Boxes::Error;
                         return KeyBoardAction::Continue;
                     };
-                    *markdown = parse_markdown(Some(&e), &text);
-                    markdown.transform(app.width());
+                    *markdown = parse_markdown(Some(&e), &text, app.width() - 2);
                     app.reset();
                     app.mode = Mode::View;
                     app.help_box.set_mode(Mode::View);
