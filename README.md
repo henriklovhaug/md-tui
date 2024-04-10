@@ -64,6 +64,7 @@ languages:
 - Java
 - Go
 - Python
+- Ocaml
 - Json
 - Bash/sh
 - C/C++
