@@ -735,7 +735,7 @@ fn transform_codeblock(component: &mut RenderComponent) {
                     HighlightEvent::HighlightStart(index) => {
                         color = COLOR_MAP[index.0];
                     }
-                    HighlightEvent::HighlightEnd => (),
+                    HighlightEvent::HighlightEnd => color = Color::Reset,
                 }
             }
 
@@ -758,9 +758,8 @@ fn transform_codeblock(component: &mut RenderComponent) {
                             final_content.push(inner_content);
                             inner_content = Vec::new();
                         } else if i == word.content().len() - 1 {
-                            end = i + 1;
                             let new_word =
-                                Word::new(word.content()[start..end].to_string(), word.kind());
+                                Word::new(word.content()[start..].to_string(), word.kind());
                             inner_content.push(new_word);
                         }
                     }

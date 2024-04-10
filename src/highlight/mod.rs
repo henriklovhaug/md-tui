@@ -54,9 +54,9 @@ pub static COLOR_MAP: [Color; 18] = [
     Color::Cyan,
     Color::Cyan,
     Color::Cyan,
-    Color::White,
-    Color::White,
-    Color::White,
+    Color::Reset,
+    Color::Reset,
+    Color::Reset,
 ];
 
 pub enum HighlightInfo {
