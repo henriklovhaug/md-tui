@@ -7,13 +7,13 @@ pub fn highlight_c(lines: &[u8]) -> Result<Vec<HighlightEvent>, String> {
     let mut highlither = Highlighter::new();
     let language = language();
 
-    let mut python_config =
+    let mut c_config =
         HighlightConfiguration::new(language, "c", tree_sitter_c::HIGHLIGHT_QUERY, "", "").unwrap();
 
-    python_config.configure(&HIGHLIGHT_NAMES);
+    c_config.configure(&HIGHLIGHT_NAMES);
 
     let highlights: Result<Vec<HighlightEvent>, String> =
-        if let Ok(lines) = highlither.highlight(&python_config, lines, None, |_| None) {
+        if let Ok(lines) = highlither.highlight(&c_config, lines, None, |_| None) {
             lines
                 .collect::<Result<Vec<_>, _>>()
                 .map_err(|e| e.to_string())

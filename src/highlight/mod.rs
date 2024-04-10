@@ -3,8 +3,8 @@ use tree_sitter_highlight::HighlightEvent;
 
 use self::{
     c::highlight_c, cpp::highlight_cpp, go::highlight_go, java::highlight_java,
-    javascript::highlight_javascript, json::highlight_json, python::highlight_python,
-    rust::highlight_rust,
+    javascript::highlight_javascript, json::highlight_json, lua::highlight_lua,
+    python::highlight_python, rust::highlight_rust,
 };
 
 mod bash;
@@ -14,6 +14,7 @@ mod go;
 mod java;
 mod javascript;
 mod json;
+mod lua;
 mod python;
 mod rust;
 
@@ -75,6 +76,7 @@ pub fn highlight_code(language: &str, lines: &[u8]) -> HighlightInfo {
         "cpp" => HighlightInfo::Highlighted(highlight_cpp(lines).unwrap()),
         "go" => HighlightInfo::Highlighted(highlight_go(lines).unwrap()),
         "javascript" => HighlightInfo::Highlighted(highlight_javascript(lines).unwrap()),
+        "lua" => HighlightInfo::Highlighted(highlight_lua(lines).unwrap()),
         _ => HighlightInfo::Unhighlighted,
     }
 }
