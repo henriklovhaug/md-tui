@@ -67,6 +67,7 @@ languages:
 - Json
 - Bash/sh
 - C/C++
+- Lua
 
 ## Configuration
 
