@@ -15,6 +15,7 @@ mod java;
 mod javascript;
 mod json;
 mod lua;
+mod ocaml;
 mod python;
 mod rust;
 
@@ -77,6 +78,7 @@ pub fn highlight_code(language: &str, lines: &[u8]) -> HighlightInfo {
         "go" => HighlightInfo::Highlighted(highlight_go(lines).unwrap()),
         "javascript" => HighlightInfo::Highlighted(highlight_javascript(lines).unwrap()),
         "lua" => HighlightInfo::Highlighted(highlight_lua(lines).unwrap()),
+        "ocaml" => HighlightInfo::Highlighted(ocaml::highlight_ocaml(lines).unwrap()),
         _ => HighlightInfo::Unhighlighted,
     }
 }

@@ -522,6 +522,7 @@ dependencies = [
  "tree-sitter-javascript",
  "tree-sitter-json",
  "tree-sitter-lua",
+ "tree-sitter-ocaml",
  "tree-sitter-python",
  "tree-sitter-rust",
 ]
@@ -1181,6 +1182,16 @@ name = "tree-sitter-lua"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3b9fe6fc87bd480e1943fc1fcb02453fb2da050e4e8ce0daa67d801544046856"
+dependencies = [
+ "cc",
+ "tree-sitter",
+]
+
+[[package]]
+name = "tree-sitter-ocaml"
+version = "0.21.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "47621e2bdc1524bf97f91ccc7a2584c64f93c27df819679c23e2bfadcff4930e"
 dependencies = [
  "cc",
  "tree-sitter",
