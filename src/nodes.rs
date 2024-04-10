@@ -173,7 +173,7 @@ impl RenderRoot {
     }
 
     /// Because of the parsing, every table has a missing newline at the end
-    pub fn add_missing_components(&mut self) {
+    pub fn add_missing_components(self) -> Self {
         let mut components = Vec::new();
         let mut iter = self.components.iter().peekable();
         while let Some(component) = iter.next() {
@@ -185,7 +185,11 @@ impl RenderRoot {
                 }
             }
         }
-        self.components = components;
+        return Self {
+            file_name: self.file_name,
+            components,
+            is_focused: self.is_focused,
+        };
     }
 
     pub fn height(&self) -> u16 {

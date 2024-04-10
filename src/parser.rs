@@ -11,7 +11,7 @@ use crate::nodes::{MetaData, RenderComponent, RenderNode, RenderRoot, Word, Word
 #[grammar = "md.pest"]
 pub struct MdParser;
 
-pub fn parse_markdown(name: Option<&str>, file: &str) -> RenderRoot {
+pub fn parse_markdown(name: Option<&str>, file: &str, width: u16) -> RenderRoot {
     let root: Pairs<'_, Rule> = if let Ok(file) = MdParser::parse(Rule::txt, file) {
         file
     } else {
@@ -24,10 +24,9 @@ pub fn parse_markdown(name: Option<&str>, file: &str) -> RenderRoot {
     let children = children.iter().dedup().cloned().collect();
     let parse_root = ParseRoot::new(name.map(str::to_string), children);
 
-    let mut root = node_to_component(parse_root);
+    let mut root = node_to_component(parse_root).add_missing_components();
 
-    root.add_missing_components();
-
+    root.transform(width);
     root
 }
 
