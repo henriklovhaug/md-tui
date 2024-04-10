@@ -52,7 +52,7 @@ tree-sitter-rust = "0.21.0"
 # Config for 'cargo dist'
 [workspace.metadata.dist]
 # The preferred cargo-dist version to use in CI (Cargo.toml SemVer syntax)
-cargo-dist-version = "0.12.2"
+cargo-dist-version = "0.13.0"
 # CI backends to support
 ci = ["github"]
 # The installers to generate for each app
