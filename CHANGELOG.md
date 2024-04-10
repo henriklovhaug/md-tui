@@ -6,14 +6,16 @@
 
 Currently adds support for (with more to come):
 
-- bash
-- rust
-- go
-- python
-- java
-- c++/c
-- json
+- Rust
 - JavaScript
+- Java
+- Go
+- Python
+- Ocaml
+- Json
+- Bash/sh
+- C/C++
+- Lua
 
 ## Fixes
 
