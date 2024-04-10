@@ -10,7 +10,6 @@
   - [Configuration](#configuration)
   - [Links](#links)
   - [Contributions](#contributions)
-  - [Versioning](#versioning)
 
 <!--toc:end-->
 
@@ -119,14 +118,8 @@ quote_default = "white"
 ## Links
 
 MD-TUI currently supports `[text](url)`, `[[link]]`, and `[[link|Some title]]`
-for links.
+type of links.
 
 ## Contributions
 
 Both PRs and issues are appreciated!
-
-## Versioning
-
-Until 1.0.0 release, every minor increase adds new features and is very likely
-to also break current implementation. Patches fixes may also add new features in
-a breaking way. It's wild west in terms of semver until 1.0.0.
