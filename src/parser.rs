@@ -114,10 +114,28 @@ fn parse_component(parse_node: ParseNode) -> RenderComponent {
             RenderComponent::new(RenderNode::Quote, words)
         }
 
-        MdParseEnum::Paragraph | MdParseEnum::Heading => {
+        MdParseEnum::Heading => {
             let kind = parse_node.kind();
+            let indent = parse_node
+                .content()
+                .chars()
+                .take_while(|c| *c == '#')
+                .count();
             let leaf_nodes = get_leaf_nodes(parse_node);
             let mut words = Vec::new();
+
+            words.push(Word::new(
+                "".to_string(),
+                WordType::MetaInfo(MetaData::HeadingLevel(indent as u8)),
+            ));
+
+            if indent > 1 {
+                words.push(Word::new(
+                    format!("{} ", "#".repeat(indent)),
+                    WordType::Normal,
+                ));
+            }
+
             for node in leaf_nodes {
                 let word_type = WordType::from(node.kind());
                 let mut content = node.content().to_owned();
@@ -142,6 +160,31 @@ fn parse_component(parse_node: ParseNode) -> RenderComponent {
                 MdParseEnum::Heading => RenderComponent::new(RenderNode::Heading, words),
                 _ => unreachable!(),
             }
+        }
+
+        MdParseEnum::Paragraph => {
+            let leaf_nodes = get_leaf_nodes(parse_node);
+            let mut words = Vec::new();
+            for node in leaf_nodes {
+                let word_type = WordType::from(node.kind());
+                let mut content = node.content().to_owned();
+
+                if node.kind() == MdParseEnum::WikiLink {
+                    let comp = Word::new(content.clone(), WordType::LinkData);
+                    words.push(comp);
+                }
+
+                if content.starts_with(' ') {
+                    content.remove(0);
+                    let comp = Word::new(" ".to_owned(), word_type);
+                    words.push(comp);
+                }
+                words.push(Word::new(content, word_type));
+            }
+            if let Some(w) = words.first_mut() {
+                w.set_content(w.content().trim_start().to_owned());
+            }
+            RenderComponent::new(RenderNode::Paragraph, words)
         }
 
         MdParseEnum::CodeBlock => {

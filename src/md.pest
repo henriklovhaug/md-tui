@@ -79,12 +79,12 @@ u_list = { indent ~ ("-" | "*") ~ " " ~ sentence+ }
 o_list = { indent ~ o_list_counter ~ sentence+ }
 
 // Headings
-h1 = _{ "# " ~ (h_word | " ")+ }
-h2 = _{ "## " ~ (h_word | " ")+ }
-h3 = _{ "### " ~ (h_word | " ")+ }
-h4 = _{ "#### " ~ (h_word | " ")+ }
-h5 = _{ "##### " ~ (h_word | " ")+ }
-h6 = _{ "###### " ~ (h_word | " ")+ }
+h1 = { "# " ~ (h_word | " ")+ }
+h2 = { "## " ~ (h_word | " ")+ }
+h3 = { "### " ~ (h_word | " ")+ }
+h4 = { "#### " ~ (h_word | " ")+ }
+h5 = { "##### " ~ (h_word | " ")+ }
+h6 = { "###### " ~ (h_word | " ")+ }
 
 // Quote markings
 important = { ^"[!important]" }

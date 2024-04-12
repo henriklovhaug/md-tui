@@ -202,6 +202,7 @@ pub enum MetaData {
     Tip,
     Warning,
     Caution,
+    HeadingLevel(u8),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

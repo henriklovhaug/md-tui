@@ -322,6 +322,48 @@ lazy_static! {
     };
 }
 
+pub struct HeadingColors {
+    pub level_2: Color,
+    pub level_3: Color,
+    pub level_4: Color,
+    pub level_5: Color,
+    pub level_6: Color,
+}
+
+lazy_static! {
+    pub static ref HEADER_COLOR: HeadingColors = {
+        let config_dir = dirs::home_dir().unwrap();
+        let config_file = config_dir.join(".config").join("mdt").join("config.toml");
+        let settings = Config::builder()
+            .add_source(File::with_name(config_file.to_str().unwrap()).required(false))
+            .build()
+            .unwrap();
+
+        HeadingColors {
+            level_2: settings
+                .get::<String>("h2_fg_color")
+                .map(|s| Color::from_str(&s).unwrap_or(Color::Green))
+                .unwrap_or(Color::Green),
+            level_3: settings
+                .get_string("h3_fg_color")
+                .map(|s| Color::from_str(&s).unwrap_or(Color::Magenta))
+                .unwrap_or(Color::Magenta),
+            level_4: settings
+                .get_string("h4_fg_color")
+                .map(|s| Color::from_str(&s).unwrap_or(Color::Cyan))
+                .unwrap_or(Color::Cyan),
+            level_5: settings
+                .get_string("h5_fg_color")
+                .map(|s| Color::from_str(&s).unwrap_or(Color::Yellow))
+                .unwrap_or(Color::Yellow),
+            level_6: settings
+                .get_string("h6_fg_color")
+                .map(|s| Color::from_str(&s).unwrap_or(Color::LightRed))
+                .unwrap_or(Color::LightRed),
+        }
+    };
+}
+
 #[cfg(test)]
 #[test]
 fn test_jump_history() {

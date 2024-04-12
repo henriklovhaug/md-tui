@@ -113,6 +113,13 @@ quote_tip = "lightgreen"
 quote_note = "lightblue"
 quote_caution = "lightmagenta"
 quote_default = "white"
+
+# Heading
+h2_fg_color = "green"
+h3_fg_color = "magenta"
+h4_fg_color = "cyan"
+h5_fg_color = "yellow"
+h6_fg_color = "lightred"
 ```
 
 ## Links
