@@ -166,11 +166,11 @@ impl RenderRoot {
                 }
             }
         }
-        return Self {
+        Self {
             file_name: self.file_name,
             components,
             is_focused: self.is_focused,
-        };
+        }
     }
 
     pub fn height(&self) -> u16 {
