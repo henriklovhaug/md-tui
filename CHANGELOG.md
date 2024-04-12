@@ -3,6 +3,7 @@
 ## Fixes
 
 - (#92) Fix page counter which had the total number of pages wrong sometimes.
+- (#49) Headings are visually separate-able, and configurable.
 
 # Version 0.6.0 (Unreleased)
 
