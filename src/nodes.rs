@@ -146,25 +146,6 @@ impl RenderRoot {
         block.highlight_link().unwrap()
     }
 
-    fn get_component_from_height_mut(&mut self, height: u16) -> Option<&mut RenderComponent> {
-        let mut y_offset = 0;
-        for component in self.components.iter_mut() {
-            if y_offset <= height && height < y_offset + component.height() {
-                return Some(component);
-            }
-            y_offset += component.height();
-        }
-        None
-    }
-
-    pub fn mark_word(&mut self, height: usize, index: usize, length: usize) -> Result<(), String> {
-        let component = self
-            .get_component_from_height_mut(height as u16)
-            .ok_or("index out of bounds")?;
-        let height = height - component.y_offset() as usize;
-        component.mark_word(height, index, length)
-    }
-
     /// Transforms the content of the components to fit the given width
     pub fn transform(&mut self, width: u16) {
         for component in self.components_mut() {
@@ -521,66 +502,6 @@ impl RenderComponent {
             .for_each(|c| {
                 c.set_kind(WordType::Selected);
             });
-        Ok(())
-    }
-
-    pub fn mark_word(&mut self, height: usize, index: usize, length: usize) -> Result<(), String> {
-        if self.kind == RenderNode::Table {
-            return self.mark_word_table(height, index, length);
-        }
-
-        let line = self.content.get_mut(height).ok_or("index out of bounds")?;
-        let mut skip_while = 0;
-        let mut take_while = 0;
-        line.iter_mut()
-            .by_ref()
-            .skip_while(|c| {
-                skip_while += c.content().len();
-                skip_while <= index + c.content().len() / 2
-            })
-            .take_while(|k| {
-                take_while += k.content().len();
-                take_while < length + k.content().len()
-            })
-            .for_each(|word| {
-                word.set_kind(WordType::Selected);
-            });
-        Ok(())
-    }
-
-    pub fn mark_word_table(
-        &mut self,
-        height: usize,
-        index: usize,
-        length: usize,
-    ) -> Result<(), String> {
-        let column_count = self.meta_info.len();
-
-        let line = self
-            .content
-            .chunks_mut(column_count)
-            .nth(height)
-            .ok_or("index out of bounds")?;
-
-        let mut skip_while = 0;
-        let mut take_while = 0;
-
-        line.iter_mut().for_each(|word| {
-            word.iter_mut()
-                .by_ref()
-                .skip_while(|c| {
-                    skip_while += c.content().len();
-                    skip_while <= index + c.content().len() / 2
-                })
-                .take_while(|k| {
-                    take_while += k.content().len();
-                    take_while < length + k.content().len()
-                })
-                .for_each(|word| {
-                    word.set_kind(WordType::Selected);
-                });
-        });
-
         Ok(())
     }
 
