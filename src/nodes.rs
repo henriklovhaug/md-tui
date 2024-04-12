@@ -801,7 +801,7 @@ fn transform_list(component: &mut RenderComponent, width: u16) {
     let mut extra_indent = 0;
     for word in component.content.iter_mut().flatten() {
         if word.content().len() + len < width as usize && word.kind() != WordType::ListMarker {
-            len += word.content().len() + 1;
+            len += word.content().len();
             line.push(word.clone());
         } else {
             let filler_content = if word.kind() == WordType::ListMarker {
@@ -820,10 +820,11 @@ fn transform_list(component: &mut RenderComponent, width: u16) {
                 " ".repeat(indent + 2 + extra_indent)
             };
             lines.push(line);
-            len = word.content.len() + 1;
+            len = word.content.len();
             let content = word.content.trim_start().to_owned();
             word.set_content(content);
             let filler = Word::new(filler_content, WordType::Normal);
+            len += filler.content().len();
             line = vec![filler, word.to_owned()];
         }
     }
