@@ -9,8 +9,8 @@ use ratatui::{
 };
 
 use crate::{
-    nodes::{RenderComponent, RenderNode, Word, WordType},
-    util::CONFIG,
+    nodes::{MetaData, RenderComponent, RenderNode, Word, WordType},
+    util::{CONFIG, HEADER_COLOR},
 };
 
 fn clips_upper_bound(_area: Rect, component: &RenderComponent) -> bool {
@@ -206,17 +206,41 @@ fn render_quote(area: Rect, buf: &mut Buffer, component: RenderComponent, clip: 
     paragraph.render(area, buf);
 }
 
+fn style_heading(word: &Word, indent: u8) -> Span<'_> {
+    match indent {
+        1 => Span::styled(word.content(), Style::default().fg(CONFIG.heading_fg_color)),
+        2 => Span::styled(word.content(), Style::default().fg(HEADER_COLOR.level_2)),
+        3 => Span::styled(word.content(), Style::default().fg(HEADER_COLOR.level_3)),
+        4 => Span::styled(word.content(), Style::default().fg(HEADER_COLOR.level_4)),
+        5 => Span::styled(word.content(), Style::default().fg(HEADER_COLOR.level_5)),
+        6 => Span::styled(word.content(), Style::default().fg(HEADER_COLOR.level_6)),
+        _ => Span::styled(word.content(), Style::default().fg(CONFIG.heading_fg_color)),
+    }
+}
+
 fn render_heading(area: Rect, buf: &mut Buffer, component: RenderComponent) {
+    let indent = if let Some(meta) = component.meta_info().first() {
+        match meta.kind() {
+            WordType::MetaInfo(MetaData::HeadingLevel(e)) => e,
+            _ => 1,
+        }
+    } else {
+        1
+    };
+
     let content: Vec<Span<'_>> = component
         .content()
         .iter()
         .flatten()
-        .map(|c| Span::styled(c.content(), Style::default().fg(CONFIG.heading_fg_color)))
+        .map(|c| style_heading(c, indent))
         .collect();
 
-    let paragraph = Paragraph::new(Line::from(content))
-        .block(Block::default().style(Style::default().bg(CONFIG.heading_bg_color)))
-        .alignment(Alignment::Center);
+    let paragraph = match indent {
+        1 => Paragraph::new(Line::from(content))
+            .block(Block::default().style(Style::default().bg(CONFIG.heading_bg_color)))
+            .alignment(Alignment::Center),
+        _ => Paragraph::new(Line::from(content)),
+    };
 
     paragraph.render(area, buf);
 }

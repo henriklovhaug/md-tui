@@ -229,14 +229,14 @@ pub fn compare_heading(link_header: &str, header: &[Vec<Word>]) -> bool {
         .iter()
         .flatten()
         .map(|word| word.content().to_lowercase())
-        .collect::<Vec<String>>()
         .join("-")
         .replace(
             [
-                '(', ')', '[', ']', '{', '}', '<', '>', '"', '\'', ' ', '/', '.', ',',
+                '(', ')', '[', ']', '{', '}', '<', '>', '"', '\'', ' ', '/', '.', ',', '#',
             ],
             "",
         )
+        .trim_start_matches('-')
         .chars()
         .dedup_by(|a, b| *a == '-' && *b == '-')
         .collect();
