@@ -317,7 +317,7 @@ impl Widget for FileTree {
 
         let y_height = items.len() / 2 * 3;
 
-        let total_pages = file_len / partition + (file_len / partition) % 2;
+        let total_pages = usize::div_ceil(file_len, partition);
 
         let page_count = format!("  {}/{}", self.page + 1, total_pages);
 

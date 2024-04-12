@@ -1,3 +1,9 @@
+# Version 0.6.1
+
+## Fixes
+
+- (#92) Fix page counter which had the total number of pages wrong sometimes.
+
 # Version 0.6.0 (Unreleased)
 
 ## NEW FEATURE
