@@ -359,7 +359,7 @@ fn keyboard_mode_view(
             KeyCode::Char('f') | KeyCode::Char('/') => {
                 app.search_box.clear();
                 app.search_box.set_position(2, height - 3);
-                app.search_box.set_width(CONFIG.width);
+                app.search_box.set_width(CONFIG.width - 3);
                 app.boxes = Boxes::Search;
                 app.help_box.close();
             }
