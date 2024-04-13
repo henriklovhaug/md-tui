@@ -2,6 +2,7 @@ use std::{
     error::Error,
     fs::read_to_string,
     io, panic,
+    sync::mpsc,
     time::{Duration, Instant},
 };
 
@@ -12,6 +13,7 @@ use crossterm::{
 };
 use event_handler::{handle_keyboard_input, KeyBoardAction};
 use nodes::RenderRoot;
+use notify::{Config, RecommendedWatcher, RecursiveMode, Watcher};
 use pages::file_explorer::FileTree;
 use parser::parse_markdown;
 use ratatui::{
@@ -87,6 +89,10 @@ fn run_app<B: Backend>(
 ) -> io::Result<()> {
     let mut last_tick = Instant::now();
 
+    let (tx, rx) = mpsc::channel();
+
+    let mut watcher = RecommendedWatcher::new(tx, Config::default()).unwrap();
+
     terminal.draw(|f| {
         render_loading(f, &app);
     })?;
@@ -99,6 +105,8 @@ fn run_app<B: Backend>(
     let args: Vec<String> = std::env::args().collect();
     if let Some(arg) = args.get(1) {
         if let Ok(file) = read_to_string(arg) {
+            let path = std::path::Path::new(arg);
+            let _ = watcher.watch(path, notify::RecursiveMode::NonRecursive);
             markdown = parse_markdown(Some(arg), &file, app.width() - 2);
             app.mode = Mode::View;
         } else {
@@ -110,6 +118,22 @@ fn run_app<B: Backend>(
     }
 
     loop {
+        for event in rx.try_iter() {
+            if event.is_err() {
+                continue;
+            }
+            let event = event.unwrap();
+
+            if let notify::EventKind::Modify(_) = event.kind {
+                if let Ok(file) = read_to_string(markdown.file_name().unwrap()) {
+                    markdown =
+                        parse_markdown(Some(markdown.file_name().unwrap()), &file, app.width() - 2);
+                    app.mode = Mode::View;
+                }
+
+                break;
+            }
+        }
         if app.set_width(terminal.size()?.width) {
             let url = if let Some(url) = markdown.file_name() {
                 url
@@ -190,6 +214,7 @@ fn run_app<B: Backend>(
                     &mut markdown,
                     &mut file_tree,
                     height,
+                    &mut watcher,
                 ) {
                     KeyBoardAction::Exit => {
                         return Ok(());

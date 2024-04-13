@@ -1,6 +1,7 @@
 use std::{cmp, fs::read_to_string};
 
 use crossterm::event::KeyCode;
+use notify::{FsEventWatcher, Watcher};
 
 use crate::{
     nodes::RenderRoot,
@@ -20,13 +21,14 @@ pub fn handle_keyboard_input(
     markdown: &mut RenderRoot,
     file_tree: &mut FileTree,
     height: u16,
+    watcher: &mut FsEventWatcher,
 ) -> KeyBoardAction {
     if key == KeyCode::Char('q') && app.boxes != Boxes::Search {
         return KeyBoardAction::Exit;
     }
     match app.mode {
-        Mode::View => keyboard_mode_view(key, app, markdown, height),
-        Mode::FileTree => keyboard_mode_file_tree(key, app, markdown, file_tree, height),
+        Mode::View => keyboard_mode_view(key, app, markdown, height, watcher),
+        Mode::FileTree => keyboard_mode_file_tree(key, app, markdown, file_tree, height, watcher),
     }
 }
 
@@ -36,6 +38,7 @@ pub fn keyboard_mode_file_tree(
     markdown: &mut RenderRoot,
     file_tree: &mut FileTree,
     height: u16,
+    watcher: &mut FsEventWatcher,
 ) -> KeyBoardAction {
     match app.boxes {
         Boxes::Error => match key {
@@ -107,17 +110,18 @@ pub fn keyboard_mode_file_tree(
                     app.boxes = Boxes::Error;
                     return KeyBoardAction::Continue;
                 };
-                let text = if let Ok(file) = read_to_string(file.path()) {
+                let text = if let Ok(file) = read_to_string(file.path_str()) {
                     app.reset();
                     file
                 } else {
                     app.error_box
-                        .set_message(format!("Could not open file {}", file.path()));
+                        .set_message(format!("Could not open file {}", file.path_str()));
                     app.boxes = Boxes::Error;
                     return KeyBoardAction::Continue;
                 };
 
-                *markdown = parse_markdown(Some(file.path()), &text, app.width() - 2);
+                *markdown = parse_markdown(Some(file.path_str()), &text, app.width() - 2);
+                let _ = watcher.watch(file.path(), notify::RecursiveMode::NonRecursive);
                 app.mode = Mode::View;
                 app.help_box.set_mode(Mode::View);
                 app.select_index = 0;
@@ -142,6 +146,8 @@ pub fn keyboard_mode_file_tree(
                         return KeyBoardAction::Continue;
                     };
                     *markdown = parse_markdown(Some(&e), &text, app.width() - 2);
+                    let path = std::path::Path::new(&e);
+                    let _ = watcher.watch(path, notify::RecursiveMode::NonRecursive);
                     app.reset();
                     app.mode = Mode::View;
                     app.help_box.set_mode(Mode::View);
@@ -177,6 +183,7 @@ fn keyboard_mode_view(
     app: &mut App,
     markdown: &mut RenderRoot,
     height: u16,
+    watcher: &mut FsEventWatcher,
 ) -> KeyBoardAction {
     match app.boxes {
         Boxes::Error => match key {
@@ -475,6 +482,8 @@ fn keyboard_mode_view(
                             app.history.push(Jump::File(file_name.to_string()));
                         }
 
+                        let path = std::path::Path::new(&url);
+                        let _ = watcher.watch(path, notify::RecursiveMode::NonRecursive);
                         *markdown = parse_markdown(Some(url), &text, app.width() - 2);
                         app.reset();
                     }
@@ -495,6 +504,8 @@ fn keyboard_mode_view(
                         return KeyBoardAction::Continue;
                     };
                     *markdown = parse_markdown(Some(&e), &text, app.width() - 2);
+                    let path = std::path::Path::new(&e);
+                    let _ = watcher.watch(path, notify::RecursiveMode::NonRecursive);
                     app.reset();
                     app.mode = Mode::View;
                     app.help_box.set_mode(Mode::View);
