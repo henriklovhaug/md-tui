@@ -409,33 +409,12 @@ fn keyboard_mode_view(
                     );
                 }
             }
-            KeyCode::Char('r') => {
-                let url = if let Some(url) = markdown.file_name() {
-                    url
-                } else {
-                    app.error_box.set_message("No file".to_string());
-                    app.boxes = Boxes::Error;
-                    return KeyBoardAction::Continue;
-                };
-                let text = if let Ok(file) = read_to_string(url) {
-                    app.vertical_scroll = cmp::min(
-                        app.vertical_scroll,
-                        markdown.height().saturating_sub(height / 2),
-                    );
-                    file
-                } else {
-                    app.error_box
-                        .set_message(format!("Could not open file {:?}", markdown.file_name()));
-                    app.boxes = Boxes::Error;
-                    return KeyBoardAction::Continue;
-                };
-                *markdown = parse_markdown(markdown.file_name(), text.as_ref(), app.width() - 2);
-                app.mode = Mode::View;
-            }
+
             KeyCode::Esc => {
                 app.selected = false;
                 markdown.deselect();
             }
+
             KeyCode::Enter => {
                 if !app.selected {
                     return KeyBoardAction::Continue;

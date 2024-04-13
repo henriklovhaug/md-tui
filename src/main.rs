@@ -1,4 +1,5 @@
 use std::{
+    cmp,
     error::Error,
     fs::read_to_string,
     io, panic,
@@ -118,6 +119,8 @@ fn run_app<B: Backend>(
     }
 
     loop {
+        let height = terminal.size()?.height;
+
         for event in rx.try_iter() {
             if event.is_err() {
                 continue;
@@ -129,6 +132,10 @@ fn run_app<B: Backend>(
                     markdown =
                         parse_markdown(Some(markdown.file_name().unwrap()), &file, app.width() - 2);
                     app.mode = Mode::View;
+                    app.vertical_scroll = cmp::min(
+                        app.vertical_scroll,
+                        markdown.height().saturating_sub(height / 2),
+                    );
                 }
 
                 break;
@@ -153,7 +160,6 @@ fn run_app<B: Backend>(
             };
             markdown = parse_markdown(markdown.file_name(), &text, app.width() - 2);
         }
-        let height = terminal.size()?.height;
 
         markdown.set_scroll(app.vertical_scroll);
 
