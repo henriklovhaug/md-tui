@@ -39,7 +39,6 @@ _file tree_.
 | `k`        | Scroll up                                                              |
 | `l`        | Scroll one page down                                                   |
 | `h`        | Scroll one page up                                                     |
-| `r`        | Reload file                                                            |
 | `f` or `/` | Search                                                                 |
 | `n` or `N` | Jump to next or previous search result                                 |
 | `s` or `S` | Enter select link mode. Different selection strategy.                  |

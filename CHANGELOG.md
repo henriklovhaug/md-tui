@@ -4,6 +4,8 @@
 
 - (#92) Fix page counter which had the total number of pages wrong sometimes.
 - (#49) Headings are visually separate-able, and configurable.
+- (#96) The scroll is not affected on file change. It also now detects file
+  changes.
 
 # Version 0.6.0 (Unreleased)
 
