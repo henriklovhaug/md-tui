@@ -92,8 +92,6 @@ link_selected_fg_color = "green"
 link_selected_bg_color = "darkgrey"
 
 # Block styling
-h_bg_color = "blue"
-h_fg_color = "black"
 quote_bg_color = "reset"
 code_block_bg_color = "#2A2A2A"
 table_header_fg_color = "yellow"
@@ -115,6 +113,8 @@ quote_caution = "lightmagenta"
 quote_default = "white"
 
 # Heading
+h_bg_color = "blue"
+h_fg_color = "black"
 h2_fg_color = "green"
 h3_fg_color = "magenta"
 h4_fg_color = "cyan"
