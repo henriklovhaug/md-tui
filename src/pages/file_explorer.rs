@@ -1,4 +1,5 @@
 use std::cmp;
+use std::path::Path;
 
 use itertools::Itertools;
 use ratatui::buffer::Buffer;
@@ -31,8 +32,12 @@ impl MdFile {
         Self { path, name }
     }
 
-    pub fn path(&self) -> &str {
+    pub fn path_str(&self) -> &str {
         &self.path
+    }
+
+    pub fn path(&self) -> &Path {
+        Path::new(&self.path)
     }
 
     pub fn name(&self) -> &str {
