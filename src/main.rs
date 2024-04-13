@@ -13,7 +13,7 @@ use crossterm::{
 };
 use event_handler::{handle_keyboard_input, KeyBoardAction};
 use nodes::RenderRoot;
-use notify::{Config, RecommendedWatcher, RecursiveMode, Watcher};
+use notify::{Config, RecommendedWatcher, Watcher};
 use pages::file_explorer::FileTree;
 use parser::parse_markdown;
 use ratatui::{
