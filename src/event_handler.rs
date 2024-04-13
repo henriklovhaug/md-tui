@@ -411,7 +411,10 @@ fn keyboard_mode_view(
                     return KeyBoardAction::Continue;
                 };
                 let text = if let Ok(file) = read_to_string(url) {
-                    app.vertical_scroll = 0;
+                    app.vertical_scroll = cmp::min(
+                        app.vertical_scroll,
+                        markdown.height().saturating_sub(height / 2),
+                    );
                     file
                 } else {
                     app.error_box
