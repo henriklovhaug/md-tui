@@ -1,7 +1,7 @@
 use std::{cmp, fs::read_to_string};
 
 use crossterm::event::KeyCode;
-use notify::{FsEventWatcher, Watcher};
+use notify::{PollWatcher, Watcher};
 
 use crate::{
     nodes::RenderRoot,
@@ -21,7 +21,7 @@ pub fn handle_keyboard_input(
     markdown: &mut RenderRoot,
     file_tree: &mut FileTree,
     height: u16,
-    watcher: &mut FsEventWatcher,
+    watcher: &mut PollWatcher,
 ) -> KeyBoardAction {
     if key == KeyCode::Char('q') && app.boxes != Boxes::Search {
         return KeyBoardAction::Exit;
@@ -38,7 +38,7 @@ pub fn keyboard_mode_file_tree(
     markdown: &mut RenderRoot,
     file_tree: &mut FileTree,
     height: u16,
-    watcher: &mut FsEventWatcher,
+    watcher: &mut PollWatcher,
 ) -> KeyBoardAction {
     match app.boxes {
         Boxes::Error => match key {
@@ -183,7 +183,7 @@ fn keyboard_mode_view(
     app: &mut App,
     markdown: &mut RenderRoot,
     height: u16,
-    watcher: &mut FsEventWatcher,
+    watcher: &mut PollWatcher,
 ) -> KeyBoardAction {
     match app.boxes {
         Boxes::Error => match key {

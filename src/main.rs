@@ -14,7 +14,7 @@ use crossterm::{
 };
 use event_handler::{handle_keyboard_input, KeyBoardAction};
 use nodes::RenderRoot;
-use notify::{Config, RecommendedWatcher, Watcher};
+use notify::{Config, PollWatcher, Watcher};
 use pages::file_explorer::FileTree;
 use parser::parse_markdown;
 use ratatui::{
@@ -92,7 +92,11 @@ fn run_app<B: Backend>(
 
     let (tx, rx) = mpsc::channel();
 
-    let mut watcher = RecommendedWatcher::new(tx, Config::default()).unwrap();
+    let mut watcher = PollWatcher::new(
+        tx,
+        Config::default().with_poll_interval(Duration::from_secs(1)),
+    )
+    .unwrap();
 
     terminal.draw(|f| {
         render_loading(f, &app);
