@@ -7,7 +7,7 @@
 - (#96) The scroll is not affected on file change. It also now detects file
   changes.
 
-# Version 0.6.0 (Unreleased)
+# Version 0.6.0
 
 ## NEW FEATURE
 
