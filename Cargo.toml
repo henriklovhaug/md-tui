@@ -53,7 +53,7 @@ tree-sitter-python = "0.21.0"
 tree-sitter-rust = "0.21.0"
 
 [build-dependencies]
-cc="*"
+cc="1"
 
 # Config for 'cargo dist'
 [workspace.metadata.dist]
