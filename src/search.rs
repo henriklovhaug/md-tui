@@ -248,7 +248,7 @@ pub fn compare_heading(link_header: &str, header: &[Vec<Word>]) -> bool {
 mod tests {
 
     use crate::{
-        nodes::{CompnentRoot, RenderNode, TextComponent, WordType},
+        nodes::{ComponentRoot, RenderNode, TextComponent, WordType},
         parser::parse_markdown,
     };
 
@@ -343,7 +343,7 @@ mod tests {
         ];
 
         let componet = TextComponent::new(RenderNode::Paragraph, text);
-        let root = CompnentRoot::new(None, vec![componet]);
+        let root = ComponentRoot::new(None, vec![componet]);
         let query = "world";
         let result = find_with_ref(query, root.words());
         assert_eq!(result.len(), 2);
@@ -359,7 +359,7 @@ mod tests {
         ];
 
         let componet = TextComponent::new(RenderNode::Paragraph, text);
-        let root = CompnentRoot::new(None, vec![componet]);
+        let root = ComponentRoot::new(None, vec![componet]);
         let query = "hello world";
         let result = find_with_ref(query, root.words());
         assert_eq!(result.len(), 3);
@@ -376,7 +376,7 @@ mod tests {
         ];
 
         let componet = TextComponent::new(RenderNode::Paragraph, text);
-        let root = CompnentRoot::new(None, vec![componet]);
+        let root = ComponentRoot::new(None, vec![componet]);
         let query = "hello world";
         let result = find_with_ref(query, root.words());
 
@@ -397,7 +397,7 @@ mod tests {
         ];
 
         let componet = TextComponent::new(RenderNode::Paragraph, text);
-        let root = CompnentRoot::new(None, vec![componet]);
+        let root = ComponentRoot::new(None, vec![componet]);
         let query = "hello world";
         let result = find_with_ref(query, root.words());
 

@@ -8,13 +8,13 @@ use ratatui::{buffer::Buffer, layout::Rect, style::Color, widgets::Widget};
 use tree_sitter_highlight::HighlightEvent;
 
 #[derive(Debug, Clone)]
-pub struct CompnentRoot {
+pub struct ComponentRoot {
     file_name: Option<String>,
     components: Vec<TextComponent>,
     is_focused: bool,
 }
 
-impl CompnentRoot {
+impl ComponentRoot {
     pub fn new(file_name: Option<String>, components: Vec<TextComponent>) -> Self {
         Self {
             file_name,
@@ -182,7 +182,7 @@ impl CompnentRoot {
     }
 }
 
-impl Widget for CompnentRoot {
+impl Widget for ComponentRoot {
     fn render(self, area: Rect, buf: &mut Buffer) {
         for component in self.components_owned() {
             component.render(area, buf);

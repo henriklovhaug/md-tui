@@ -4,7 +4,7 @@ use crossterm::event::KeyCode;
 use notify::{PollWatcher, Watcher};
 
 use crate::{
-    nodes::CompnentRoot,
+    nodes::ComponentRoot,
     pages::file_explorer::FileTree,
     parser::parse_markdown,
     util::{App, Boxes, Jump, LinkType, Mode, CONFIG},
@@ -18,7 +18,7 @@ pub enum KeyBoardAction {
 pub fn handle_keyboard_input(
     key: KeyCode,
     app: &mut App,
-    markdown: &mut CompnentRoot,
+    markdown: &mut ComponentRoot,
     file_tree: &mut FileTree,
     height: u16,
     watcher: &mut PollWatcher,
@@ -35,7 +35,7 @@ pub fn handle_keyboard_input(
 pub fn keyboard_mode_file_tree(
     key: KeyCode,
     app: &mut App,
-    markdown: &mut CompnentRoot,
+    markdown: &mut ComponentRoot,
     file_tree: &mut FileTree,
     height: u16,
     watcher: &mut PollWatcher,
@@ -181,7 +181,7 @@ pub fn keyboard_mode_file_tree(
 fn keyboard_mode_view(
     key: KeyCode,
     app: &mut App,
-    markdown: &mut CompnentRoot,
+    markdown: &mut ComponentRoot,
     height: u16,
     watcher: &mut PollWatcher,
 ) -> KeyBoardAction {

@@ -5,17 +5,17 @@ use pest::{
 };
 use pest_derive::Parser;
 
-use crate::nodes::{CompnentRoot, MetaData, RenderNode, TextComponent, Word, WordType};
+use crate::nodes::{ComponentRoot, MetaData, RenderNode, TextComponent, Word, WordType};
 
 #[derive(Parser)]
 #[grammar = "md.pest"]
 pub struct MdParser;
 
-pub fn parse_markdown(name: Option<&str>, file: &str, width: u16) -> CompnentRoot {
+pub fn parse_markdown(name: Option<&str>, file: &str, width: u16) -> ComponentRoot {
     let root: Pairs<'_, Rule> = if let Ok(file) = MdParser::parse(Rule::txt, file) {
         file
     } else {
-        return CompnentRoot::new(name.map(str::to_string), Vec::new());
+        return ComponentRoot::new(name.map(str::to_string), Vec::new());
     };
 
     let root_pair = root.into_iter().next().unwrap();
@@ -50,7 +50,7 @@ fn parse_node_children(pair: Pairs<'_, Rule>) -> Vec<ParseNode> {
     children
 }
 
-fn node_to_component(root: ParseRoot) -> CompnentRoot {
+fn node_to_component(root: ParseRoot) -> ComponentRoot {
     let mut children = Vec::new();
     let name = root.file_name().to_owned();
     for component in root.children_owned() {
@@ -58,7 +58,7 @@ fn node_to_component(root: ParseRoot) -> CompnentRoot {
         children.push(comp);
     }
 
-    CompnentRoot::new(name, children)
+    ComponentRoot::new(name, children)
 }
 
 fn parse_component(parse_node: ParseNode) -> TextComponent {
@@ -317,7 +317,7 @@ fn get_leaf_nodes(node: ParseNode) -> Vec<ParseNode> {
     leaf_nodes
 }
 
-pub fn print_from_root(root: &CompnentRoot) {
+pub fn print_from_root(root: &ComponentRoot) {
     for child in root.components() {
         print_component(child, 0);
     }
