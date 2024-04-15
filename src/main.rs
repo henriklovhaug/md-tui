@@ -13,7 +13,7 @@ use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use event_handler::{handle_keyboard_input, KeyBoardAction};
-use nodes::RenderRoot;
+use nodes::CompnentRoot;
 use notify::{Config, PollWatcher, Watcher};
 use pages::file_explorer::FileTree;
 use parser::parse_markdown;
@@ -285,7 +285,7 @@ fn render_file_tree(f: &mut Frame, app: &App, file_tree: FileTree) {
     f.render_widget(app.help_box, area);
 }
 
-fn render_markdown(f: &mut Frame, app: &App, markdown: RenderRoot) {
+fn render_markdown(f: &mut Frame, app: &App, markdown: CompnentRoot) {
     let size = f.size();
     let area = Rect {
         x: 2,

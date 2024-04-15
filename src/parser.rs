@@ -5,17 +5,17 @@ use pest::{
 };
 use pest_derive::Parser;
 
-use crate::nodes::{MetaData, RenderComponent, RenderNode, RenderRoot, Word, WordType};
+use crate::nodes::{CompnentRoot, MetaData, RenderNode, TextComponent, Word, WordType};
 
 #[derive(Parser)]
 #[grammar = "md.pest"]
 pub struct MdParser;
 
-pub fn parse_markdown(name: Option<&str>, file: &str, width: u16) -> RenderRoot {
+pub fn parse_markdown(name: Option<&str>, file: &str, width: u16) -> CompnentRoot {
     let root: Pairs<'_, Rule> = if let Ok(file) = MdParser::parse(Rule::txt, file) {
         file
     } else {
-        return RenderRoot::new(name.map(str::to_string), Vec::new());
+        return CompnentRoot::new(name.map(str::to_string), Vec::new());
     };
 
     let root_pair = root.into_iter().next().unwrap();
@@ -50,7 +50,7 @@ fn parse_node_children(pair: Pairs<'_, Rule>) -> Vec<ParseNode> {
     children
 }
 
-fn node_to_component(root: ParseRoot) -> RenderRoot {
+fn node_to_component(root: ParseRoot) -> CompnentRoot {
     let mut children = Vec::new();
     let name = root.file_name().to_owned();
     for component in root.children_owned() {
@@ -58,10 +58,10 @@ fn node_to_component(root: ParseRoot) -> RenderRoot {
         children.push(comp);
     }
 
-    RenderRoot::new(name, children)
+    CompnentRoot::new(name, children)
 }
 
-fn parse_component(parse_node: ParseNode) -> RenderComponent {
+fn parse_component(parse_node: ParseNode) -> TextComponent {
     match parse_node.kind() {
         MdParseEnum::Task => {
             let leaf_nodes = get_leaf_nodes(parse_node);
@@ -87,7 +87,7 @@ fn parse_component(parse_node: ParseNode) -> RenderComponent {
                 }
                 words.push(Word::new(content, word_type));
             }
-            RenderComponent::new(RenderNode::Task, words)
+            TextComponent::new(RenderNode::Task, words)
         }
 
         MdParseEnum::Quote => {
@@ -111,7 +111,7 @@ fn parse_component(parse_node: ParseNode) -> RenderComponent {
             if let Some(w) = words.first_mut() {
                 w.set_content(w.content().trim_start().to_owned());
             }
-            RenderComponent::new(RenderNode::Quote, words)
+            TextComponent::new(RenderNode::Quote, words)
         }
 
         MdParseEnum::Heading => {
@@ -156,8 +156,8 @@ fn parse_component(parse_node: ParseNode) -> RenderComponent {
                 w.set_content(w.content().trim_start().to_owned());
             }
             match kind {
-                MdParseEnum::Paragraph => RenderComponent::new(RenderNode::Paragraph, words),
-                MdParseEnum::Heading => RenderComponent::new(RenderNode::Heading, words),
+                MdParseEnum::Paragraph => TextComponent::new(RenderNode::Paragraph, words),
+                MdParseEnum::Heading => TextComponent::new(RenderNode::Heading, words),
                 _ => unreachable!(),
             }
         }
@@ -184,7 +184,7 @@ fn parse_component(parse_node: ParseNode) -> RenderComponent {
             if let Some(w) = words.first_mut() {
                 w.set_content(w.content().trim_start().to_owned());
             }
-            RenderComponent::new(RenderNode::Paragraph, words)
+            TextComponent::new(RenderNode::Paragraph, words)
         }
 
         MdParseEnum::CodeBlock => {
@@ -195,7 +195,7 @@ fn parse_component(parse_node: ParseNode) -> RenderComponent {
                 let content = node.content().to_owned();
                 words.push(vec![Word::new(content, word_type)]);
             }
-            RenderComponent::new_formatted(RenderNode::CodeBlock, words)
+            TextComponent::new_formatted(RenderNode::CodeBlock, words)
         }
 
         MdParseEnum::ListContainer => {
@@ -243,7 +243,7 @@ fn parse_component(parse_node: ParseNode) -> RenderComponent {
                 }
                 words.push(inner_words);
             }
-            RenderComponent::new_formatted(RenderNode::List, words)
+            TextComponent::new_formatted(RenderNode::List, words)
         }
 
         MdParseEnum::Table => {
@@ -276,12 +276,12 @@ fn parse_component(parse_node: ParseNode) -> RenderComponent {
                 }
                 words.push(inner_words);
             }
-            RenderComponent::new_formatted(RenderNode::Table, words)
+            TextComponent::new_formatted(RenderNode::Table, words)
         }
 
-        MdParseEnum::BlockSeperator => RenderComponent::new(RenderNode::LineBreak, Vec::new()),
+        MdParseEnum::BlockSeperator => TextComponent::new(RenderNode::LineBreak, Vec::new()),
         MdParseEnum::HorizontalSeperator => {
-            RenderComponent::new(RenderNode::HorizontalSeperator, Vec::new())
+            TextComponent::new(RenderNode::HorizontalSeperator, Vec::new())
         }
         _ => todo!("Not implemented for {:?}", parse_node.kind()),
     }
@@ -317,13 +317,13 @@ fn get_leaf_nodes(node: ParseNode) -> Vec<ParseNode> {
     leaf_nodes
 }
 
-pub fn print_from_root(root: &RenderRoot) {
+pub fn print_from_root(root: &CompnentRoot) {
     for child in root.components() {
         print_component(child, 0);
     }
 }
 
-fn print_component(component: &RenderComponent, _depth: usize) {
+fn print_component(component: &TextComponent, _depth: usize) {
     println!(
         "Component: {:?}, height: {}, y_offset: {}",
         component.kind(),

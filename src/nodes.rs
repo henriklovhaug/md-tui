@@ -8,14 +8,14 @@ use ratatui::{buffer::Buffer, layout::Rect, style::Color, widgets::Widget};
 use tree_sitter_highlight::HighlightEvent;
 
 #[derive(Debug, Clone)]
-pub struct RenderRoot {
+pub struct CompnentRoot {
     file_name: Option<String>,
-    components: Vec<RenderComponent>,
+    components: Vec<TextComponent>,
     is_focused: bool,
 }
 
-impl RenderRoot {
-    pub fn new(file_name: Option<String>, components: Vec<RenderComponent>) -> Self {
+impl CompnentRoot {
+    pub fn new(file_name: Option<String>, components: Vec<TextComponent>) -> Self {
         Self {
             file_name,
             components,
@@ -23,15 +23,15 @@ impl RenderRoot {
         }
     }
 
-    pub fn components(&self) -> &Vec<RenderComponent> {
+    pub fn components(&self) -> &Vec<TextComponent> {
         &self.components
     }
 
-    pub fn components_owned(self) -> Vec<RenderComponent> {
+    pub fn components_owned(self) -> Vec<TextComponent> {
         self.components
     }
 
-    pub fn components_mut(&mut self) -> &mut Vec<RenderComponent> {
+    pub fn components_mut(&mut self) -> &mut Vec<TextComponent> {
         &mut self.components
     }
 
@@ -162,7 +162,7 @@ impl RenderRoot {
             if let Some(next) = iter.peek() {
                 if component.kind() != RenderNode::LineBreak && next.kind() != RenderNode::LineBreak
                 {
-                    components.push(RenderComponent::new(RenderNode::LineBreak, Vec::new()));
+                    components.push(TextComponent::new(RenderNode::LineBreak, Vec::new()));
                 }
             }
         }
@@ -182,7 +182,7 @@ impl RenderRoot {
     }
 }
 
-impl Widget for RenderRoot {
+impl Widget for CompnentRoot {
     fn render(self, area: Rect, buf: &mut Buffer) {
         for component in self.components_owned() {
             component.render(area, buf);
@@ -336,7 +336,7 @@ pub enum RenderNode {
 }
 
 #[derive(Debug, Clone)]
-pub struct RenderComponent {
+pub struct TextComponent {
     kind: RenderNode,
     content: Vec<Vec<Word>>,
     meta_info: Vec<Word>,
@@ -347,7 +347,7 @@ pub struct RenderComponent {
     focused_index: usize,
 }
 
-impl RenderComponent {
+impl TextComponent {
     pub fn new(kind: RenderNode, content: Vec<Word>) -> Self {
         let meta_info: Vec<Word> = content
             .iter()
@@ -595,7 +595,7 @@ impl RenderComponent {
     }
 }
 
-fn transform_paragraph(component: &mut RenderComponent, width: u16) {
+fn transform_paragraph(component: &mut TextComponent, width: u16) {
     let width = match component.kind {
         RenderNode::Paragraph => width as usize,
         RenderNode::Task => width as usize - 4,
@@ -635,7 +635,7 @@ fn transform_paragraph(component: &mut RenderComponent, width: u16) {
     component.content = lines;
 }
 
-fn transform_codeblock(component: &mut RenderComponent) {
+fn transform_codeblock(component: &mut TextComponent) {
     let language = if let Some(word) = component.meta_info().first() {
         word.content()
     } else {
@@ -703,7 +703,7 @@ fn transform_codeblock(component: &mut RenderComponent) {
     component.height = height;
 }
 
-fn transform_list(component: &mut RenderComponent, width: u16) {
+fn transform_list(component: &mut TextComponent, width: u16) {
     let mut len = 0;
     let mut lines = Vec::new();
     let mut line = Vec::new();

@@ -9,15 +9,15 @@ use ratatui::{
 };
 
 use crate::{
-    nodes::{MetaData, RenderComponent, RenderNode, Word, WordType},
+    nodes::{MetaData, RenderNode, TextComponent, Word, WordType},
     util::{CONFIG, HEADER_COLOR},
 };
 
-fn clips_upper_bound(_area: Rect, component: &RenderComponent) -> bool {
+fn clips_upper_bound(_area: Rect, component: &TextComponent) -> bool {
     component.scroll_offset() > component.y_offset()
 }
 
-fn clips_lower_bound(area: Rect, component: &RenderComponent) -> bool {
+fn clips_lower_bound(area: Rect, component: &TextComponent) -> bool {
     (component.y_offset() + component.height()).saturating_sub(component.scroll_offset())
         > area.height
 }
@@ -29,7 +29,7 @@ enum Clipping {
     None,
 }
 
-impl Widget for RenderComponent {
+impl Widget for TextComponent {
     fn render(self, area: Rect, buf: &mut Buffer) {
         if self.y_offset().saturating_sub(self.scroll_offset()) > area.height
             || self.scroll_offset() > self.y_offset() + self.height()
@@ -136,7 +136,7 @@ fn style_word(word: &Word) -> Span<'_> {
     }
 }
 
-fn render_quote(area: Rect, buf: &mut Buffer, component: RenderComponent, clip: Clipping) {
+fn render_quote(area: Rect, buf: &mut Buffer, component: TextComponent, clip: Clipping) {
     let top = component
         .scroll_offset()
         .saturating_sub(component.y_offset());
@@ -218,7 +218,7 @@ fn style_heading(word: &Word, indent: u8) -> Span<'_> {
     }
 }
 
-fn render_heading(area: Rect, buf: &mut Buffer, component: RenderComponent) {
+fn render_heading(area: Rect, buf: &mut Buffer, component: TextComponent) {
     let indent = if let Some(meta) = component.meta_info().first() {
         match meta.kind() {
             WordType::MetaInfo(MetaData::HeadingLevel(e)) => e,
@@ -245,7 +245,7 @@ fn render_heading(area: Rect, buf: &mut Buffer, component: RenderComponent) {
     paragraph.render(area, buf);
 }
 
-fn render_paragraph(area: Rect, buf: &mut Buffer, component: RenderComponent, clip: Clipping) {
+fn render_paragraph(area: Rect, buf: &mut Buffer, component: TextComponent, clip: Clipping) {
     let top = component
         .scroll_offset()
         .saturating_sub(component.y_offset());
@@ -282,7 +282,7 @@ fn render_paragraph(area: Rect, buf: &mut Buffer, component: RenderComponent, cl
     paragraph.render(area, buf);
 }
 
-fn render_list(area: Rect, buf: &mut Buffer, component: RenderComponent, clip: Clipping) {
+fn render_list(area: Rect, buf: &mut Buffer, component: TextComponent, clip: Clipping) {
     let top = component
         .scroll_offset()
         .saturating_sub(component.y_offset());
@@ -321,7 +321,7 @@ fn render_list(area: Rect, buf: &mut Buffer, component: RenderComponent, clip: C
     list.render(area, buf);
 }
 
-fn render_code_block(area: Rect, buf: &mut Buffer, component: RenderComponent, clip: Clipping) {
+fn render_code_block(area: Rect, buf: &mut Buffer, component: TextComponent, clip: Clipping) {
     let mut content = component
         .content()
         .iter()
@@ -365,7 +365,7 @@ fn render_code_block(area: Rect, buf: &mut Buffer, component: RenderComponent, c
 fn render_table(
     area: Rect,
     buf: &mut Buffer,
-    component: RenderComponent,
+    component: TextComponent,
     clip: Clipping,
     meta_info: Vec<Word>,
 ) {
@@ -447,7 +447,7 @@ fn render_table(
 fn render_task(
     area: Rect,
     buf: &mut Buffer,
-    component: RenderComponent,
+    component: TextComponent,
     clip: Clipping,
     meta_info: &Word,
 ) {
