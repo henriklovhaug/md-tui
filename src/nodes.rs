@@ -754,11 +754,10 @@ fn transform_list(component: &mut TextComponent, width: u16) {
 
                         extra_indent = 1;
                     } else {
-                        o_list_counter_stack.push(0);
                         extra_indent = 0;
                     }
                     tmp = meta.content().len();
-                    meta.content().len()
+                    tmp
                 } else {
                     0
                 };
