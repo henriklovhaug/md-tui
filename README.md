@@ -80,36 +80,36 @@ will not remove it, but leave it as its default. To remove colors, set it to
 width = 80
 
 # Inline styling
-italic_color = "reset"
 bold_color = "reset"
 bold_italic_color = "reset"
-strikethrough_color = "reset"
-code_fg_color = "red"
 code_bg_color = "#2A2A2A"
+code_fg_color = "red"
+italic_color = "reset"
 link_color = "blue"
-link_selected_fg_color = "green"
 link_selected_bg_color = "darkgrey"
+link_selected_fg_color = "green"
+strikethrough_color = "reset"
 
 # Block styling
-quote_bg_color = "reset"
 code_block_bg_color = "#2A2A2A"
-table_header_fg_color = "yellow"
+quote_bg_color = "reset"
 table_header_bg_color = "reset"
+table_header_fg_color = "yellow"
 
 # File tree
-file_tree_selected_fg_color = "lightgreen"
-file_tree_page_count_color = "lightgreen"
 file_tree_name_color = "blue"
+file_tree_page_count_color = "lightgreen"
 file_tree_path_color = "gray"
+file_tree_selected_fg_color = "lightgreen"
 gitignore = false
 
 # Quote bar
-quote_important = "lightred"
-quote_warning = "lightYellow"
-quote_tip = "lightgreen"
-quote_note = "lightblue"
 quote_caution = "lightmagenta"
 quote_default = "white"
+quote_important = "lightred"
+quote_note = "lightblue"
+quote_tip = "lightgreen"
+quote_warning = "lightYellow"
 
 # Heading
 h_bg_color = "blue"
