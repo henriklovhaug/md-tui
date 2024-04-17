@@ -57,16 +57,16 @@ _file tree_.
 `MD-TUI` supports syntax highlighting in code blocks for the following
 languages:
 
-- Rust
-- JavaScript
-- Java
-- Go
-- Python
-- Ocaml
-- Json
 - Bash/sh
 - C/C++
+- Go
+- Java
+- JavaScript
+- Json
 - Lua
+- Ocaml
+- Python
+- Rust
 
 ## Configuration
 
