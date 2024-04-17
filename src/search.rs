@@ -230,16 +230,11 @@ pub fn compare_heading(link_header: &str, header: &[Vec<Word>]) -> bool {
         .flatten()
         .map(|word| word.content().to_lowercase())
         .join("-")
-        .replace(
-            [
-                '(', ')', '[', ']', '{', '}', '<', '>', '"', '\'', ' ', '/', '.', ',', '#', ':',
-                '+',
-            ],
-            "",
-        )
         .trim_start_matches('-')
         .chars()
+        .filter(|c| c.is_alphanumeric() || *c == '-')
         .dedup_by(|a, b| *a == '-' && *b == '-')
+        .skip_while(|c| *c == '-')
         .collect();
 
     link_header == header
@@ -427,5 +422,16 @@ your markdown notes, or opening external links from someones README.
 
         let result = find_with_ref("markdown notes,", markdown.words());
         assert_eq!(result.len(), 3);
+    }
+
+    #[test]
+    fn test_alphanumeric() {
+        let s = "#Hello, world!";
+        let filtered = s
+            .chars()
+            .filter(|c| c.is_alphanumeric() || *c == '-')
+            .collect::<String>();
+
+        assert_eq!(filtered, "Helloworld");
     }
 }
