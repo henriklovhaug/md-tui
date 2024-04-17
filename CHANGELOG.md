@@ -1,3 +1,7 @@
+# Version 0.6.3
+
+- Improve heading search.
+
 # Version 0.6.2
 
 ## Fixes
