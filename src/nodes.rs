@@ -1,3 +1,5 @@
+use std::cmp;
+
 use crate::{
     highlight::{highlight_code, HighlightInfo, COLOR_MAP},
     parser::MdParseEnum,
@@ -719,8 +721,11 @@ fn transform_list(component: &mut TextComponent, width: u16) {
     });
 
     let mut zip_iter = indent_iter.zip(list_type_iter);
+
+    let mut o_list_counter_stack = vec![0];
     let mut indent = 0;
     let mut extra_indent = 0;
+    let mut tmp = indent;
     for word in component.content.iter_mut().flatten() {
         if word.content().len() + len < width as usize && word.kind() != WordType::ListMarker {
             len += word.content().len();
@@ -728,25 +733,45 @@ fn transform_list(component: &mut TextComponent, width: u16) {
         } else {
             let filler_content = if word.kind() == WordType::ListMarker {
                 indent = if let Some((meta, list_type)) = zip_iter.next() {
+                    match tmp.cmp(&meta.content().len()) {
+                        cmp::Ordering::Less => {
+                            o_list_counter_stack.push(0);
+                        }
+                        cmp::Ordering::Greater => {
+                            o_list_counter_stack.pop();
+                        }
+                        cmp::Ordering::Equal => (),
+                    }
                     if list_type.kind() == WordType::MetaInfo(MetaData::OList) {
-                        extra_indent = 1;
+                        let counter = o_list_counter_stack
+                            .last_mut()
+                            .expect("List parse error. Stack is empty");
+
+                        *counter += 1;
+
+                        word.set_content(format!("{counter}. "));
+
+                        extra_indent = 1; // Ordered list is longer than unordered and needs extra space
                     } else {
                         extra_indent = 0;
                     }
-                    meta.content().len()
+                    tmp = meta.content().len();
+                    tmp
                 } else {
                     0
                 };
+
                 " ".repeat(indent)
             } else {
                 " ".repeat(indent + 2 + extra_indent)
             };
+
+            let filler = Word::new(filler_content, WordType::Normal);
+
             lines.push(line);
-            len = word.content.len();
             let content = word.content.trim_start().to_owned();
             word.set_content(content);
-            let filler = Word::new(filler_content, WordType::Normal);
-            len += filler.content().len();
+            len = word.content().len() + filler.content().len();
             line = vec![filler, word.to_owned()];
         }
     }

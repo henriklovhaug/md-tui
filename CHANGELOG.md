@@ -1,6 +1,7 @@
 # Version 0.6.3
 
 - Improve heading search.
+- (#67) numbering of ordered list is now handled automatically.
 
 # Version 0.6.2
 
