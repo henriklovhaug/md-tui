@@ -743,16 +743,15 @@ fn transform_list(component: &mut TextComponent, width: u16) {
                         cmp::Ordering::Equal => (),
                     }
                     if list_type.kind() == WordType::MetaInfo(MetaData::OList) {
-                        *o_list_counter_stack
+                        let counter = o_list_counter_stack
                             .last_mut()
-                            .expect("List parse error. Stack is empty") += 1;
+                            .expect("List parse error. Stack is empty");
 
-                        let counter = o_list_counter_stack.last().expect("List parse error");
+                        *counter += 1;
 
-                        let content = format!("{counter}. ");
-                        word.set_content(content);
+                        word.set_content(format!("{counter}. "));
 
-                        extra_indent = 1;
+                        extra_indent = 1; // Ordered list is longer than unordered and needs extra space
                     } else {
                         extra_indent = 0;
                     }
