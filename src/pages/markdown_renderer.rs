@@ -168,7 +168,7 @@ fn render_quote(area: Rect, buf: &mut Buffer, component: TextComponent, clip: Cl
 
     let lines = content
         .iter()
-        .map(|c| Line::from(c.iter().map(|i| style_word(i)).collect::<Vec<_>>()))
+        .map(|c| Line::from(c.iter().map(style_word).collect::<Vec<_>>()))
         .collect::<Vec<_>>();
 
     let bar_color = if let Some(meta) = meta.first() {
@@ -274,7 +274,7 @@ fn render_paragraph(area: Rect, buf: &mut Buffer, component: TextComponent, clip
 
     let lines = content
         .iter()
-        .map(|c| Line::from(c.iter().map(|i| style_word(i)).collect::<Vec<_>>()))
+        .map(|c| Line::from(c.iter().map(style_word).collect::<Vec<_>>()))
         .collect::<Vec<_>>();
 
     let paragraph = Paragraph::new(lines);
@@ -311,9 +311,7 @@ fn render_list(area: Rect, buf: &mut Buffer, component: TextComponent, clip: Cli
     let content: Vec<ListItem<'_>> = content
         .iter()
         .map(|c| -> ListItem<'_> {
-            ListItem::new(Line::from(
-                c.iter().map(|i| style_word(i)).collect::<Vec<_>>(),
-            ))
+            ListItem::new(Line::from(c.iter().map(style_word).collect::<Vec<_>>()))
         })
         .collect();
 
@@ -325,7 +323,7 @@ fn render_code_block(area: Rect, buf: &mut Buffer, component: TextComponent, cli
     let mut content = component
         .content()
         .iter()
-        .map(|c| Line::from(c.iter().map(|i| style_word(i)).collect::<Vec<_>>()))
+        .map(|c| Line::from(c.iter().map(style_word).collect::<Vec<_>>()))
         .collect::<Vec<_>>();
 
     match clip {
@@ -385,11 +383,7 @@ fn render_table(
     let header = Row::new(
         titles
             .iter()
-            .map(|c| {
-                Cell::from(Line::from(
-                    c.iter().map(|i| style_word(i)).collect::<Vec<_>>(),
-                ))
-            })
+            .map(|c| Cell::from(Line::from(c.iter().map(style_word).collect::<Vec<_>>())))
             .collect::<Vec<_>>(),
     );
 
@@ -398,11 +392,7 @@ fn render_table(
         .map(|c| {
             Row::new(
                 c.iter()
-                    .map(|i| {
-                        Cell::from(Line::from(
-                            i.iter().map(|i| style_word(i)).collect::<Vec<_>>(),
-                        ))
-                    })
+                    .map(|i| Cell::from(Line::from(i.iter().map(style_word).collect::<Vec<_>>())))
                     .collect::<Vec<_>>(),
             )
         })
@@ -500,7 +490,7 @@ fn render_task(
 
     let lines = content
         .iter()
-        .map(|c| Line::from(c.iter().map(|i| style_word(i)).collect::<Vec<_>>()))
+        .map(|c| Line::from(c.iter().map(style_word).collect::<Vec<_>>()))
         .collect::<Vec<_>>();
 
     let paragraph = Paragraph::new(lines);
