@@ -1,33 +1,47 @@
-use ratatui::{buffer::Buffer, layout::Rect, widgets::Widget};
+use image::Rgb;
+use ratatui::{
+    buffer::Buffer,
+    layout::Rect,
+    widgets::{StatefulWidget, Widget},
+};
+use ratatui_image::picker::Picker;
 
 use crate::search::{compare_heading, find_and_mark};
 
 use super::{
+    image::ImageComponent,
     textcomponent::{TextComponent, TextNode},
     word::{Word, WordType},
 };
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct ComponentRoot {
     file_name: Option<String>,
     components: Vec<Component>,
     is_focused: bool,
+    picker: Picker,
 }
 
 impl ComponentRoot {
     pub fn new(file_name: Option<String>, components: Vec<Component>) -> Self {
+        let mut picker = Picker::from_termios().expect("Failed to create picker");
+        picker.guess_protocol();
+        picker.background_color = Some(Rgb::<u8>([255, 0, 255]));
+
         Self {
             file_name,
             components,
             is_focused: false,
+            picker,
         }
     }
 
     pub fn components(&self) -> Vec<&TextComponent> {
         self.components
             .iter()
-            .map(|c| match c {
-                Component::TextComponent(comp) => comp,
+            .filter_map(|c| match c {
+                Component::TextComponent(comp) => Some(comp),
+                Component::Image(_) => None,
             })
             .collect()
     }
@@ -35,8 +49,9 @@ impl ComponentRoot {
     pub fn components_mut(&mut self) -> Vec<&mut TextComponent> {
         self.components
             .iter_mut()
-            .map(|c| match c {
-                Component::TextComponent(comp) => comp,
+            .filter_map(|c| match c {
+                Component::TextComponent(comp) => Some(comp),
+                Component::Image(_) => None,
             })
             .collect()
     }
@@ -50,6 +65,7 @@ impl ComponentRoot {
             .iter()
             .filter_map(|c| match c {
                 Component::TextComponent(comp) => Some(comp),
+                Component::Image(_) => None,
             })
             .flat_map(|c| c.content().iter().flatten())
             .collect()
@@ -61,6 +77,7 @@ impl ComponentRoot {
             .iter_mut()
             .filter_map(|c| match c {
                 Component::TextComponent(comp) => Some(comp),
+                Component::Image(_) => None,
             })
             .flat_map(|c| c.words_mut())
             .collect::<Vec<_>>();
@@ -72,6 +89,7 @@ impl ComponentRoot {
             .iter()
             .filter_map(|c| match c {
                 Component::TextComponent(comp) => Some(comp),
+                Component::Image(_) => None,
             })
             .flat_map(|c| {
                 let mut heights = c.selected_heights();
@@ -92,6 +110,7 @@ impl ComponentRoot {
         let mut count = 0;
         for comp in self.components.iter_mut().filter_map(|f| match f {
             Component::TextComponent(comp) => Some(comp),
+            Component::Image(_) => None,
         }) {
             if index - count < comp.num_links() {
                 comp.visually_select(index - count)?;
@@ -106,6 +125,7 @@ impl ComponentRoot {
         self.is_focused = false;
         for comp in self.components.iter_mut().filter_map(|f| match f {
             Component::TextComponent(comp) => Some(comp),
+            Component::Image(_) => None,
         }) {
             comp.deselect();
         }
@@ -118,6 +138,7 @@ impl ComponentRoot {
             .iter()
             .filter_map(|f| match f {
                 Component::TextComponent(comp) => Some(comp),
+                Component::Image(_) => None,
             })
             .for_each(|comp| {
                 let height = comp.y_offset();
@@ -176,6 +197,7 @@ impl ComponentRoot {
             .iter()
             .filter_map(|f| match f {
                 Component::TextComponent(comp) => Some(comp),
+                Component::Image(_) => None,
             })
             .find(|c| c.is_focused())
             .unwrap();
@@ -197,6 +219,7 @@ impl ComponentRoot {
             .iter()
             .filter_map(|f| match f {
                 Component::TextComponent(comp) => Some(comp),
+                Component::Image(_) => None,
             })
             .peekable();
         while let Some(component) = iter.next() {
@@ -214,6 +237,7 @@ impl ComponentRoot {
             file_name: self.file_name,
             components,
             is_focused: self.is_focused,
+            picker: self.picker,
         }
     }
 
@@ -226,16 +250,19 @@ impl ComponentRoot {
             .iter()
             .filter_map(|f| match f {
                 Component::TextComponent(comp) => Some(comp),
+                Component::Image(_) => None,
             })
             .map(|c| c.num_links())
             .sum()
     }
 }
 
-impl Widget for ComponentRoot {
-    fn render(self, area: Rect, buf: &mut Buffer) {
+impl StatefulWidget for ComponentRoot {
+    type State = Picker;
+
+    fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
         for component in self.components {
-            component.render(area, buf);
+            component.render(area, buf, state);
         }
     }
 }
@@ -250,6 +277,7 @@ pub trait ComponentProps {
 #[derive(Debug, Clone)]
 pub enum Component {
     TextComponent(TextComponent),
+    Image(ImageComponent),
 }
 
 impl From<TextComponent> for Component {
@@ -258,10 +286,13 @@ impl From<TextComponent> for Component {
     }
 }
 
-impl Widget for Component {
-    fn render(self, area: Rect, buf: &mut Buffer) {
+impl StatefulWidget for Component {
+    type State = Picker;
+
+    fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
         match self {
             Component::TextComponent(comp) => comp.render(area, buf),
+            Component::Image(comp) => comp.render(area, buf, state),
         }
     }
 }
@@ -270,24 +301,28 @@ impl ComponentProps for Component {
     fn y_offset(&self) -> u16 {
         match self {
             Component::TextComponent(comp) => comp.y_offset(),
+            Component::Image(comp) => comp.y_offset(),
         }
     }
 
     fn height(&self) -> u16 {
         match self {
             Component::TextComponent(comp) => comp.height(),
+            Component::Image(comp) => comp.height(),
         }
     }
 
     fn set_y_offset(&mut self, y_offset: u16) {
         match self {
             Component::TextComponent(comp) => comp.set_y_offset(y_offset),
+            Component::Image(comp) => comp.set_y_offset(y_offset),
         }
     }
 
     fn set_scroll_offset(&mut self, scroll: u16) {
         match self {
             Component::TextComponent(comp) => comp.set_scroll_offset(scroll),
+            Component::Image(comp) => comp.set_scroll_offset(scroll),
         }
     }
 }
