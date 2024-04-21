@@ -10,7 +10,7 @@ use ratatui::{
 
 use crate::{
     nodes::{
-        textcomponent::{TextNode, TextComponent},
+        textcomponent::{TextComponent, TextNode},
         word::{MetaData, Word, WordType},
     },
     util::{CONFIG, HEADER_COLOR},

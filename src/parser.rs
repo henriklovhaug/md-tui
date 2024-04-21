@@ -158,7 +158,7 @@ fn parse_component(parse_node: ParseNode) -> Component {
             if let Some(w) = words.first_mut() {
                 w.set_content(w.content().trim_start().to_owned());
             }
-               Component::TextComponent( TextComponent::new(TextNode::Heading, words))
+            Component::TextComponent(TextComponent::new(TextNode::Heading, words))
         }
 
         MdParseEnum::Paragraph => {
@@ -278,10 +278,13 @@ fn parse_component(parse_node: ParseNode) -> Component {
             Component::TextComponent(TextComponent::new_formatted(TextNode::Table, words))
         }
 
-        MdParseEnum::BlockSeperator => Component::TextComponent(TextComponent::new(TextNode::LineBreak, Vec::new())),
-        MdParseEnum::HorizontalSeperator => {
-            Component::TextComponent(TextComponent::new(TextNode::HorizontalSeperator, Vec::new()))
+        MdParseEnum::BlockSeperator => {
+            Component::TextComponent(TextComponent::new(TextNode::LineBreak, Vec::new()))
         }
+        MdParseEnum::HorizontalSeperator => Component::TextComponent(TextComponent::new(
+            TextNode::HorizontalSeperator,
+            Vec::new(),
+        )),
         _ => todo!("Not implemented for {:?}", parse_node.kind()),
     }
 }
