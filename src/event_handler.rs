@@ -4,7 +4,7 @@ use crossterm::event::KeyCode;
 use notify::{PollWatcher, Watcher};
 
 use crate::{
-    nodes::ComponentRoot,
+    nodes::root::ComponentRoot,
     pages::file_explorer::FileTree,
     parser::parse_markdown,
     util::{App, Boxes, Jump, LinkType, Mode, CONFIG},

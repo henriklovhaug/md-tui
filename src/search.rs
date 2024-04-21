@@ -2,7 +2,7 @@ use itertools::Itertools;
 use strsim::damerau_levenshtein;
 
 use crate::{
-    nodes::Word,
+    nodes::word::{Word, WordType},
     pages::file_explorer::{FileTree, MdFile},
     util::CONFIG,
 };
@@ -200,12 +200,12 @@ pub fn find_and_mark<'a>(query: &str, text: &'a mut Vec<&'a mut Word>) {
         if damerau_levenshtein(query, &words) == 0 {
             window
                 .iter_mut()
-                .for_each(|word| word.set_kind(crate::nodes::WordType::Selected));
+                .for_each(|word| word.set_kind(WordType::Selected));
         }
     })
 }
 
-fn windows_mut_for_each<T>(v: &mut [T], n: usize, mut f: impl FnMut(&mut [T])) {
+fn windows_mut_for_each<T>(v: &mut [T], n: usize, f: impl Fn(&mut [T])) {
     let mut start = 0;
     let mut end = n;
     while end <= v.len() {
@@ -244,7 +244,10 @@ pub fn compare_heading(link_header: &str, header: &[Vec<Word>]) -> bool {
 mod tests {
 
     use crate::{
-        nodes::{ComponentRoot, RenderNode, TextComponent, WordType},
+        nodes::{
+            root::{Component, ComponentRoot},
+            textcomponent::{TextComponent, TextNode},
+        },
         parser::parse_markdown,
     };
 
@@ -338,7 +341,7 @@ mod tests {
             Word::new("World".to_string(), WordType::BoldItalic),
         ];
 
-        let componet = TextComponent::new(RenderNode::Paragraph, text);
+        let componet = Component::TextComponent(TextComponent::new(TextNode::Paragraph, text));
         let root = ComponentRoot::new(None, vec![componet]);
         let query = "world";
         let result = find_with_ref(query, root.words());
@@ -354,7 +357,7 @@ mod tests {
             Word::new("World".to_string(), WordType::BoldItalic),
         ];
 
-        let componet = TextComponent::new(RenderNode::Paragraph, text);
+        let componet = Component::TextComponent(TextComponent::new(TextNode::Paragraph, text));
         let root = ComponentRoot::new(None, vec![componet]);
         let query = "hello world";
         let result = find_with_ref(query, root.words());
@@ -371,7 +374,7 @@ mod tests {
             Word::new("World".to_string(), WordType::BoldItalic),
         ];
 
-        let componet = TextComponent::new(RenderNode::Paragraph, text);
+        let componet = Component::TextComponent(TextComponent::new(TextNode::Paragraph, text));
         let root = ComponentRoot::new(None, vec![componet]);
         let query = "hello world";
         let result = find_with_ref(query, root.words());
@@ -392,7 +395,7 @@ mod tests {
             Word::new("World".to_string(), WordType::BoldItalic),
         ];
 
-        let componet = TextComponent::new(RenderNode::Paragraph, text);
+        let componet = Component::TextComponent(TextComponent::new(TextNode::Paragraph, text));
         let root = ComponentRoot::new(None, vec![componet]);
         let query = "hello world";
         let result = find_with_ref(query, root.words());

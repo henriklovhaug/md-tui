@@ -13,7 +13,7 @@ use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use event_handler::{handle_keyboard_input, KeyBoardAction};
-use nodes::ComponentRoot;
+use nodes::root::ComponentRoot;
 use notify::{Config, PollWatcher, Watcher};
 use pages::file_explorer::FileTree;
 use parser::parse_markdown;
@@ -30,7 +30,7 @@ use util::{destruct_terminal, App, Boxes, Mode};
 mod boxes;
 mod event_handler;
 pub mod highlight;
-pub mod nodes;
+mod nodes;
 mod pages;
 pub mod parser;
 pub mod search;

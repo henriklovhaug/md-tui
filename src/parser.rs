@@ -5,7 +5,11 @@ use pest::{
 };
 use pest_derive::Parser;
 
-use crate::nodes::{ComponentRoot, MetaData, RenderNode, TextComponent, Word, WordType};
+use crate::nodes::{
+    root::{Component, ComponentRoot},
+    textcomponent::{TextComponent, TextNode},
+    word::{MetaData, Word, WordType},
+};
 
 #[derive(Parser)]
 #[grammar = "md.pest"]
@@ -61,7 +65,7 @@ fn node_to_component(root: ParseRoot) -> ComponentRoot {
     ComponentRoot::new(name, children)
 }
 
-fn parse_component(parse_node: ParseNode) -> TextComponent {
+fn parse_component(parse_node: ParseNode) -> Component {
     match parse_node.kind() {
         MdParseEnum::Task => {
             let leaf_nodes = get_leaf_nodes(parse_node);
@@ -87,7 +91,7 @@ fn parse_component(parse_node: ParseNode) -> TextComponent {
                 }
                 words.push(Word::new(content, word_type));
             }
-            TextComponent::new(RenderNode::Task, words)
+            Component::TextComponent(TextComponent::new(TextNode::Task, words))
         }
 
         MdParseEnum::Quote => {
@@ -111,11 +115,10 @@ fn parse_component(parse_node: ParseNode) -> TextComponent {
             if let Some(w) = words.first_mut() {
                 w.set_content(w.content().trim_start().to_owned());
             }
-            TextComponent::new(RenderNode::Quote, words)
+            Component::TextComponent(TextComponent::new(TextNode::Quote, words))
         }
 
         MdParseEnum::Heading => {
-            let kind = parse_node.kind();
             let indent = parse_node
                 .content()
                 .chars()
@@ -155,11 +158,7 @@ fn parse_component(parse_node: ParseNode) -> TextComponent {
             if let Some(w) = words.first_mut() {
                 w.set_content(w.content().trim_start().to_owned());
             }
-            match kind {
-                MdParseEnum::Paragraph => TextComponent::new(RenderNode::Paragraph, words),
-                MdParseEnum::Heading => TextComponent::new(RenderNode::Heading, words),
-                _ => unreachable!(),
-            }
+               Component::TextComponent( TextComponent::new(TextNode::Heading, words))
         }
 
         MdParseEnum::Paragraph => {
@@ -184,7 +183,7 @@ fn parse_component(parse_node: ParseNode) -> TextComponent {
             if let Some(w) = words.first_mut() {
                 w.set_content(w.content().trim_start().to_owned());
             }
-            TextComponent::new(RenderNode::Paragraph, words)
+            Component::TextComponent(TextComponent::new(TextNode::Paragraph, words))
         }
 
         MdParseEnum::CodeBlock => {
@@ -195,7 +194,7 @@ fn parse_component(parse_node: ParseNode) -> TextComponent {
                 let content = node.content().to_owned();
                 words.push(vec![Word::new(content, word_type)]);
             }
-            TextComponent::new_formatted(RenderNode::CodeBlock, words)
+            Component::TextComponent(TextComponent::new_formatted(TextNode::CodeBlock, words))
         }
 
         MdParseEnum::ListContainer => {
@@ -243,7 +242,7 @@ fn parse_component(parse_node: ParseNode) -> TextComponent {
                 }
                 words.push(inner_words);
             }
-            TextComponent::new_formatted(RenderNode::List, words)
+            Component::TextComponent(TextComponent::new_formatted(TextNode::List, words))
         }
 
         MdParseEnum::Table => {
@@ -276,12 +275,12 @@ fn parse_component(parse_node: ParseNode) -> TextComponent {
                 }
                 words.push(inner_words);
             }
-            TextComponent::new_formatted(RenderNode::Table, words)
+            Component::TextComponent(TextComponent::new_formatted(TextNode::Table, words))
         }
 
-        MdParseEnum::BlockSeperator => TextComponent::new(RenderNode::LineBreak, Vec::new()),
+        MdParseEnum::BlockSeperator => Component::TextComponent(TextComponent::new(TextNode::LineBreak, Vec::new())),
         MdParseEnum::HorizontalSeperator => {
-            TextComponent::new(RenderNode::HorizontalSeperator, Vec::new())
+            Component::TextComponent(TextComponent::new(TextNode::HorizontalSeperator, Vec::new()))
         }
         _ => todo!("Not implemented for {:?}", parse_node.kind()),
     }
