@@ -1,4 +1,3 @@
-use image::Rgb;
 use ratatui::{
     buffer::Buffer,
     layout::Rect,
@@ -19,20 +18,14 @@ pub struct ComponentRoot {
     file_name: Option<String>,
     components: Vec<Component>,
     is_focused: bool,
-    picker: Picker,
 }
 
 impl ComponentRoot {
     pub fn new(file_name: Option<String>, components: Vec<Component>) -> Self {
-        let mut picker = Picker::from_termios().expect("Failed to create picker");
-        picker.guess_protocol();
-        picker.background_color = Some(Rgb::<u8>([255, 0, 255]));
-
         Self {
             file_name,
             components,
             is_focused: false,
-            picker,
         }
     }
 
@@ -237,7 +230,6 @@ impl ComponentRoot {
             file_name: self.file_name,
             components,
             is_focused: self.is_focused,
-            picker: self.picker,
         }
     }
 
