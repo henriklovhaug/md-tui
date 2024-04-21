@@ -22,7 +22,7 @@ use ratatui::{
     backend::{Backend, CrosstermBackend},
     layout::Rect,
     style::{Color, Stylize},
-    widgets::{Block, Clear, Paragraph},
+    widgets::{Block, Clear, Paragraph, StatefulWidgetRef},
     Frame, Terminal,
 };
 use ratatui_image::picker::Picker;
@@ -176,7 +176,7 @@ fn run_app<B: Backend>(
         terminal.draw(|f| {
             match app.mode {
                 Mode::View => {
-                    render_markdown(f, &app, markdown.clone(), &mut picker);
+                    render_markdown(f, &app, &mut markdown, &mut picker);
                 }
                 Mode::FileTree => {
                     render_file_tree(f, &app, file_tree.clone());
@@ -291,7 +291,7 @@ fn render_file_tree(f: &mut Frame, app: &App, file_tree: FileTree) {
     f.render_widget(app.help_box, area);
 }
 
-fn render_markdown(f: &mut Frame, app: &App, markdown: ComponentRoot, picker: &mut Picker) {
+fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot, picker: &mut Picker) {
     let size = f.size();
     let area = Rect {
         x: 2,
@@ -299,7 +299,10 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: ComponentRoot, picker: &m
         height: size.height - 5,
         ..size
     };
-    f.render_stateful_widget(markdown, area, picker);
+
+    let buf = f.buffer_mut();
+
+    markdown.render_ref(area, buf, picker);
 
     // Render a block at the bottom to show the current mode
     let block = Block::default().bg(Color::Black);

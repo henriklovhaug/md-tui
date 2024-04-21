@@ -14,6 +14,7 @@ use super::word::{Word, WordType};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TextNode {
+    Image,
     Paragraph,
     LineBreak,
     Heading,
@@ -281,6 +282,7 @@ impl TextComponent {
                 self.height = height;
             }
             TextNode::HorizontalSeperator => self.height = 1,
+            TextNode::Image => unreachable!("Image should not be transformed"),
         }
     }
 }

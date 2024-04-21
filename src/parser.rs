@@ -6,6 +6,7 @@ use pest::{
 use pest_derive::Parser;
 
 use crate::nodes::{
+    image::ImageComponent,
     root::{Component, ComponentRoot},
     textcomponent::{TextComponent, TextNode},
     word::{MetaData, Word, WordType},
@@ -67,6 +68,27 @@ fn node_to_component(root: ParseRoot) -> ComponentRoot {
 
 fn parse_component(parse_node: ParseNode) -> Component {
     match parse_node.kind() {
+        MdParseEnum::Image => {
+            let leaf_nodes = get_leaf_nodes(parse_node);
+            let mut alt_text = String::new();
+            let mut image = None;
+            for node in leaf_nodes {
+                if node.kind() == MdParseEnum::AltText {
+                    alt_text = node.content().to_owned();
+                } else {
+                    let dyn_img = image::io::Reader::open("./test.jpeg")
+                        .unwrap()
+                        .decode()
+                        .unwrap();
+                    image = Some(dyn_img);
+                }
+            }
+
+            let comp = ImageComponent::new(image.unwrap(), 20, alt_text);
+
+            Component::Image(comp)
+        }
+
         MdParseEnum::Task => {
             let leaf_nodes = get_leaf_nodes(parse_node);
             let mut words = Vec::new();
@@ -408,46 +430,48 @@ impl ParseNode {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MdParseEnum {
-    Heading,
-    Word,
-    Task,
-    TaskOpen,
-    TaskClosed,
-    UnorderedList,
-    ListContainer,
-    OrderedList,
-    CodeBlock,
-    CodeBlockStr,
-    PLanguage,
-    CodeStr,
-    Code,
-    Paragraph,
-    Link,
-    WikiLink,
-    LinkData,
-    Quote,
-    Table,
-    TableSeperator,
-    TableRow,
-    TableCell,
-    Digit,
+    AltText,
     BlockSeperator,
-    Sentence,
     Bold,
-    BoldStr,
-    Italic,
-    ItalicStr,
     BoldItalic,
     BoldItalicStr,
+    BoldStr,
+    Caution,
+    Code,
+    CodeBlock,
+    CodeBlockStr,
+    CodeStr,
+    Digit,
+    Heading,
+    HorizontalSeperator,
+    Image,
+    Imortant,
+    Indent,
+    Italic,
+    ItalicStr,
+    Link,
+    LinkData,
+    ListContainer,
+    Note,
+    OrderedList,
+    PLanguage,
+    Paragraph,
+    Quote,
+    Sentence,
     Strikethrough,
     StrikethroughStr,
-    HorizontalSeperator,
-    Indent,
-    Imortant,
-    Note,
+    Table,
+    TableCell,
+    TableRow,
+    TableSeperator,
+    Task,
+    TaskClosed,
+    TaskOpen,
     Tip,
+    UnorderedList,
     Warning,
-    Caution,
+    WikiLink,
+    Word,
 }
 
 impl From<Rule> for MdParseEnum {
@@ -512,16 +536,21 @@ impl From<Rule> for MdParseEnum {
             | Rule::list_prefix
             | Rule::forbidden_sentence_prefix => Self::Paragraph,
 
+            Rule::image => Self::Image,
+
+            Rule::alt_word | Rule::alt_text => Self::AltText,
+
             Rule::heading_prefix
-            | Rule::c_char
-            | Rule::latex_char
-            | Rule::i_char
+            | Rule::alt_char
             | Rule::b_char
-            | Rule::s_char
-            | Rule::comment_char
+            | Rule::c_char
             | Rule::c_line_char
-            | Rule::wiki_link
-            | Rule::quote_marking => todo!(),
+            | Rule::comment_char
+            | Rule::i_char
+            | Rule::latex_char
+            | Rule::quote_marking
+            | Rule::s_char
+            | Rule::wiki_link => todo!(),
         }
     }
 }

@@ -385,28 +385,28 @@ mod tests {
         assert_eq!(result[2], root.words()[3]);
     }
 
-    #[test]
-    fn test_word_by_ref_span_multiple_words_using_reference_and_clone() {
-        let text = vec![
-            Word::new("Hello".to_string(), WordType::Bold),
-            Word::new("hello".to_string(), WordType::White),
-            Word::new(" ".to_string(), WordType::White),
-            Word::new("world".to_string(), WordType::Normal),
-            Word::new("World".to_string(), WordType::BoldItalic),
-        ];
-
-        let componet = Component::TextComponent(TextComponent::new(TextNode::Paragraph, text));
-        let root = ComponentRoot::new(None, vec![componet]);
-        let query = "hello world";
-        let result = find_with_ref(query, root.words());
-
-        let root_clone = root.clone();
-
-        assert_ne!(result[0], root_clone.words()[0]);
-        assert_eq!(result[0], root_clone.words()[1]);
-        assert_eq!(result[1], root_clone.words()[2]);
-        assert_eq!(result[2], root_clone.words()[3]);
-    }
+    // #[test]
+    // fn test_word_by_ref_span_multiple_words_using_reference_and_clone() {
+    //     let text = vec![
+    //         Word::new("Hello".to_string(), WordType::Bold),
+    //         Word::new("hello".to_string(), WordType::White),
+    //         Word::new(" ".to_string(), WordType::White),
+    //         Word::new("world".to_string(), WordType::Normal),
+    //         Word::new("World".to_string(), WordType::BoldItalic),
+    //     ];
+    //
+    //     let componet = Component::TextComponent(TextComponent::new(TextNode::Paragraph, text));
+    //     let root = ComponentRoot::new(None, vec![componet]);
+    //     let query = "hello world";
+    //     let result = find_with_ref(query, root.words());
+    //
+    //     let root_clone = root.clone();
+    //
+    //     assert_ne!(result[0], root_clone.words()[0]);
+    //     assert_eq!(result[0], root_clone.words()[1]);
+    //     assert_eq!(result[1], root_clone.words()[2]);
+    //     assert_eq!(result[2], root_clone.words()[3]);
+    // }
 
     #[test]
     fn test_long_match() {

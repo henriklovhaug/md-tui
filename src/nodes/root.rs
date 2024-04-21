@@ -1,7 +1,7 @@
 use ratatui::{
     buffer::Buffer,
     layout::Rect,
-    widgets::{StatefulWidget, Widget},
+    widgets::{StatefulWidgetRef, Widget},
 };
 use ratatui_image::picker::Picker;
 
@@ -13,7 +13,6 @@ use super::{
     word::{Word, WordType},
 };
 
-#[derive(Clone)]
 pub struct ComponentRoot {
     file_name: Option<String>,
     components: Vec<Component>,
@@ -207,18 +206,12 @@ impl ComponentRoot {
     /// Because of the parsing, every table has a missing newline at the end
     pub fn add_missing_components(self) -> Self {
         let mut components = Vec::new();
-        let mut iter = self
-            .components
-            .iter()
-            .filter_map(|f| match f {
-                Component::TextComponent(comp) => Some(comp),
-                Component::Image(_) => None,
-            })
-            .peekable();
+        let mut iter = self.components.into_iter().peekable();
         while let Some(component) = iter.next() {
-            components.push(Component::TextComponent(component.to_owned()));
+            let kind = component.kind();
+            components.push(component);
             if let Some(next) = iter.peek() {
-                if component.kind() != TextNode::LineBreak && next.kind() != TextNode::LineBreak {
+                if kind != TextNode::LineBreak && next.kind() != TextNode::LineBreak {
                     components.push(Component::TextComponent(TextComponent::new(
                         TextNode::LineBreak,
                         Vec::new(),
@@ -249,12 +242,17 @@ impl ComponentRoot {
     }
 }
 
-impl StatefulWidget for ComponentRoot {
+impl StatefulWidgetRef for ComponentRoot {
+    #[doc = r" State associated with the stateful widget."]
+    #[doc = r""]
+    #[doc = r" If you don't need this then you probably want to implement [`WidgetRef`] instead."]
     type State = Picker;
 
-    fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
-        for component in self.components {
-            component.render(area, buf, state);
+    #[doc = r" Draws the current state of the widget in the given buffer. That is the only method required"]
+    #[doc = r" to implement a custom stateful widget."]
+    fn render_ref(&self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
+        for component in self.components.iter() {
+            component.render_ref(area, buf, state);
         }
     }
 }
@@ -264,9 +262,9 @@ pub trait ComponentProps {
     fn height(&self) -> u16;
     fn set_y_offset(&mut self, y_offset: u16);
     fn set_scroll_offset(&mut self, scroll: u16);
+    fn kind(&self) -> TextNode;
 }
 
-#[derive(Debug, Clone)]
 pub enum Component {
     TextComponent(TextComponent),
     Image(ImageComponent),
@@ -278,13 +276,13 @@ impl From<TextComponent> for Component {
     }
 }
 
-impl StatefulWidget for Component {
+impl StatefulWidgetRef for Component {
     type State = Picker;
 
-    fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
+    fn render_ref(&self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
         match self {
-            Component::TextComponent(comp) => comp.render(area, buf),
-            Component::Image(comp) => comp.render(area, buf, state),
+            Component::TextComponent(comp) => comp.clone().render(area, buf),
+            Component::Image(comp) => comp.render_ref(area, buf, state),
         }
     }
 }
@@ -315,6 +313,13 @@ impl ComponentProps for Component {
         match self {
             Component::TextComponent(comp) => comp.set_scroll_offset(scroll),
             Component::Image(comp) => comp.set_scroll_offset(scroll),
+        }
+    }
+
+    fn kind(&self) -> TextNode {
+        match self {
+            Component::TextComponent(comp) => comp.kind(),
+            Component::Image(comp) => comp.kind(),
         }
     }
 }

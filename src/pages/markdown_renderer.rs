@@ -94,6 +94,7 @@ impl Widget for TextComponent {
             TextNode::Quote => render_quote(area, buf, self, clips),
             TextNode::LineBreak => (),
             TextNode::HorizontalSeperator => render_horizontal_seperator(area, buf),
+            TextNode::Image => todo!(),
         }
     }
 }

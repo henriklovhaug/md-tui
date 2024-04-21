@@ -56,6 +56,7 @@ impl From<MdParseEnum> for WordType {
             MdParseEnum::Paragraph
             | MdParseEnum::TableRow
             | MdParseEnum::Sentence
+            | MdParseEnum::AltText
             | MdParseEnum::Word => WordType::Normal,
 
             MdParseEnum::LinkData => WordType::LinkData,
@@ -79,6 +80,7 @@ impl From<MdParseEnum> for WordType {
             | MdParseEnum::BoldStr
             | MdParseEnum::BoldItalicStr
             | MdParseEnum::StrikethroughStr
+            | MdParseEnum::Image
             | MdParseEnum::TableSeperator => {
                 unreachable!("Edit this or pest file to fix for value: {:?}", value)
             }
