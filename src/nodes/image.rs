@@ -1,3 +1,5 @@
+use std::cmp;
+
 use image::{DynamicImage, Rgb};
 use ratatui::{
     buffer::Buffer,
@@ -25,11 +27,7 @@ impl ImageComponent {
         picker.background_color = Some(Rgb::<u8>([0, 0, 0]));
 
         let image = picker
-            .new_protocol(
-                image,
-                Rect::new(0, 100, CONFIG.width, 20),
-                Resize::Fit(None),
-            )
+            .new_protocol(image, Rect::new(0, 0, CONFIG.width, 20), Resize::Fit(None))
             .unwrap();
 
         Self {
@@ -45,11 +43,11 @@ impl ImageComponent {
         self.scroll_offset = offset;
     }
 
-    pub fn get_scroll_offset(&self) -> u16 {
+    pub fn scroll_offset(&self) -> u16 {
         self.scroll_offset
     }
 
-    pub fn get_y_offset(&self) -> u16 {
+    pub fn y_offset(&self) -> u16 {
         self.y_offset
     }
 }
@@ -79,23 +77,25 @@ impl ComponentProps for ImageComponent {
 impl StatefulWidgetRef for ImageComponent {
     type State = Picker;
 
-    #[doc = r" Draws the current state of the widget in the given buffer. That is the only method required"]
-    #[doc = r" to implement a custom stateful widget."]
     fn render_ref(&self, area: Rect, buf: &mut Buffer, _state: &mut Self::State) {
-        if self.get_y_offset().saturating_sub(self.get_scroll_offset()) + self.height()
-            >= area.height
-            || self.get_y_offset().saturating_sub(self.get_scroll_offset()) == 0
+        if self.y_offset().saturating_sub(self.scroll_offset()) + self.height() > area.height
+            || self.y_offset().saturating_sub(self.scroll_offset()) + self.height() == 0
         {
             return;
         }
 
         let image = Image::new(self.image.as_ref());
 
+        let height = cmp::min(
+            self.height,
+            (self.y_offset() + self.height).saturating_sub(self.scroll_offset()),
+        );
+
         let area = Rect::new(
             area.x,
-            self.y_offset() - self.get_scroll_offset(),
+            self.y_offset().saturating_sub(self.scroll_offset()),
             area.width,
-            self.height,
+            height,
         );
 
         image.render(area, buf)
