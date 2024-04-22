@@ -2,14 +2,15 @@ use ratatui::style::Color;
 use tree_sitter_highlight::HighlightEvent;
 
 use self::{
-    c::highlight_c, cpp::highlight_cpp, go::highlight_go, java::highlight_java,
-    javascript::highlight_javascript, json::highlight_json, lua::highlight_lua,
-    python::highlight_python, rust::highlight_rust,
+    c::highlight_c, cpp::highlight_cpp, elixir::highlight_elixir, go::highlight_go,
+    java::highlight_java, javascript::highlight_javascript, json::highlight_json,
+    lua::highlight_lua, python::highlight_python, rust::highlight_rust,
 };
 
 mod bash;
 mod c;
 mod cpp;
+mod elixir;
 mod go;
 mod java;
 mod javascript;
@@ -68,17 +69,18 @@ pub enum HighlightInfo {
 
 pub fn highlight_code(language: &str, lines: &[u8]) -> HighlightInfo {
     match language {
-        "java" => HighlightInfo::Highlighted(highlight_java(lines).unwrap()),
-        "rust" => HighlightInfo::Highlighted(highlight_rust(lines).unwrap()),
-        "json" => HighlightInfo::Highlighted(highlight_json(lines).unwrap()),
-        "python" => HighlightInfo::Highlighted(highlight_python(lines).unwrap()),
         "bash" | "sh" => HighlightInfo::Highlighted(bash::highlight_bash(lines).unwrap()),
         "c" => HighlightInfo::Highlighted(highlight_c(lines).unwrap()),
         "cpp" => HighlightInfo::Highlighted(highlight_cpp(lines).unwrap()),
+        "elixir" => HighlightInfo::Highlighted(highlight_elixir(lines).unwrap()),
         "go" => HighlightInfo::Highlighted(highlight_go(lines).unwrap()),
+        "java" => HighlightInfo::Highlighted(highlight_java(lines).unwrap()),
         "javascript" | "js" => HighlightInfo::Highlighted(highlight_javascript(lines).unwrap()),
+        "json" => HighlightInfo::Highlighted(highlight_json(lines).unwrap()),
         "lua" => HighlightInfo::Highlighted(highlight_lua(lines).unwrap()),
         "ocaml" => HighlightInfo::Highlighted(ocaml::highlight_ocaml(lines).unwrap()),
+        "python" => HighlightInfo::Highlighted(highlight_python(lines).unwrap()),
+        "rust" => HighlightInfo::Highlighted(highlight_rust(lines).unwrap()),
         _ => HighlightInfo::Unhighlighted,
     }
 }
