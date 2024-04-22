@@ -76,7 +76,7 @@ fn parse_component(parse_node: ParseNode) -> Component {
                 if node.kind() == MdParseEnum::AltText {
                     alt_text = node.content().to_owned();
                 } else {
-                    let dyn_img = image::io::Reader::open("./test.jpeg")
+                    let dyn_img = image::io::Reader::open(node.content())
                         .unwrap()
                         .decode()
                         .unwrap();

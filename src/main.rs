@@ -14,7 +14,7 @@ use crossterm::{
 };
 use event_handler::{handle_keyboard_input, KeyBoardAction};
 use image::Rgb;
-use nodes::root::ComponentRoot;
+use nodes::root::{Component, ComponentRoot};
 use notify::{Config, PollWatcher, Watcher};
 use pages::file_explorer::FileTree;
 use parser::parse_markdown;
@@ -22,10 +22,10 @@ use ratatui::{
     backend::{Backend, CrosstermBackend},
     layout::Rect,
     style::{Color, Stylize},
-    widgets::{Block, Clear, Paragraph, StatefulWidgetRef},
+    widgets::{Block, Clear, Paragraph},
     Frame, Terminal,
 };
-use ratatui_image::picker::Picker;
+use ratatui_image::{picker::Picker, FilterType, Resize, StatefulImage};
 use search::find_md_files;
 use util::{destruct_terminal, App, Boxes, Mode};
 
@@ -291,7 +291,7 @@ fn render_file_tree(f: &mut Frame, app: &App, file_tree: FileTree) {
     f.render_widget(app.help_box, area);
 }
 
-fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot, picker: &mut Picker) {
+fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot, _picker: &mut Picker) {
     let size = f.size();
     let area = Rect {
         x: 2,
@@ -300,9 +300,41 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot, picke
         ..size
     };
 
-    let buf = f.buffer_mut();
+    for child in markdown.children_mut() {
+        match child {
+            Component::TextComponent(comp) => f.render_widget(comp.clone(), area),
+            Component::Image(img) => {
+                if img.y_offset().saturating_sub(img.scroll_offset()) >= area.height
+                    || img.y_offset().saturating_sub(img.scroll_offset()) + img.height() == 0
+                {
+                    continue;
+                }
 
-    markdown.render_ref(area, buf, picker);
+                let image = StatefulImage::new(None).resize(Resize::Fit(Some(FilterType::Nearest)));
+
+                let height = cmp::min(
+                    img.height(),
+                    (img.y_offset() + img.height()).saturating_sub(img.scroll_offset()),
+                );
+
+                let height = cmp::min(
+                    height,
+                    area.height
+                        .saturating_sub(img.y_offset())
+                        .saturating_add(img.scroll_offset()),
+                );
+
+                let inner_area = Rect::new(
+                    area.x,
+                    img.y_offset().saturating_sub(img.scroll_offset()),
+                    area.width,
+                    height,
+                );
+
+                f.render_stateful_widget(image, inner_area, img.image_mut())
+            }
+        }
+    }
 
     // Render a block at the bottom to show the current mode
     let block = Block::default().bg(Color::Black);

@@ -1,10 +1,3 @@
-use ratatui::{
-    buffer::Buffer,
-    layout::Rect,
-    widgets::{StatefulWidgetRef, Widget},
-};
-use ratatui_image::picker::Picker;
-
 use crate::search::{compare_heading, find_and_mark};
 
 use super::{
@@ -26,6 +19,14 @@ impl ComponentRoot {
             components,
             is_focused: false,
         }
+    }
+
+    pub fn children(&self) -> Vec<&Component> {
+        self.components.iter().collect()
+    }
+
+    pub fn children_mut(&mut self) -> Vec<&mut Component> {
+        self.components.iter_mut().collect()
     }
 
     pub fn components(&self) -> Vec<&TextComponent> {
@@ -169,7 +170,7 @@ impl ComponentRoot {
                     }
                     y_offset += comp.height();
                 }
-                _ => todo!("Add height offset"),
+                Component::Image(e) => y_offset += e.height(),
             }
         }
         Err(format!("Heading not found: {}", heading))
@@ -242,21 +243,6 @@ impl ComponentRoot {
     }
 }
 
-impl StatefulWidgetRef for ComponentRoot {
-    #[doc = r" State associated with the stateful widget."]
-    #[doc = r""]
-    #[doc = r" If you don't need this then you probably want to implement [`WidgetRef`] instead."]
-    type State = Picker;
-
-    #[doc = r" Draws the current state of the widget in the given buffer. That is the only method required"]
-    #[doc = r" to implement a custom stateful widget."]
-    fn render_ref(&self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
-        for component in self.components.iter() {
-            component.render_ref(area, buf, state);
-        }
-    }
-}
-
 pub trait ComponentProps {
     fn y_offset(&self) -> u16;
     fn height(&self) -> u16;
@@ -273,17 +259,6 @@ pub enum Component {
 impl From<TextComponent> for Component {
     fn from(comp: TextComponent) -> Self {
         Component::TextComponent(comp)
-    }
-}
-
-impl StatefulWidgetRef for Component {
-    type State = Picker;
-
-    fn render_ref(&self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
-        match self {
-            Component::TextComponent(comp) => comp.clone().render(area, buf),
-            Component::Image(comp) => comp.render_ref(area, buf, state),
-        }
     }
 }
 

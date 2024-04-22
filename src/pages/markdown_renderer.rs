@@ -72,7 +72,6 @@ impl Widget for TextComponent {
             Clipping::None => self.height(),
         };
 
-        // Just used for task and TODO code block
         let meta_info = self
             .meta_info()
             .to_owned()

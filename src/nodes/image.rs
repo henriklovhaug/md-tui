@@ -1,14 +1,5 @@
-use std::cmp;
-
 use image::{DynamicImage, Rgb};
-use ratatui::{
-    buffer::Buffer,
-    layout::Rect,
-    widgets::{StatefulWidgetRef, Widget},
-};
-use ratatui_image::{picker::Picker, protocol::Protocol, Image, Resize};
-
-use crate::util::CONFIG;
+use ratatui_image::{picker::Picker, protocol::StatefulProtocol};
 
 use super::{root::ComponentProps, textcomponent::TextNode};
 
@@ -17,7 +8,7 @@ pub struct ImageComponent {
     y_offset: u16,
     height: u16,
     scroll_offset: u16,
-    image: Box<dyn Protocol>,
+    image: Box<dyn StatefulProtocol>,
 }
 
 impl ImageComponent {
@@ -26,9 +17,7 @@ impl ImageComponent {
         picker.guess_protocol();
         picker.background_color = Some(Rgb::<u8>([0, 0, 0]));
 
-        let image = picker
-            .new_protocol(image, Rect::new(0, 0, CONFIG.width, 20), Resize::Fit(None))
-            .unwrap();
+        let image = picker.new_resize_protocol(image);
 
         Self {
             height,
@@ -37,6 +26,10 @@ impl ImageComponent {
             scroll_offset: 0,
             y_offset: 0,
         }
+    }
+
+    pub fn image_mut(&mut self) -> &mut Box<dyn StatefulProtocol> {
+        &mut self.image
     }
 
     pub fn set_scroll_offset(&mut self, offset: u16) {
@@ -49,6 +42,10 @@ impl ImageComponent {
 
     pub fn y_offset(&self) -> u16 {
         self.y_offset
+    }
+
+    pub fn height(&self) -> u16 {
+        self.height
     }
 }
 
@@ -71,33 +68,5 @@ impl ComponentProps for ImageComponent {
 
     fn kind(&self) -> TextNode {
         TextNode::Image
-    }
-}
-
-impl StatefulWidgetRef for ImageComponent {
-    type State = Picker;
-
-    fn render_ref(&self, area: Rect, buf: &mut Buffer, _state: &mut Self::State) {
-        if self.y_offset().saturating_sub(self.scroll_offset()) + self.height() > area.height
-            || self.y_offset().saturating_sub(self.scroll_offset()) + self.height() == 0
-        {
-            return;
-        }
-
-        let image = Image::new(self.image.as_ref());
-
-        let height = cmp::min(
-            self.height,
-            (self.y_offset() + self.height).saturating_sub(self.scroll_offset()),
-        );
-
-        let area = Rect::new(
-            area.x,
-            self.y_offset().saturating_sub(self.scroll_offset()),
-            area.width,
-            height,
-        );
-
-        image.render(area, buf)
     }
 }
