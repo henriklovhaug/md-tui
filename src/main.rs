@@ -40,15 +40,6 @@ mod util;
 const EMPTY_FILE: &str = "";
 
 fn main() -> Result<(), Box<dyn Error>> {
-    // let text = read_to_string("./md_tests/test.md")?;
-    // let mut markdown = parse_markdown(Some("kek"), &text);
-    // markdown.transform(80);
-    // markdown.set_scroll(0);
-    //
-    // parser::print_from_root(&markdown);
-    // // dbg!("{:?}", markdown.content());
-    // return Ok(());
-
     // Set up panic handler. If not set up, the terminal will be left in a broken state if a panic
     // occurs
     panic::set_hook(Box::new(|panic_info| {
