@@ -77,16 +77,25 @@ fn parse_component(parse_node: ParseNode) -> Component {
                     alt_text = node.content().to_owned();
                 } else {
                     let dyn_img = image::io::Reader::open(node.content())
-                        .unwrap()
-                        .decode()
-                        .unwrap();
-                    image = Some(dyn_img);
+                        .ok()
+                        .and_then(|r| r.decode().ok());
+
+                    image = dyn_img;
                 }
             }
 
-            let comp = ImageComponent::new(image.unwrap(), 20, alt_text);
+            if let Some(img) = image.as_ref() {
+                let comp = ImageComponent::new(img.to_owned(), 20, alt_text);
+                Component::Image(comp)
+            } else {
+                let word = [Word::new(
+                    format!("Image not found [{alt_text}]"),
+                    WordType::Normal,
+                )];
 
-            Component::Image(comp)
+                let comp = TextComponent::new(TextNode::Paragraph, word.into());
+                Component::TextComponent(comp)
+            }
         }
 
         MdParseEnum::Task => {

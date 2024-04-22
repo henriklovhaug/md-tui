@@ -13,7 +13,6 @@ use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use event_handler::{handle_keyboard_input, KeyBoardAction};
-use image::Rgb;
 use nodes::root::{Component, ComponentRoot};
 use notify::{Config, PollWatcher, Watcher};
 use pages::file_explorer::FileTree;
@@ -25,7 +24,7 @@ use ratatui::{
     widgets::{Block, Clear, Paragraph},
     Frame, Terminal,
 };
-use ratatui_image::{picker::Picker, FilterType, Resize, StatefulImage};
+use ratatui_image::{FilterType, Resize, StatefulImage};
 use search::find_md_files;
 use util::{destruct_terminal, App, Boxes, Mode};
 
@@ -124,10 +123,6 @@ fn run_app<B: Backend>(
         }
     }
 
-    let mut picker = Picker::from_termios().expect("Could not create picker");
-    picker.guess_protocol();
-    picker.background_color = Some(Rgb::<u8>([255, 0, 255]));
-
     loop {
         let height = terminal.size()?.height;
 
@@ -176,7 +171,7 @@ fn run_app<B: Backend>(
         terminal.draw(|f| {
             match app.mode {
                 Mode::View => {
-                    render_markdown(f, &app, &mut markdown, &mut picker);
+                    render_markdown(f, &app, &mut markdown);
                 }
                 Mode::FileTree => {
                     render_file_tree(f, &app, file_tree.clone());
@@ -291,7 +286,7 @@ fn render_file_tree(f: &mut Frame, app: &App, file_tree: FileTree) {
     f.render_widget(app.help_box, area);
 }
 
-fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot, _picker: &mut Picker) {
+fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
     let size = f.size();
     let area = Rect {
         x: 2,
