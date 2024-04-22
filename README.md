@@ -4,6 +4,7 @@
 
 - [MD-TUI](#md-tui)
   - [Installation](#installation)
+    - [Requirements](#requirements)
   - [Usage](#usage)
   - [Key binds](#key-binds)
   - [Syntax highlighting](#syntax-highlighting)
@@ -17,13 +18,19 @@
 terminal. I created it because I wasn't happy with how alternatives handled
 links in their applications. While the full markdown specification is not yet
 supported, it will slowly get there. It's a good solution for quickly viewing
-your markdown notes, or opening external links from someones README.
+your markdown notes, or opening external links from someones README. If your
+terminal support images, they will render.
 
 ## Installation
 
 Using cargo: `cargo install md-tui --locked`
 
 Using AUR: `yay -S md-tui-bin`
+
+### Requirements
+
+1. A terminal
+2. Nerd font
 
 ## Usage
 
