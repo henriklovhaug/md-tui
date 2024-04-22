@@ -76,7 +76,7 @@ pub fn highlight_code(language: &str, lines: &[u8]) -> HighlightInfo {
         "c" => HighlightInfo::Highlighted(highlight_c(lines).unwrap()),
         "cpp" => HighlightInfo::Highlighted(highlight_cpp(lines).unwrap()),
         "go" => HighlightInfo::Highlighted(highlight_go(lines).unwrap()),
-        "javascript" => HighlightInfo::Highlighted(highlight_javascript(lines).unwrap()),
+        "javascript" | "js" => HighlightInfo::Highlighted(highlight_javascript(lines).unwrap()),
         "lua" => HighlightInfo::Highlighted(highlight_lua(lines).unwrap()),
         "ocaml" => HighlightInfo::Highlighted(ocaml::highlight_ocaml(lines).unwrap()),
         _ => HighlightInfo::Unhighlighted,

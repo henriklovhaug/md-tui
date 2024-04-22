@@ -9,7 +9,10 @@ use ratatui::{
 };
 
 use crate::{
-    nodes::{MetaData, RenderNode, TextComponent, Word, WordType},
+    nodes::{
+        textcomponent::{TextComponent, TextNode},
+        word::{MetaData, Word, WordType},
+    },
     util::{CONFIG, HEADER_COLOR},
 };
 
@@ -69,7 +72,6 @@ impl Widget for TextComponent {
             Clipping::None => self.height(),
         };
 
-        // Just used for task and TODO code block
         let meta_info = self
             .meta_info()
             .to_owned()
@@ -82,16 +84,16 @@ impl Widget for TextComponent {
         let area = Rect { height, y, ..area };
 
         match kind {
-            RenderNode::Paragraph => render_paragraph(area, buf, self, clips),
-            RenderNode::Heading => render_heading(area, buf, self),
-            RenderNode::Task => render_task(area, buf, self, clips, &meta_info),
-            RenderNode::List => render_list(area, buf, self, clips),
-            RenderNode::CodeBlock => render_code_block(area, buf, self, clips),
-            RenderNode::Table => render_table(area, buf, self, clips, table_meta),
-            RenderNode::Quote => render_quote(area, buf, self, clips),
-            // RenderNode::Quote => render_quote(area, buf, self.content_owned()),
-            RenderNode::LineBreak => (),
-            RenderNode::HorizontalSeperator => render_horizontal_seperator(area, buf),
+            TextNode::Paragraph => render_paragraph(area, buf, self, clips),
+            TextNode::Heading => render_heading(area, buf, self),
+            TextNode::Task => render_task(area, buf, self, clips, &meta_info),
+            TextNode::List => render_list(area, buf, self, clips),
+            TextNode::CodeBlock => render_code_block(area, buf, self, clips),
+            TextNode::Table => render_table(area, buf, self, clips, table_meta),
+            TextNode::Quote => render_quote(area, buf, self, clips),
+            TextNode::LineBreak => (),
+            TextNode::HorizontalSeperator => render_horizontal_seperator(area, buf),
+            TextNode::Image => todo!(),
         }
     }
 }

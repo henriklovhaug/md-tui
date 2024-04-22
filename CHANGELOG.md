@@ -1,3 +1,12 @@
+# Version 0.7.0
+
+## Images!!
+
+It now supports images!! Mostly thanks to the
+[ratatui-image crate](https://crates.io/crates/ratatui-image). For terminals
+with a nerd font and no image support it will fall back to Unicode half blocks.
+This means `MD-TUI` is a poor fit for `TTY`s. (#15).
+
 # Version 0.6.3
 
 - Improve heading search.

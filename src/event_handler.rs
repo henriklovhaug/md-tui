@@ -4,7 +4,7 @@ use crossterm::event::KeyCode;
 use notify::{PollWatcher, Watcher};
 
 use crate::{
-    nodes::ComponentRoot,
+    nodes::root::ComponentRoot,
     pages::file_explorer::FileTree,
     parser::parse_markdown,
     util::{App, Boxes, Jump, LinkType, Mode, CONFIG},
@@ -27,8 +27,8 @@ pub fn handle_keyboard_input(
         return KeyBoardAction::Exit;
     }
     match app.mode {
-        Mode::View => keyboard_mode_view(key, app, markdown, height, watcher),
         Mode::FileTree => keyboard_mode_file_tree(key, app, markdown, file_tree, height, watcher),
+        Mode::View => keyboard_mode_view(key, app, markdown, height, watcher),
     }
 }
 
@@ -207,7 +207,8 @@ fn keyboard_mode_view(
                 let heights = markdown.search_results_heights();
 
                 if heights.is_empty() {
-                    app.error_box.set_message("No results found".to_string());
+                    app.error_box
+                        .set_message(format!("No results found for\n {query}"));
                     app.boxes = Boxes::Error;
                     return KeyBoardAction::Continue;
                 }

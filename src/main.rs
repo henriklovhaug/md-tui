@@ -13,7 +13,7 @@ use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use event_handler::{handle_keyboard_input, KeyBoardAction};
-use nodes::ComponentRoot;
+use nodes::root::{Component, ComponentRoot};
 use notify::{Config, PollWatcher, Watcher};
 use pages::file_explorer::FileTree;
 use parser::parse_markdown;
@@ -24,13 +24,14 @@ use ratatui::{
     widgets::{Block, Clear, Paragraph},
     Frame, Terminal,
 };
+use ratatui_image::{FilterType, Resize, StatefulImage};
 use search::find_md_files;
 use util::{destruct_terminal, App, Boxes, Mode};
 
 mod boxes;
 mod event_handler;
 pub mod highlight;
-pub mod nodes;
+mod nodes;
 mod pages;
 pub mod parser;
 pub mod search;
@@ -39,15 +40,6 @@ mod util;
 const EMPTY_FILE: &str = "";
 
 fn main() -> Result<(), Box<dyn Error>> {
-    // let text = read_to_string("./md_tests/test.md")?;
-    // let mut markdown = parse_markdown(Some("kek"), &text);
-    // markdown.transform(80);
-    // markdown.set_scroll(0);
-    //
-    // parser::print_from_root(&markdown);
-    // // dbg!("{:?}", markdown.content());
-    // return Ok(());
-
     // Set up panic handler. If not set up, the terminal will be left in a broken state if a panic
     // occurs
     panic::set_hook(Box::new(|panic_info| {
@@ -170,7 +162,7 @@ fn run_app<B: Backend>(
         terminal.draw(|f| {
             match app.mode {
                 Mode::View => {
-                    render_markdown(f, &app, markdown.clone());
+                    render_markdown(f, &app, &mut markdown);
                 }
                 Mode::FileTree => {
                     render_file_tree(f, &app, file_tree.clone());
@@ -285,7 +277,7 @@ fn render_file_tree(f: &mut Frame, app: &App, file_tree: FileTree) {
     f.render_widget(app.help_box, area);
 }
 
-fn render_markdown(f: &mut Frame, app: &App, markdown: ComponentRoot) {
+fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
     let size = f.size();
     let area = Rect {
         x: 2,
@@ -293,7 +285,42 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: ComponentRoot) {
         height: size.height - 5,
         ..size
     };
-    f.render_widget(markdown, area);
+
+    for child in markdown.children_mut() {
+        match child {
+            Component::TextComponent(comp) => f.render_widget(comp.clone(), area),
+            Component::Image(img) => {
+                if img.y_offset().saturating_sub(img.scroll_offset()) >= area.height
+                    || img.y_offset().saturating_sub(img.scroll_offset()) + img.height() == 0
+                {
+                    continue;
+                }
+
+                let image = StatefulImage::new(None).resize(Resize::Fit(Some(FilterType::Nearest)));
+
+                let height = cmp::min(
+                    img.height(),
+                    (img.y_offset() + img.height()).saturating_sub(img.scroll_offset()),
+                );
+
+                let height = cmp::min(
+                    height,
+                    area.height
+                        .saturating_sub(img.y_offset())
+                        .saturating_add(img.scroll_offset()),
+                );
+
+                let inner_area = Rect::new(
+                    area.x,
+                    img.y_offset().saturating_sub(img.scroll_offset()),
+                    area.width,
+                    height,
+                );
+
+                f.render_stateful_widget(image, inner_area, img.image_mut())
+            }
+        }
+    }
 
     // Render a block at the bottom to show the current mode
     let block = Block::default().bg(Color::Black);

@@ -5,7 +5,12 @@ use pest::{
 };
 use pest_derive::Parser;
 
-use crate::nodes::{ComponentRoot, MetaData, RenderNode, TextComponent, Word, WordType};
+use crate::nodes::{
+    image::ImageComponent,
+    root::{Component, ComponentRoot},
+    textcomponent::{TextComponent, TextNode},
+    word::{MetaData, Word, WordType},
+};
 
 #[derive(Parser)]
 #[grammar = "md.pest"]
@@ -61,8 +66,53 @@ fn node_to_component(root: ParseRoot) -> ComponentRoot {
     ComponentRoot::new(name, children)
 }
 
-fn parse_component(parse_node: ParseNode) -> TextComponent {
+fn is_url(url: &str) -> bool {
+    url.starts_with("http://") || url.starts_with("https://")
+}
+
+fn parse_component(parse_node: ParseNode) -> Component {
     match parse_node.kind() {
+        MdParseEnum::Image => {
+            let leaf_nodes = get_leaf_nodes(parse_node);
+            let mut alt_text = String::new();
+            let mut image = None;
+            for node in leaf_nodes {
+                if node.kind() == MdParseEnum::AltText {
+                    alt_text = node.content().to_owned();
+                } else if is_url(node.content()) {
+                    let mut buf = Vec::new();
+
+                    image = ureq::get(node.content()).call().ok().and_then(|b| {
+                        let _ = b.into_reader().read_to_end(&mut buf);
+
+                        image::load_from_memory(&buf).ok()
+                    });
+                } else {
+                    image = image::io::Reader::open(node.content())
+                        .ok()
+                        .and_then(|r| r.decode().ok());
+                }
+            }
+
+            if let Some(img) = image.as_ref() {
+                let comp = ImageComponent::new(img.to_owned(), 20, alt_text);
+                Component::Image(comp)
+            } else {
+                let word = [
+                    Word::new("Image".to_string(), WordType::Normal),
+                    Word::new(" ".to_owned(), WordType::Normal),
+                    Word::new("not".to_owned(), WordType::Normal),
+                    Word::new(" ".to_owned(), WordType::Normal),
+                    Word::new("found/fetched".to_owned(), WordType::Normal),
+                    Word::new(" ".to_owned(), WordType::Normal),
+                    Word::new(format!("[{alt_text}]"), WordType::Normal),
+                ];
+
+                let comp = TextComponent::new(TextNode::Paragraph, word.into());
+                Component::TextComponent(comp)
+            }
+        }
+
         MdParseEnum::Task => {
             let leaf_nodes = get_leaf_nodes(parse_node);
             let mut words = Vec::new();
@@ -87,7 +137,7 @@ fn parse_component(parse_node: ParseNode) -> TextComponent {
                 }
                 words.push(Word::new(content, word_type));
             }
-            TextComponent::new(RenderNode::Task, words)
+            Component::TextComponent(TextComponent::new(TextNode::Task, words))
         }
 
         MdParseEnum::Quote => {
@@ -111,11 +161,10 @@ fn parse_component(parse_node: ParseNode) -> TextComponent {
             if let Some(w) = words.first_mut() {
                 w.set_content(w.content().trim_start().to_owned());
             }
-            TextComponent::new(RenderNode::Quote, words)
+            Component::TextComponent(TextComponent::new(TextNode::Quote, words))
         }
 
         MdParseEnum::Heading => {
-            let kind = parse_node.kind();
             let indent = parse_node
                 .content()
                 .chars()
@@ -155,11 +204,7 @@ fn parse_component(parse_node: ParseNode) -> TextComponent {
             if let Some(w) = words.first_mut() {
                 w.set_content(w.content().trim_start().to_owned());
             }
-            match kind {
-                MdParseEnum::Paragraph => TextComponent::new(RenderNode::Paragraph, words),
-                MdParseEnum::Heading => TextComponent::new(RenderNode::Heading, words),
-                _ => unreachable!(),
-            }
+            Component::TextComponent(TextComponent::new(TextNode::Heading, words))
         }
 
         MdParseEnum::Paragraph => {
@@ -184,7 +229,7 @@ fn parse_component(parse_node: ParseNode) -> TextComponent {
             if let Some(w) = words.first_mut() {
                 w.set_content(w.content().trim_start().to_owned());
             }
-            TextComponent::new(RenderNode::Paragraph, words)
+            Component::TextComponent(TextComponent::new(TextNode::Paragraph, words))
         }
 
         MdParseEnum::CodeBlock => {
@@ -195,7 +240,7 @@ fn parse_component(parse_node: ParseNode) -> TextComponent {
                 let content = node.content().to_owned();
                 words.push(vec![Word::new(content, word_type)]);
             }
-            TextComponent::new_formatted(RenderNode::CodeBlock, words)
+            Component::TextComponent(TextComponent::new_formatted(TextNode::CodeBlock, words))
         }
 
         MdParseEnum::ListContainer => {
@@ -243,7 +288,7 @@ fn parse_component(parse_node: ParseNode) -> TextComponent {
                 }
                 words.push(inner_words);
             }
-            TextComponent::new_formatted(RenderNode::List, words)
+            Component::TextComponent(TextComponent::new_formatted(TextNode::List, words))
         }
 
         MdParseEnum::Table => {
@@ -276,13 +321,16 @@ fn parse_component(parse_node: ParseNode) -> TextComponent {
                 }
                 words.push(inner_words);
             }
-            TextComponent::new_formatted(RenderNode::Table, words)
+            Component::TextComponent(TextComponent::new_formatted(TextNode::Table, words))
         }
 
-        MdParseEnum::BlockSeperator => TextComponent::new(RenderNode::LineBreak, Vec::new()),
-        MdParseEnum::HorizontalSeperator => {
-            TextComponent::new(RenderNode::HorizontalSeperator, Vec::new())
+        MdParseEnum::BlockSeperator => {
+            Component::TextComponent(TextComponent::new(TextNode::LineBreak, Vec::new()))
         }
+        MdParseEnum::HorizontalSeperator => Component::TextComponent(TextComponent::new(
+            TextNode::HorizontalSeperator,
+            Vec::new(),
+        )),
         _ => todo!("Not implemented for {:?}", parse_node.kind()),
     }
 }
@@ -406,46 +454,48 @@ impl ParseNode {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MdParseEnum {
-    Heading,
-    Word,
-    Task,
-    TaskOpen,
-    TaskClosed,
-    UnorderedList,
-    ListContainer,
-    OrderedList,
-    CodeBlock,
-    CodeBlockStr,
-    PLanguage,
-    CodeStr,
-    Code,
-    Paragraph,
-    Link,
-    WikiLink,
-    LinkData,
-    Quote,
-    Table,
-    TableSeperator,
-    TableRow,
-    TableCell,
-    Digit,
+    AltText,
     BlockSeperator,
-    Sentence,
     Bold,
-    BoldStr,
-    Italic,
-    ItalicStr,
     BoldItalic,
     BoldItalicStr,
+    BoldStr,
+    Caution,
+    Code,
+    CodeBlock,
+    CodeBlockStr,
+    CodeStr,
+    Digit,
+    Heading,
+    HorizontalSeperator,
+    Image,
+    Imortant,
+    Indent,
+    Italic,
+    ItalicStr,
+    Link,
+    LinkData,
+    ListContainer,
+    Note,
+    OrderedList,
+    PLanguage,
+    Paragraph,
+    Quote,
+    Sentence,
     Strikethrough,
     StrikethroughStr,
-    HorizontalSeperator,
-    Indent,
-    Imortant,
-    Note,
+    Table,
+    TableCell,
+    TableRow,
+    TableSeperator,
+    Task,
+    TaskClosed,
+    TaskOpen,
     Tip,
+    UnorderedList,
     Warning,
-    Caution,
+    WikiLink,
+    Word,
 }
 
 impl From<Rule> for MdParseEnum {
@@ -510,16 +560,21 @@ impl From<Rule> for MdParseEnum {
             | Rule::list_prefix
             | Rule::forbidden_sentence_prefix => Self::Paragraph,
 
+            Rule::image => Self::Image,
+
+            Rule::alt_word | Rule::alt_text => Self::AltText,
+
             Rule::heading_prefix
-            | Rule::c_char
-            | Rule::latex_char
-            | Rule::i_char
+            | Rule::alt_char
             | Rule::b_char
-            | Rule::s_char
-            | Rule::comment_char
+            | Rule::c_char
             | Rule::c_line_char
-            | Rule::wiki_link
-            | Rule::quote_marking => todo!(),
+            | Rule::comment_char
+            | Rule::i_char
+            | Rule::latex_char
+            | Rule::quote_marking
+            | Rule::s_char
+            | Rule::wiki_link => todo!(),
         }
     }
 }

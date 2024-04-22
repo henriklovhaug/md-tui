@@ -31,6 +31,7 @@ better-panic = "0.3.0"
 config = "0.14.0"
 crossterm = "0.27.0"
 dirs = "5.0.1"
+image = "0.24.9"
 itertools = "0.12.1"
 lazy_static = "1.4.0"
 notify = "6.1.1"
@@ -38,6 +39,7 @@ open = "5.1.2"
 pest = "2.7.9"
 pest_derive = "2.7.9"
 ratatui = { version = "0.26.2", default-features = true, features = ["macros", "all-widgets", "serde"] }
+ratatui-image = { version = "1.0.0", features = ["crossterm"] }
 strsim = "0.11.1"
 tree-sitter-bash = "0.21.0"
 tree-sitter-c = "0.21.0"
@@ -51,6 +53,7 @@ tree-sitter-lua = "0.1.0"
 tree-sitter-ocaml = "0.21.2"
 tree-sitter-python = "0.21.0"
 tree-sitter-rust = "0.21.0"
+ureq = "2.9.6"
 
 [build-dependencies]
 cc="1"
