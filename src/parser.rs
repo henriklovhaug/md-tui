@@ -82,19 +82,15 @@ fn parse_component(parse_node: ParseNode) -> Component {
                 } else if is_url(node.content()) {
                     let mut buf = Vec::new();
 
-                    let dyn_image = ureq::get(node.content()).call().ok().and_then(|b| {
+                    image = ureq::get(node.content()).call().ok().and_then(|b| {
                         let _ = b.into_reader().read_to_end(&mut buf);
 
                         image::load_from_memory(&buf).ok()
                     });
-
-                    image = dyn_image;
                 } else {
-                    let dyn_img = image::io::Reader::open(node.content())
+                    image = image::io::Reader::open(node.content())
                         .ok()
                         .and_then(|r| r.decode().ok());
-
-                    image = dyn_img;
                 }
             }
 
