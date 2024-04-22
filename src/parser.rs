@@ -66,6 +66,10 @@ fn node_to_component(root: ParseRoot) -> ComponentRoot {
     ComponentRoot::new(name, children)
 }
 
+fn is_url(url: &str) -> bool {
+    url.starts_with("http://") || url.starts_with("https://")
+}
+
 fn parse_component(parse_node: ParseNode) -> Component {
     match parse_node.kind() {
         MdParseEnum::Image => {
@@ -75,6 +79,16 @@ fn parse_component(parse_node: ParseNode) -> Component {
             for node in leaf_nodes {
                 if node.kind() == MdParseEnum::AltText {
                     alt_text = node.content().to_owned();
+                } else if is_url(node.content()) {
+                    let mut buf = Vec::new();
+
+                    let dyn_image = ureq::get(node.content()).call().ok().and_then(|b| {
+                        let _ = b.into_reader().read_to_end(&mut buf);
+
+                        image::load_from_memory(&buf).ok()
+                    });
+
+                    image = dyn_image;
                 } else {
                     let dyn_img = image::io::Reader::open(node.content())
                         .ok()
@@ -88,10 +102,15 @@ fn parse_component(parse_node: ParseNode) -> Component {
                 let comp = ImageComponent::new(img.to_owned(), 20, alt_text);
                 Component::Image(comp)
             } else {
-                let word = [Word::new(
-                    format!("Image not found [{alt_text}]"),
-                    WordType::Normal,
-                )];
+                let word = [
+                    Word::new("Image".to_string(), WordType::Normal),
+                    Word::new(" ".to_owned(), WordType::Normal),
+                    Word::new("not".to_owned(), WordType::Normal),
+                    Word::new(" ".to_owned(), WordType::Normal),
+                    Word::new("found/fetched".to_owned(), WordType::Normal),
+                    Word::new(" ".to_owned(), WordType::Normal),
+                    Word::new(format!("[{alt_text}]"), WordType::Normal),
+                ];
 
                 let comp = TextComponent::new(TextNode::Paragraph, word.into());
                 Component::TextComponent(comp)
