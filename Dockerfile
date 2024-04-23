@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-ARG RUST_VERSION=1.77.0
+ARG RUST_VERSION=1.77.2
 
 ################################################################################
 # Create a stage for building the application.
