@@ -7,6 +7,10 @@ It now supports images!! Mostly thanks to the
 with a nerd font and no image support it will fall back to Unicode half blocks.
 This means `MD-TUI` is a poor fit for `TTY`s. (#15).
 
+## Fixes
+
+- Code block without specifying language now has leading empty line.
+
 # Version 0.6.3
 
 - Improve heading search.
