@@ -66,6 +66,7 @@ languages:
 
 - Bash/sh
 - C/C++
+- Elixir
 - Go
 - Java
 - JavaScript
