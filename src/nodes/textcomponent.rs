@@ -340,6 +340,12 @@ fn transform_codeblock(component: &mut TextComponent) {
 
     let mut new_content = Vec::new();
 
+    if language.is_empty() {
+        component.content.insert(
+            0,
+            vec![Word::new("".to_string(), WordType::CodeBlock(Color::Reset))],
+        );
+    }
     match highlight {
         HighlightInfo::Highlighted(e) => {
             let mut color = Color::Reset;
