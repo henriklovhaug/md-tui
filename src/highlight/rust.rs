@@ -8,7 +8,7 @@ pub fn highlight_rust(lines: &[u8]) -> Result<Vec<HighlightEvent>, String> {
     let language = language();
 
     let mut rust_config =
-        HighlightConfiguration::new(language, "rust", tree_sitter_rust::HIGHLIGHT_QUERY, "", "")
+        HighlightConfiguration::new(language, "rust", tree_sitter_rust::HIGHLIGHTS_QUERY, "", "")
             .unwrap();
 
     rust_config.configure(&HIGHLIGHT_NAMES);
