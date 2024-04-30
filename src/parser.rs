@@ -103,7 +103,9 @@ fn parse_component(parse_node: ParseNode) -> Component {
                     Word::new(" ".to_owned(), WordType::Normal),
                     Word::new("not".to_owned(), WordType::Normal),
                     Word::new(" ".to_owned(), WordType::Normal),
-                    Word::new("found/fetched".to_owned(), WordType::Normal),
+                    Word::new("found".to_owned(), WordType::Normal),
+                    Word::new("/".to_owned(), WordType::Normal),
+                    Word::new("fetched".to_owned(), WordType::Normal),
                     Word::new(" ".to_owned(), WordType::Normal),
                     Word::new(format!("[{alt_text}]"), WordType::Normal),
                 ];

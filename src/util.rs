@@ -1,6 +1,6 @@
 use std::{cmp, io, str::FromStr};
 
-use config::{Config, File};
+use config::{Config, Environment, File};
 use crossterm::{
     cursor,
     event::DisableMouseCapture,
@@ -192,11 +192,12 @@ lazy_static! {
         let config_file = config_dir.join(".config").join("mdt").join("config.toml");
         let settings = Config::builder()
             .add_source(File::with_name(config_file.to_str().unwrap()).required(false))
+            .add_source(Environment::with_prefix("MDT").separator("_"))
             .build()
             .unwrap();
 
         MdConfig {
-            width: settings.get::<u16>("width").unwrap_or(80),
+            width: settings.get::<u16>("width").unwrap_or(100),
             heading_bg_color: Color::from_str(
                 &settings.get::<String>("h_bg_color").unwrap_or_default(),
             )

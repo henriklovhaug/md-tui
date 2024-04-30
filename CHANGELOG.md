@@ -1,3 +1,8 @@
+# Version 0.7.1
+
+- Changes default width to 100
+- Add possibility to change config using environment variables
+
 # Version 0.7.0
 
 ## Images!!

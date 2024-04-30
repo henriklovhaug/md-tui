@@ -289,7 +289,7 @@ fn keyboard_mode_view(
                 );
             }
 
-            KeyCode::Char('h') => {
+            KeyCode::Char('h') | KeyCode::Char('K') => {
                 if !app.selected {
                     app.vertical_scroll = app.vertical_scroll.saturating_sub(height);
                 } else {
