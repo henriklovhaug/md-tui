@@ -27,6 +27,8 @@ Using cargo: `cargo install md-tui --locked`
 
 Using AUR: `yay -S md-tui-bin`
 
+Prebuilt binaries with install script can be found on the release page.
+
 ### Requirements
 
 1. A terminal

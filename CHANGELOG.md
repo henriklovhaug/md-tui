@@ -2,6 +2,7 @@
 
 - Changes default width to 100
 - Add possibility to change config using environment variables
+- Fix crash when terminal does not respond with font size
 
 # Version 0.7.0
 
