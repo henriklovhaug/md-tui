@@ -95,8 +95,16 @@ fn parse_component(parse_node: ParseNode) -> Component {
             }
 
             if let Some(img) = image.as_ref() {
-                let comp = ImageComponent::new(img.to_owned(), 20, alt_text);
-                Component::Image(comp)
+                let comp = ImageComponent::new(img.to_owned(), 20, alt_text.clone());
+
+                if let Some(comp) = comp {
+                    Component::Image(comp)
+                } else {
+                    let word = [Word::new(format!("[{alt_text}]"), WordType::Normal)];
+
+                    let comp = TextComponent::new(TextNode::Paragraph, word.into());
+                    Component::TextComponent(comp)
+                }
             } else {
                 let word = [
                     Word::new("Image".to_string(), WordType::Normal),

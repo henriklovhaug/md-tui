@@ -12,20 +12,20 @@ pub struct ImageComponent {
 }
 
 impl ImageComponent {
-    pub fn new<T: ToString>(image: DynamicImage, height: u16, alt_text: T) -> Self {
-        let mut picker = Picker::from_termios().unwrap();
+    pub fn new<T: ToString>(image: DynamicImage, height: u16, alt_text: T) -> Option<Self> {
+        let mut picker = Picker::from_termios().ok()?;
         picker.guess_protocol();
         picker.background_color = Some(Rgb::<u8>([0, 0, 0]));
 
         let image = picker.new_resize_protocol(image);
 
-        Self {
+        Some(Self {
             height,
             image,
             _alt_text: alt_text.to_string(),
             scroll_offset: 0,
             y_offset: 0,
-        }
+        })
     }
 
     pub fn image_mut(&mut self) -> &mut Box<dyn StatefulProtocol> {
