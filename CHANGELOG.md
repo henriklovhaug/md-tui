@@ -1,3 +1,7 @@
+# Version 0.7.2
+
+- Images which was below viewport would crash the app when reaching it.
+
 # Version 0.7.1
 
 - Changes default width to 100
