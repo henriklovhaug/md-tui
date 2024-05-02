@@ -298,16 +298,18 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
 
                 let image = StatefulImage::new(None).resize(Resize::Fit(Some(FilterType::Nearest)));
 
+                // Resize height based on clipping top
                 let height = cmp::min(
                     img.height(),
                     (img.y_offset() + img.height()).saturating_sub(img.scroll_offset()),
                 );
 
+                // Resize height based on clipping bottom
                 let height = cmp::min(
                     height,
                     area.height
-                        .saturating_sub(img.y_offset())
-                        .saturating_add(img.scroll_offset()),
+                        .saturating_add(img.scroll_offset())
+                        .saturating_sub(img.y_offset()),
                 );
 
                 let inner_area = Rect::new(
