@@ -1,39 +1,41 @@
+WHITESPACE_S = _{ " " | "\t" }
+
 // Characters
-alt_char       = _{ (!(NEWLINE | " " | "[" | "]") ~ ANY)+ }
-b_char         = _{ (!(NEWLINE | comment | " " | "**") ~ ANY)+ }
-c_char         = _{ (!(NEWLINE | " " | "`") ~ ANY)+ }
+alt_char       = _{ (!(NEWLINE | WHITESPACE_S | "[" | "]") ~ ANY)+ }
+b_char         = _{ (!(NEWLINE | comment | WHITESPACE_S | "**") ~ ANY)+ }
+c_char         = _{ (!(NEWLINE | WHITESPACE_S | "`") ~ ANY)+ }
 c_line_char    = _{ (!(NEWLINE | "```") ~ ANY)+ }
 comment_char   = _{ (!(NEWLINE | "-->") ~ ANY)+ }
 digit          = _{ '0'..'9' }
-i_char         = _{ (!(NEWLINE | comment | " " | "_" | "*") ~ ANY)+ }
-indent         =  { " "* }
-latex_char     = _{ (!(NEWLINE | " " | "$") ~ ANY)+ }
-link_char      = _{ (!(NEWLINE | " " | "[" | "]" | "(" | ")") ~ ANY)+ }
-p_char         = _{ (!(NEWLINE | comment | code | bold_italic | italic | bold | strikethrough | latex | " ") ~ ANY)+ }
-s_char         = _{ (!(NEWLINE | comment | " " | "~~") ~ ANY)+ }
-t_char         = _{ (!(NEWLINE | comment | code | bold_italic | italic | bold | strikethrough | latex | " " | "|") ~ ANY)+ }
-wiki_link_char = _{ (!(NEWLINE | " " | "|" | "[[" | "]]") ~ ANY)+ }
+i_char         = _{ (!(NEWLINE | comment | WHITESPACE_S | "_" | "*") ~ ANY)+ }
+indent         =  { WHITESPACE_S* }
+latex_char     = _{ (!(NEWLINE | WHITESPACE_S | "$") ~ ANY)+ }
+link_char      = _{ (!(NEWLINE | WHITESPACE_S | "[" | "]" | "(" | ")") ~ ANY)+ }
+p_char         = _{ (!(NEWLINE | comment | code | bold_italic | italic | bold | strikethrough | latex | WHITESPACE_S) ~ ANY)+ }
+s_char         = _{ (!(NEWLINE | comment | WHITESPACE_S | "~~") ~ ANY)+ }
+t_char         = _{ (!(NEWLINE | comment | code | bold_italic | italic | bold | strikethrough | latex | WHITESPACE_S | "|") ~ ANY)+ }
+wiki_link_char = _{ (!(NEWLINE | WHITESPACE_S | "|" | "[[" | "]]") ~ ANY)+ }
 
 // Words
 word               =  {
-    !(forbidden_sentence_prefix | latex | bold_italic | bold | italic | strikethrough | code | link) ~ NEWLINE? ~ " "* ~ p_char+
+    !(forbidden_sentence_prefix | latex | bold_italic | bold | italic | strikethrough | code | link) ~ NEWLINE? ~ WHITESPACE_S* ~ p_char+
 }
 t_word             =  {
-    !(forbidden_sentence_prefix | latex | bold_italic | bold | italic | strikethrough | code | link) ~ NEWLINE? ~ " "* ~ t_char+
+    !(forbidden_sentence_prefix | latex | bold_italic | bold | italic | strikethrough | code | link) ~ NEWLINE? ~ WHITESPACE_S* ~ t_char+
 }
-alt_word           = _{ " "* ~ alt_char+ }
-bold_italic_word   =  { " "* ~ b_char+ }
-bold_word          =  { " "* ~ b_char+ }
-code_word          =  { " "* ~ c_char+ }
-h_word             =  { p_char+ ~ " "? }
-italic_word        =  { " "* ~ i_char+ }
-latex_word         =  { latex_char+ ~ " "? }
+alt_word           = _{ WHITESPACE_S* ~ alt_char+ }
+bold_italic_word   =  { WHITESPACE_S* ~ b_char+ }
+bold_word          =  { WHITESPACE_S* ~ b_char+ }
+code_word          =  { WHITESPACE_S* ~ c_char+ }
+h_word             =  { p_char+ ~ WHITESPACE_S? }
+italic_word        =  { WHITESPACE_S* ~ i_char+ }
+latex_word         =  { latex_char+ ~ WHITESPACE_S? }
 link_data          =  { link_char+ }
-link_word          =  { (link_char | " " | "(" | ")")+ }
-strikethrough_word =  { " "* ~ s_char+ }
+link_word          =  { (link_char | WHITESPACE_S | "(" | ")")+ }
+strikethrough_word =  { WHITESPACE_S* ~ s_char+ }
 wiki_link_alone    =  { wiki_link_char+ }
 wiki_link_data     =  { wiki_link_char+ }
-wiki_link_word     =  { (link_char | " ")+ }
+wiki_link_word     =  { (link_char | WHITESPACE_S)+ }
 
 // Prefixes
 task_open         =  { "- [ ] " }
@@ -42,54 +44,54 @@ task_prefix       = _{ task_open | task_complete }
 quote_prefix      = _{ ">" }
 code_block_prefix =  { "```" }
 table_prefix      =  { "|" }
-list_prefix       =  { (" "* ~ "-") | (NUMBER+ ~ ". ") }
+list_prefix       =  { (WHITESPACE_S* ~ "-") | (NUMBER+ ~ ". ") }
 heading_prefix    =  { "#" }
 
 forbidden_sentence_prefix = {
-    NEWLINE ~ " "* ~ (task_prefix | quote_prefix | code_block_prefix | table_prefix | list_prefix | heading_prefix)
+    NEWLINE ~ WHITESPACE_S* ~ (task_prefix | quote_prefix | code_block_prefix | table_prefix | list_prefix | heading_prefix)
 }
 
 // Lines
-alt_text    = { " "* ~ alt_word+ }
-bold        = { NEWLINE? ~ " "* ~ !"\\" ~ "**" ~ (bold_word | (NEWLINE ~ (quote_prefix ~ " ")?))+ ~ "**" }
+alt_text    = { WHITESPACE_S* ~ alt_word+ }
+bold        = { NEWLINE? ~ WHITESPACE_S* ~ !"\\" ~ "**" ~ (bold_word | (NEWLINE ~ (quote_prefix ~ WHITESPACE_S)?))+ ~ "**" }
 bold_italic = {
-    (NEWLINE? ~ " "* ~ !"\\" ~ "***" ~ (bold_italic_word | (NEWLINE ~ (quote_prefix ~ " ")?))+ ~ "***")
-  | ((NEWLINE | " ") ~ " "* ~ !"\\" ~ "_**" ~ (bold_italic_word | (NEWLINE ~ (quote_prefix ~ " ")?))+ ~ "**_")
+    (NEWLINE? ~ WHITESPACE_S* ~ !"\\" ~ "***" ~ (bold_italic_word | (NEWLINE ~ (quote_prefix ~ WHITESPACE_S)?))+ ~ "***")
+  | ((NEWLINE | WHITESPACE_S) ~ WHITESPACE_S* ~ !"\\" ~ "_**" ~ (bold_italic_word | (NEWLINE ~ (quote_prefix ~ WHITESPACE_S)?))+ ~ "**_")
 }
 
-code                 =  { NEWLINE? ~ " "* ~ "`" ~ code_word+ ~ "`" }
-code_line            =  { NEWLINE ~ (c_line_char | " ")* }
-latex                =  { NEWLINE? ~ " "* ~ !"\\" ~ "$"+ ~ " "? ~ (latex_word | (NEWLINE ~ (quote_prefix ~ " ")?))+ ~ "$"+ }
-link                 =  { NEWLINE? ~ " "* ~ (link_line | wiki_link) }
+code                 =  { NEWLINE? ~ WHITESPACE_S* ~ "`" ~ code_word+ ~ "`" }
+code_line            =  { NEWLINE ~ (c_line_char | WHITESPACE_S)* }
+latex                =  { NEWLINE? ~ WHITESPACE_S* ~ !"\\" ~ "$"+ ~ WHITESPACE_S? ~ (latex_word | (NEWLINE ~ (quote_prefix ~ WHITESPACE_S)?))+ ~ "$"+ }
+link                 =  { NEWLINE? ~ WHITESPACE_S* ~ (link_line | wiki_link) }
 link_line            = _{ "[" ~ link_word+ ~ "]" ~ "(" ~ link_data+ ~ ")" }
 normal               = _{ word+ }
 o_list_counter       =  { digit+ ~ ". " }
 programming_language =  { ASCII_ALPHA+ }
-strikethrough        =  { NEWLINE? ~ " "* ~ !"\\" ~ "~~" ~ (strikethrough_word | (NEWLINE ~ (quote_prefix ~ " ")?))+ ~ "~~" }
+strikethrough        =  { NEWLINE? ~ WHITESPACE_S* ~ !"\\" ~ "~~" ~ (strikethrough_word | (NEWLINE ~ (quote_prefix ~ WHITESPACE_S)?))+ ~ "~~" }
 t_normal             = _{ t_word+ }
 wiki_link            = _{ ("[[" ~ wiki_link_alone+ ~ "]]") | ("[[" ~ wiki_link_data+ ~ "|" ~ wiki_link_word+ ~ "]]") }
 
 italic = {
-    (NEWLINE? ~ " "* ~ !"\\" ~ "*" ~ (italic_word | (NEWLINE ~ (quote_prefix ~ " ")?))+ ~ "*")
-  | ((NEWLINE | " ") ~ " "* ~ !"\\" ~ "_" ~ (italic_word | (NEWLINE ~ (quote_prefix ~ " ")?))+ ~ "_")
+    (NEWLINE? ~ WHITESPACE_S* ~ !"\\" ~ "*" ~ (italic_word | (NEWLINE ~ (quote_prefix ~ WHITESPACE_S)?))+ ~ "*")
+  | ((NEWLINE | WHITESPACE_S) ~ WHITESPACE_S* ~ !"\\" ~ "_" ~ (italic_word | (NEWLINE ~ (quote_prefix ~ WHITESPACE_S)?))+ ~ "_")
 }
 
 sentence   = _{ (latex | code | link | bold_italic | italic | bold | strikethrough | normal+)+ }
 t_sentence = _{ (!"|" ~ (latex | code | link | italic | bold | strikethrough | t_normal))+ }
 
-table_cell      = { "|" ~ " "* ~ t_sentence+ ~ " "* ~ ("|" ~ " "* ~ NEWLINE)? }
-table_seperator = { ("|"? ~ (" " | ":")? ~ "-"+ ~ (" " | ":")? ~ "|") }
+table_cell      = { "|" ~ WHITESPACE_S* ~ t_sentence+ ~ WHITESPACE_S* ~ ("|" ~ " "* ~ NEWLINE)? }
+table_seperator = { ("|"? ~ (WHITESPACE_S | ":")? ~ "-"+ ~ (WHITESPACE_S | ":")? ~ "|") }
 
-u_list = { indent ~ ("-" | "*") ~ " " ~ sentence+ }
+u_list = { indent ~ ("-" | "*") ~ WHITESPACE_S ~ sentence+ }
 o_list = { indent ~ o_list_counter ~ sentence+ }
 
 // Headings
-h1 = { "# " ~ (h_word | " ")+ }
-h2 = { "## " ~ (h_word | " ")+ }
-h3 = { "### " ~ (h_word | " ")+ }
-h4 = { "#### " ~ (h_word | " ")+ }
-h5 = { "##### " ~ (h_word | " ")+ }
-h6 = { "###### " ~ (h_word | " ")+ }
+h1 = { "# " ~ (h_word | WHITESPACE_S)+ }
+h2 = { "## " ~ (h_word | WHITESPACE_S)+ }
+h3 = { "### " ~ (h_word | WHITESPACE_S)+ }
+h4 = { "#### " ~ (h_word | WHITESPACE_S)+ }
+h5 = { "##### " ~ (h_word | WHITESPACE_S)+ }
+h6 = { "###### " ~ (h_word | WHITESPACE_S)+ }
 
 // Quote markings
 important = { ^"[!important]" }
@@ -98,7 +100,7 @@ tip       = { ^"[!tip]" }
 warning   = { ^"[!warning]" }
 caution   = { ^"[!caution]" }
 
-quote_marking = _{ " "* ~ (important | note | tip | warning | caution) }
+quote_marking = _{ WHITESPACE_S* ~ (important | note | tip | warning | caution) }
 
 // Blocks
 heading        = { (h1 | h2 | h3 | h4 | h5 | h6) }
@@ -106,7 +108,7 @@ list_container = { (NEWLINE? ~ !comment ~ (u_list | o_list))+ }
 paragraph      = { sentence+ }
 code_block     = { "```" ~ programming_language? ~ code_line+ ~ "```" }
 table          = { (NEWLINE? ~ (table_seperator | table_cell))+ }
-quote          = { (NEWLINE? ~ " "* ~ ">" ~ (quote_marking | sentence | " ")*)+ }
+quote          = { (NEWLINE? ~ WHITESPACE_S* ~ ">" ~ (quote_marking | sentence | WHITESPACE_S)*)+ }
 task           = { NEWLINE? ~ task_prefix ~ sentence }
 block_sep      = { NEWLINE }
 horizontal_sep = { NEWLINE? ~ "---" ~ "-"* }
@@ -115,5 +117,5 @@ image          = { NEWLINE? ~ "![" ~ alt_text ~ "](" ~ link_data+ ~ ")" }
 comment = _{ "<!--" ~ (NEWLINE | comment_char)+ ~ "-->" }
 
 txt = {
-    (horizontal_sep | image | task | comment | table | quote | list_container | code_block | heading | paragraph | block_sep | " ")+
+    (horizontal_sep | image | task | comment | table | quote | list_container | code_block | heading | paragraph | block_sep | WHITESPACE_S)+
 }
