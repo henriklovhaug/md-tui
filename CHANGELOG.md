@@ -1,6 +1,9 @@
 # Version 0.7.2
 
 - Images which was below viewport would crash the app when reaching it.
+- Improve parsing for quotes. It allows them to be indented. As with indented
+  paragraphs, this TUI does not respect indenting in for blocks other than
+  lists.
 
 # Version 0.7.1
 
