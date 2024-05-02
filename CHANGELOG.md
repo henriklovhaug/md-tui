@@ -4,6 +4,8 @@
 - Improve parsing for quotes. It allows them to be indented. As with indented
   paragraphs, this TUI does not respect indenting in for blocks other than
   lists.
+- Tabs are now transformed to 4 spaces in codeblocks. May be reversed when
+  proper rendering of tabs is configured.
 
 # Version 0.7.1
 
