@@ -53,27 +53,27 @@ forbidden_sentence_prefix = {
 
 // Lines
 alt_text    = { WHITESPACE_S* ~ alt_word+ }
-bold        = { NEWLINE? ~ WHITESPACE_S* ~ !"\\" ~ "**" ~ (bold_word | (NEWLINE ~ (quote_prefix ~ WHITESPACE_S)?))+ ~ "**" }
+bold        = { NEWLINE? ~ WHITESPACE_S* ~ !"\\" ~ "**" ~ (bold_word | (NEWLINE ~ quote_prefix?))+ ~ "**" }
 bold_italic = {
     (NEWLINE? ~ WHITESPACE_S* ~ !"\\" ~ "***" ~ (bold_italic_word | (NEWLINE ~ (quote_prefix ~ WHITESPACE_S)?))+ ~ "***")
-  | ((NEWLINE | WHITESPACE_S) ~ WHITESPACE_S* ~ !"\\" ~ "_**" ~ (bold_italic_word | (NEWLINE ~ (quote_prefix ~ WHITESPACE_S)?))+ ~ "**_")
+  | ((NEWLINE | WHITESPACE_S) ~ WHITESPACE_S* ~ !"\\" ~ "_**" ~ (bold_italic_word | (NEWLINE ~ quote_prefix?))+ ~ "**_")
 }
 
 code                 =  { NEWLINE? ~ WHITESPACE_S* ~ "`" ~ code_word+ ~ "`" }
 code_line            =  { NEWLINE ~ (c_line_char | WHITESPACE_S)* }
-latex                =  { NEWLINE? ~ WHITESPACE_S* ~ !"\\" ~ "$"+ ~ WHITESPACE_S? ~ (latex_word | (NEWLINE ~ (quote_prefix ~ WHITESPACE_S)?))+ ~ "$"+ }
+latex                =  { NEWLINE? ~ WHITESPACE_S* ~ !"\\" ~ "$"+ ~ WHITESPACE_S? ~ (latex_word | (NEWLINE ~ quote_prefix?))+ ~ "$"+ }
 link                 =  { NEWLINE? ~ WHITESPACE_S* ~ (link_line | wiki_link) }
 link_line            = _{ "[" ~ link_word+ ~ "]" ~ "(" ~ link_data+ ~ ")" }
 normal               = _{ word+ }
 o_list_counter       =  { digit+ ~ ". " }
 programming_language =  { ASCII_ALPHA+ }
-strikethrough        =  { NEWLINE? ~ WHITESPACE_S* ~ !"\\" ~ "~~" ~ (strikethrough_word | (NEWLINE ~ (quote_prefix ~ WHITESPACE_S)?))+ ~ "~~" }
+strikethrough        =  { NEWLINE? ~ WHITESPACE_S* ~ !"\\" ~ "~~" ~ (strikethrough_word | (NEWLINE ~ quote_prefix?))+ ~ "~~" }
 t_normal             = _{ t_word+ }
 wiki_link            = _{ ("[[" ~ wiki_link_alone+ ~ "]]") | ("[[" ~ wiki_link_data+ ~ "|" ~ wiki_link_word+ ~ "]]") }
 
 italic = {
-    (NEWLINE? ~ WHITESPACE_S* ~ !"\\" ~ "*" ~ (italic_word | (NEWLINE ~ (quote_prefix ~ WHITESPACE_S)?))+ ~ "*")
-  | ((NEWLINE | WHITESPACE_S) ~ WHITESPACE_S* ~ !"\\" ~ "_" ~ (italic_word | (NEWLINE ~ (quote_prefix ~ WHITESPACE_S)?))+ ~ "_")
+    (NEWLINE? ~ WHITESPACE_S* ~ !"\\" ~ "*" ~ (italic_word | (NEWLINE ~ quote_prefix?))+ ~ "*")
+  | ((NEWLINE | WHITESPACE_S) ~ WHITESPACE_S* ~ !"\\" ~ "_" ~ (italic_word | (NEWLINE ~ quote_prefix?))+ ~ "_")
 }
 
 sentence   = _{ (latex | code | link | bold_italic | italic | bold | strikethrough | normal+)+ }
@@ -108,7 +108,7 @@ list_container = { (NEWLINE? ~ !comment ~ (u_list | o_list))+ }
 paragraph      = { sentence+ }
 code_block     = { "```" ~ programming_language? ~ code_line+ ~ "```" }
 table          = { (NEWLINE? ~ (table_seperator | table_cell))+ }
-quote          = { (NEWLINE? ~ WHITESPACE_S* ~ ">" ~ (quote_marking | sentence | WHITESPACE_S)*)+ }
+quote          = { (NEWLINE? ~ WHITESPACE_S* ~ ">" ~ (quote_marking | sentence)*)+ }
 task           = { NEWLINE? ~ task_prefix ~ sentence }
 block_sep      = { NEWLINE }
 horizontal_sep = { NEWLINE? ~ "---" ~ "-"* }
