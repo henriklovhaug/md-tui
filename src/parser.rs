@@ -78,7 +78,7 @@ fn parse_component(parse_node: ParseNode) -> Component {
             let mut image = None;
             for node in leaf_nodes {
                 if node.kind() == MdParseEnum::AltText {
-                    alt_text = node.content().to_owned();
+                    node.content().clone_into(&mut alt_text);
                 } else if is_url(node.content()) {
                     let mut buf = Vec::new();
 

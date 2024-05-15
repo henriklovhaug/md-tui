@@ -244,7 +244,6 @@ impl ComponentRoot {
 }
 
 pub trait ComponentProps {
-    fn y_offset(&self) -> u16;
     fn height(&self) -> u16;
     fn set_y_offset(&mut self, y_offset: u16);
     fn set_scroll_offset(&mut self, scroll: u16);
@@ -263,13 +262,6 @@ impl From<TextComponent> for Component {
 }
 
 impl ComponentProps for Component {
-    fn y_offset(&self) -> u16 {
-        match self {
-            Component::TextComponent(comp) => comp.y_offset(),
-            Component::Image(comp) => comp.y_offset(),
-        }
-    }
-
     fn height(&self) -> u16 {
         match self {
             Component::TextComponent(comp) => comp.height(),

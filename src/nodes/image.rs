@@ -50,10 +50,6 @@ impl ImageComponent {
 }
 
 impl ComponentProps for ImageComponent {
-    fn y_offset(&self) -> u16 {
-        self.y_offset
-    }
-
     fn height(&self) -> u16 {
         self.height
     }
