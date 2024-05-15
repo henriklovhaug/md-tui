@@ -136,6 +136,15 @@ h6_fg_color = "lightred"
 MD-TUI currently supports `[text](url)`, `[[link]]`, and `[[link|Some title]]`
 type of links.
 
+## Neovim plugin
+
+This application also exists as a plugin for Neovim called
+[Preview](https://github.com/henriklovhaug/Preview.nvim).
+
+> [!NOTE]
+>
+> This version does not support images regardless of your terminal capabilities.
+
 ## Contributions
 
 Both PRs and issues are appreciated!
