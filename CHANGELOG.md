@@ -1,6 +1,7 @@
 # Version 0.7.3
 
 - Fix quote blocks word wrapping.
+- Add the arrow keys as aliases for HJKL (#103, by @cmrschwarz)
 
 # Version 0.7.2
 
