@@ -54,18 +54,18 @@ fn render_file_tree_help(expanded: bool, area: Rect, buf: &mut Buffer) {
     let header = Row::new(vec!["Key", "Action"]);
 
     let key_actions = [
-        Row::new(vec!["j", "Move down"]),
-        Row::new(vec!["k", "Move up"]),
-        Row::new(vec!["h", "Go to previous page"]),
-        Row::new(vec!["l", "Go to next page"]),
+        Row::new(vec!["j or <Down>", "Move down"]),
+        Row::new(vec!["k or <Up>", "Move up"]),
+        Row::new(vec!["h or <Left>", "Go to previous page"]),
+        Row::new(vec!["l or <Right>", "Go to next page"]),
         Row::new(vec!["g", "Move to top"]),
         Row::new(vec!["G", "Move to bottom"]),
         Row::new(vec!["/ or f", "Search"]),
-        Row::new(vec!["Enter", "Open file"]),
+        Row::new(vec!["<Enter>", "Open file"]),
         Row::new(vec!["q", "Quit"]),
     ];
 
-    let widths = [10, 20];
+    let widths = [12, 20];
 
     let table = Table::new(key_actions, widths).header(header.fg(CONFIG.table_header_fg_color));
     table.render(area, buf);
@@ -81,11 +81,11 @@ fn render_markdown_help(expandend: bool, area: Rect, buf: &mut Buffer) {
     let header = Row::new(vec!["Key", "Action"]);
 
     let key_actions = [
-        Row::new(vec!["j", "Move down"]),
-        Row::new(vec!["k", "Move up"]),
+        Row::new(vec!["j or <Down>", "Move down"]),
+        Row::new(vec!["k or <Up>", "Move up"]),
         Row::new(vec!["d", "Move half page down"]),
-        Row::new(vec!["h", "Move full page up"]),
-        Row::new(vec!["l", "Move full page down"]),
+        Row::new(vec!["h or <Left>", "Move full page up"]),
+        Row::new(vec!["l or <Right>", "Move full page down"]),
         Row::new(vec!["u", "Move half page up"]),
         Row::new(vec!["G", "Move to bottom"]),
         Row::new(vec!["g", "Move to top"]),
@@ -93,11 +93,11 @@ fn render_markdown_help(expandend: bool, area: Rect, buf: &mut Buffer) {
         Row::new(vec!["b", "Go back to previous file"]),
         Row::new(vec!["t", "Toggle file tree"]),
         Row::new(vec!["s", "Enter select mode"]),
-        Row::new(vec!["Enter", "Open link/file"]),
+        Row::new(vec!["<Enter>", "Open link/file"]),
         Row::new(vec!["q", "Quit"]),
     ];
 
-    let widths = [10, 25];
+    let widths = [12, 25];
 
     let table = Table::new(key_actions, widths).header(header.fg(CONFIG.table_header_fg_color));
 
