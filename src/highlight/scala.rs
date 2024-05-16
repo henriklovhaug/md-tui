@@ -1,5 +1,5 @@
-use tree_sitter_scala::language;
 use tree_sitter_highlight::{HighlightConfiguration, HighlightEvent, Highlighter};
+use tree_sitter_scala::language;
 
 use crate::highlight::HIGHLIGHT_NAMES;
 
@@ -8,12 +8,13 @@ pub fn highlight_scala(lines: &[u8]) -> Result<Vec<HighlightEvent>, String> {
     let language = language();
 
     let mut scala_config = HighlightConfiguration::new(
-        language, 
-        "scala", 
-        tree_sitter_scala::HIGHLIGHTS_QUERY, 
-        "", 
-        ""
-    ).unwrap();
+        language,
+        "scala",
+        tree_sitter_scala::HIGHLIGHTS_QUERY,
+        "",
+        "",
+    )
+    .unwrap();
 
     scala_config.configure(&HIGHLIGHT_NAMES);
 
