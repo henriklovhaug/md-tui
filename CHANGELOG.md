@@ -2,6 +2,7 @@
 
 - Fix quote blocks word wrapping.
 - Add the arrow keys as aliases for HJKL (#103, by @cmrschwarz)
+- Add Scala syntax highlighting (#117, by @sierikov)
 
 # Version 0.7.2
 
