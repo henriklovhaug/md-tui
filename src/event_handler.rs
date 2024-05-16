@@ -78,19 +78,19 @@ pub fn keyboard_mode_file_tree(
             _ => {}
         },
         Boxes::None => match key {
-            KeyCode::Char('j') => {
+            KeyCode::Char('j') | KeyCode::Down => {
                 file_tree.next(height);
             }
 
-            KeyCode::Char('k') => {
+            KeyCode::Char('k') | KeyCode::Up => {
                 file_tree.previous(height);
             }
 
-            KeyCode::Char('l') => {
+            KeyCode::Char('l') | KeyCode::Right => {
                 file_tree.next_page(height);
             }
 
-            KeyCode::Char('h') => {
+            KeyCode::Char('h') | KeyCode::Left => {
                 file_tree.previous_page(height);
             }
 
@@ -235,7 +235,7 @@ fn keyboard_mode_view(
             _ => {}
         },
         Boxes::None => match key {
-            KeyCode::Char('j') => {
+            KeyCode::Char('j') | KeyCode::Down => {
                 if app.selected {
                     app.select_index = cmp::min(app.select_index + 1, markdown.num_links() - 1);
                     app.vertical_scroll = if let Ok(scroll) = markdown.select(app.select_index) {
@@ -251,7 +251,7 @@ fn keyboard_mode_view(
                     );
                 }
             }
-            KeyCode::Char('k') => {
+            KeyCode::Char('k') | KeyCode::Up => {
                 if app.selected {
                     app.select_index = app.select_index.saturating_sub(1);
                     app.vertical_scroll = if let Ok(scroll) = markdown.select(app.select_index) {
@@ -282,14 +282,14 @@ fn keyboard_mode_view(
                 app.vertical_scroll = app.vertical_scroll.saturating_sub(height / 2);
             }
 
-            KeyCode::Char('l') => {
+            KeyCode::Char('l') | KeyCode::Right => {
                 app.vertical_scroll = cmp::min(
                     app.vertical_scroll + height,
                     markdown.height().saturating_sub(height / 2),
                 );
             }
 
-            KeyCode::Char('h') | KeyCode::Char('K') => {
+            KeyCode::Char('h') | KeyCode::Left | KeyCode::Char('K') => {
                 if !app.selected {
                     app.vertical_scroll = app.vertical_scroll.saturating_sub(height);
                 } else {

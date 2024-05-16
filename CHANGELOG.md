@@ -1,6 +1,8 @@
 # Version 0.7.3
 
 - Fix quote blocks word wrapping.
+- Add the arrow keys as aliases for HJKL (#103, by @cmrschwarz)
+- (#106) `MDT` now allows text part of link to cross multiple lines. 
 
 # Version 0.7.2
 

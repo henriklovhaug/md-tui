@@ -10,6 +10,7 @@
   - [Syntax highlighting](#syntax-highlighting)
   - [Configuration](#configuration)
   - [Links](#links)
+  - [Neovim plugin](#neovim-plugin)
   - [Contributions](#contributions)
 
 <!--toc:end-->
@@ -25,7 +26,7 @@ terminal support images, they will render.
 
 Using cargo: `cargo install md-tui --locked`
 
-Using AUR: `yay -S md-tui-bin`
+On Arch Linux: `pacman -S md-tui`
 
 Prebuilt binaries with install script can be found on the release page.
 
@@ -42,24 +43,24 @@ _file tree_.
 
 ## Key binds
 
-| Key        | Action                                                                 |
-| ---------- | ---------------------------------------------------------------------- |
-| `j`        | Scroll down                                                            |
-| `k`        | Scroll up                                                              |
-| `l`        | Scroll one page down                                                   |
-| `h`        | Scroll one page up                                                     |
-| `f` or `/` | Search                                                                 |
-| `n` or `N` | Jump to next or previous search result                                 |
-| `s` or `S` | Enter select link mode. Different selection strategy.                  |
-| `Enter`    | Select. Depending on which mode it can: open file, select link, search |
-| `Esc`      | Go back to _normal_ mode                                               |
-| `t`        | Go back to files                                                       |
-| `b`        | Go back to previous file (file tree if no previous file)               |
-| `g`        | Go to top of file                                                      |
-| `G`        | Go to bottom of the file                                               |
-| `d`        | Go down half a page                                                    |
-| `u`        | Go up half a page                                                      |
-| `q`        | Quit the application                                                   |
+| Key              | Action                                                                 |
+| ---------------- | ---------------------------------------------------------------------- |
+| `j` or `<Down>`  | Scroll down                                                            |
+| `k` or `<Up>`    | Scroll up                                                              |
+| `l` or `<Left>`  | Scroll one page down                                                   |
+| `h` or `<Right>` | Scroll one page up                                                     |
+| `f` or `/`       | Search                                                                 |
+| `n` or `N`       | Jump to next or previous search result                                 |
+| `s` or `S`       | Enter select link mode. Different selection strategy.                  |
+| `<Enter>`        | Select. Depending on which mode it can: open file, select link, search |
+| `Esc`            | Go back to _normal_ mode                                               |
+| `t`              | Go back to files                                                       |
+| `b`              | Go back to previous file (file tree if no previous file)               |
+| `g`              | Go to top of file                                                      |
+| `G`              | Go to bottom of the file                                               |
+| `d`              | Go down half a page                                                    |
+| `u`              | Go up half a page                                                      |
+| `q`              | Quit the application                                                   |
 
 ## Syntax highlighting
 
