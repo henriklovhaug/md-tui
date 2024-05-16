@@ -78,6 +78,7 @@ languages:
 - Ocaml
 - Python
 - Rust
+- Scala
 
 ## Configuration
 
