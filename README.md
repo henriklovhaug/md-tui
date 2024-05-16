@@ -26,7 +26,7 @@ terminal support images, they will render.
 
 Using cargo: `cargo install md-tui --locked`
 
-Using AUR: `yay -S md-tui-bin`
+On Arch Linux: `pacman -S md-tui`
 
 Prebuilt binaries with install script can be found on the release page.
 
