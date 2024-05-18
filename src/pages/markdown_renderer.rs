@@ -422,7 +422,7 @@ fn render_table(
         Clipping::None => (),
     }
 
-    let table = Table::new(rows, &widths)
+    let table = Table::new(rows, widths)
         .header(
             header.style(
                 Style::default()
