@@ -340,8 +340,8 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
         }
     } else {
         Rect {
-            y: size.height - 17,
-            height: 16,
+            y: size.height - 19,
+            height: 18,
             ..area
         }
     };
@@ -352,8 +352,8 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
     let area = if app.help_box.expanded() {
         Rect {
             x: 4,
-            y: size.height - 16,
-            height: 14,
+            y: size.height - 18,
+            height: 16,
             width: app.width() - 5,
         }
     } else {
