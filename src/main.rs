@@ -1,5 +1,5 @@
 use std::{
-    cmp,
+    cmp, env,
     error::Error,
     fs::read_to_string,
     io, panic,
@@ -8,6 +8,7 @@ use std::{
 };
 
 use crossterm::{
+    cursor,
     event::{self, DisableMouseCapture, EnableMouseCapture, Event},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
@@ -222,6 +223,11 @@ fn run_app<B: Backend>(
                         return Ok(());
                     }
                     KeyBoardAction::Continue => {}
+                    KeyBoardAction::Edit => {
+                        terminal.draw(|f| {
+                            open_editor(f, &mut app, markdown.file_name());
+                        })?;
+                    }
                 }
             }
         }
@@ -334,8 +340,8 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
         }
     } else {
         Rect {
-            y: size.height - 17,
-            height: 16,
+            y: size.height - 19,
+            height: 18,
             ..area
         }
     };
@@ -346,8 +352,8 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
     let area = if app.help_box.expanded() {
         Rect {
             x: 4,
-            y: size.height - 16,
-            height: 14,
+            y: size.height - 18,
+            height: 16,
             width: app.width() - 5,
         }
     } else {
@@ -385,4 +391,41 @@ fn render_loading(f: &mut Frame, _app: &App) {
     let page = Paragraph::new(LOADING_TEXT);
 
     f.render_widget(page, area);
+}
+
+fn open_editor(f: &mut Frame, app: &mut App, file_name: Option<&str>) {
+    let editor = if let Ok(editor) = env::var("EDITOR") {
+        editor
+    } else {
+        app.error_box
+            .set_message("No editor found. Please set the EDITOR environment variable".to_owned());
+        app.boxes = Boxes::Error;
+        return;
+    };
+
+    let file_name = if let Some(file_name) = file_name {
+        file_name
+    } else {
+        app.error_box
+            .set_message("No file found to open in editor".to_owned());
+        app.boxes = Boxes::Error;
+        return;
+    };
+
+    disable_raw_mode().unwrap();
+    execute!(io::stdout(), LeaveAlternateScreen, DisableMouseCapture).unwrap();
+    execute!(io::stdout(), cursor::Show).unwrap();
+
+    let _ = std::process::Command::new(editor)
+        .arg(file_name)
+        .spawn()
+        .expect("Failed to open editor")
+        .wait();
+
+    enable_raw_mode().expect("Failed to enable raw mode");
+    let mut stdout = io::stdout();
+    execute!(stdout, EnterAlternateScreen, EnableMouseCapture).unwrap();
+
+    app.boxes = Boxes::None;
+    f.render_widget(Clear, f.size());
 }

@@ -1,3 +1,7 @@
+# Version 0.7.4
+
+- (#104) Files can now be opened in `$EDITOR` from `MDT`.
+
 # Version 0.7.3
 
 - Fix quote blocks word wrapping.
