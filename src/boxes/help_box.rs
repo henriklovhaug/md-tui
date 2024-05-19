@@ -54,14 +54,14 @@ fn render_file_tree_help(expanded: bool, area: Rect, buf: &mut Buffer) {
     let header = Row::new(vec!["Key", "Action"]);
 
     let key_actions = [
-        Row::new(vec!["j or <Down>", "Move down"]),
-        Row::new(vec!["k or <Up>", "Move up"]),
-        Row::new(vec!["h or <Left>", "Go to previous page"]),
-        Row::new(vec!["l or <Right>", "Go to next page"]),
+        Row::new(vec!["j or \u{2193}", "Move down"]),
+        Row::new(vec!["k or \u{2191}", "Move up"]),
+        Row::new(vec!["h or \u{2190}", "Go to previous page"]),
+        Row::new(vec!["l or \u{2192}", "Go to next page"]),
         Row::new(vec!["g", "Move to top"]),
         Row::new(vec!["G", "Move to bottom"]),
         Row::new(vec!["/ or f", "Search"]),
-        Row::new(vec!["<Enter>", "Open file"]),
+        Row::new(vec!["\u{21b5}", "Open file"]),
         Row::new(vec!["q", "Quit"]),
     ];
 
@@ -81,11 +81,11 @@ fn render_markdown_help(expandend: bool, area: Rect, buf: &mut Buffer) {
     let header = Row::new(vec!["Key", "Action"]);
 
     let key_actions = [
-        Row::new(vec!["j or <Down>", "Move down"]),
-        Row::new(vec!["k or <Up>", "Move up"]),
+        Row::new(vec!["j or \u{2193}", "Move down"]),
+        Row::new(vec!["k or \u{2191}", "Move up"]),
+        Row::new(vec!["l or \u{2192}", "Move full page down"]),
+        Row::new(vec!["h or \u{2190}", "Move full page up"]),
         Row::new(vec!["d", "Move half page down"]),
-        Row::new(vec!["h or <Left>", "Move full page up"]),
-        Row::new(vec!["l or <Right>", "Move full page down"]),
         Row::new(vec!["u", "Move half page up"]),
         Row::new(vec!["G", "Move to bottom"]),
         Row::new(vec!["g", "Move to top"]),
@@ -93,7 +93,7 @@ fn render_markdown_help(expandend: bool, area: Rect, buf: &mut Buffer) {
         Row::new(vec!["b", "Go back to previous file"]),
         Row::new(vec!["t", "Toggle file tree"]),
         Row::new(vec!["s", "Enter select mode"]),
-        Row::new(vec!["<Enter>", "Open link/file"]),
+        Row::new(vec!["\u{21b5}", "Open link/file"]),
         Row::new(vec!["e", "Edit file"]),
         Row::new(vec!["q", "Quit"]),
     ];
