@@ -1,6 +1,7 @@
 # Version 0.7.4
 
 - (#104) Files can now be opened in `$EDITOR` from `MDT`.
+- (#110) Add a nix flake.
 
 # Version 0.7.3
 
