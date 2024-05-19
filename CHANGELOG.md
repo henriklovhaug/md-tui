@@ -1,7 +1,15 @@
+# Version 0.7.4
+
+- (#104) Files can now be opened in `$EDITOR` from `MDT`.
+
 # Version 0.7.3
 
 - Fix quote blocks word wrapping.
 - Add the arrow keys as aliases for HJKL (#103, by @cmrschwarz)
+- Add Scala syntax highlighting (#117, by @sierikov)
+- (#106) `MDT` now allows text part of link to cross multiple lines.
+- Allow arbitrary programming language in codeblock. Does not mean it will get
+  highlighted.
 
 # Version 0.7.2
 

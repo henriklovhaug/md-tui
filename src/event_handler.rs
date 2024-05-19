@@ -12,6 +12,7 @@ use crate::{
 
 pub enum KeyBoardAction {
     Continue,
+    Edit,
     Exit,
 }
 
@@ -410,6 +411,8 @@ fn keyboard_mode_view(
                     );
                 }
             }
+
+            KeyCode::Char('e') => return KeyBoardAction::Edit,
 
             KeyCode::Esc => {
                 app.selected = false;

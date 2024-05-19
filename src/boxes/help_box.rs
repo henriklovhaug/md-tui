@@ -94,6 +94,7 @@ fn render_markdown_help(expandend: bool, area: Rect, buf: &mut Buffer) {
         Row::new(vec!["t", "Toggle file tree"]),
         Row::new(vec!["s", "Enter select mode"]),
         Row::new(vec!["<Enter>", "Open link/file"]),
+        Row::new(vec!["e", "Edit file"]),
         Row::new(vec!["q", "Quit"]),
     ];
 

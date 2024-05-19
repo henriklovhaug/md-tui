@@ -26,7 +26,7 @@ terminal support images, they will render.
 
 Using cargo: `cargo install md-tui --locked`
 
-Using AUR: `yay -S md-tui-bin`
+On Arch Linux: `pacman -S md-tui`
 
 Prebuilt binaries with install script can be found on the release page.
 
@@ -60,6 +60,7 @@ _file tree_.
 | `G`              | Go to bottom of the file                                               |
 | `d`              | Go down half a page                                                    |
 | `u`              | Go up half a page                                                      |
+| `e`              | Edit file in `$EDITOR`                                                 |
 | `q`              | Quit the application                                                   |
 
 ## Syntax highlighting
@@ -78,6 +79,7 @@ languages:
 - Ocaml
 - Python
 - Rust
+- Scala
 
 ## Configuration
 
@@ -88,7 +90,7 @@ will not remove it, but leave it as its default. To remove colors, set it to
 
 ```toml
 # General settings
-width = 80
+width = 100
 
 # Inline styling
 bold_color = "reset"

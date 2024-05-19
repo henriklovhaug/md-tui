@@ -4,7 +4,7 @@ use tree_sitter_highlight::HighlightEvent;
 use self::{
     c::highlight_c, cpp::highlight_cpp, elixir::highlight_elixir, go::highlight_go,
     java::highlight_java, javascript::highlight_javascript, json::highlight_json,
-    lua::highlight_lua, python::highlight_python, rust::highlight_rust,
+    lua::highlight_lua, python::highlight_python, rust::highlight_rust, scala::highlight_scala,
 };
 
 mod bash;
@@ -19,6 +19,7 @@ mod lua;
 mod ocaml;
 mod python;
 mod rust;
+mod scala;
 
 static HIGHLIGHT_NAMES: [&str; 18] = [
     "attribute",
@@ -81,6 +82,7 @@ pub fn highlight_code(language: &str, lines: &[u8]) -> HighlightInfo {
         "ocaml" => HighlightInfo::Highlighted(ocaml::highlight_ocaml(lines).unwrap()),
         "python" => HighlightInfo::Highlighted(highlight_python(lines).unwrap()),
         "rust" => HighlightInfo::Highlighted(highlight_rust(lines).unwrap()),
+        "scala" => HighlightInfo::Highlighted(highlight_scala(lines).unwrap()),
         _ => HighlightInfo::Unhighlighted,
     }
 }
