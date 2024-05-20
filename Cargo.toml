@@ -58,6 +58,7 @@ tree-sitter-php = "0.22.5"
 tree-sitter-python = "0.21.0"
 tree-sitter-rust = "0.21.2"
 tree-sitter-scala = "0.21.0"
+tree-sitter-typescript = "0.21.1"
 ureq = "2.9.7"
 
 [build-dependencies]

@@ -85,6 +85,7 @@ languages:
 - Python
 - Rust
 - Scala
+- Typescript
 
 ## Configuration
 
