@@ -5,7 +5,7 @@
 - (#110) Add a Nix flake.
 - (#105 partially) More flexible table dash parsing.
 - Add highlighting for css, html, php, typescript.
-- (#105) Length is defined by longest cell in column.
+- (#105) Length is defined by longest cell in the column.
   - Cell wrapping is not implemented yet.
 - Inline code can be written with triple ticks, but it checks if it's a
   codeblock first.
