@@ -2,6 +2,8 @@
 
 - (#104) Files can now be opened in `$EDITOR` from `MDT`.
 - (#110) Add a Nix flake.
+- (#105 partially) More flexible table dash parsing.
+- Add highlighting for css, html, php.
 
 # Version 0.7.3
 
