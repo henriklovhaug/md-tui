@@ -28,7 +28,7 @@ Using cargo: `cargo install md-tui --locked`
 
 On Arch Linux: `pacman -S md-tui`
 
-For Nix users, there's also Nix flake. 
+For Nix users, there's also Nix flake.
 
 Prebuilt binaries with install script can be found on the release page.
 
@@ -72,13 +72,16 @@ languages:
 
 - Bash/sh
 - C/C++
+- Css
 - Elixir
 - Go
+- Html
 - Java
 - JavaScript
 - Json
 - Lua
 - Ocaml
+- PHP
 - Python
 - Rust
 - Scala
