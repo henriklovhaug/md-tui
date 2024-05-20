@@ -28,6 +28,8 @@ Using cargo: `cargo install md-tui --locked`
 
 On Arch Linux: `pacman -S md-tui`
 
+For Nix users, there's also Nix flake. 
+
 Prebuilt binaries with install script can be found on the release page.
 
 ### Requirements
