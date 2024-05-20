@@ -59,7 +59,7 @@ bold_italic = {
   | ((NEWLINE | WHITESPACE_S) ~ WHITESPACE_S* ~ !"\\" ~ "_**" ~ (bold_italic_word | (NEWLINE ~ quote_prefix?))+ ~ "**_")
 }
 
-code                 =  { NEWLINE? ~ WHITESPACE_S* ~ "`" ~ code_word+ ~ "`" }
+code                 =  { NEWLINE? ~ WHITESPACE_S* ~ ("`" ~ code_word+ ~ "`") | ("```" ~ code_word+ ~ "```")}
 code_line            =  { NEWLINE ~ (c_line_char | WHITESPACE_S)* }
 latex                =  { NEWLINE? ~ WHITESPACE_S* ~ !"\\" ~ "$"+ ~ WHITESPACE_S? ~ (latex_word | (NEWLINE ~ quote_prefix?))+ ~ "$"+ }
 link                 =  { NEWLINE? ~ WHITESPACE_S* ~ (link_line | wiki_link) }
@@ -80,7 +80,7 @@ sentence   = _{ (latex | code | link | bold_italic | italic | bold | strikethrou
 t_sentence = _{ (!"|" ~ (latex | code | link | italic | bold | strikethrough | t_normal))+ }
 
 table_cell      = { "|" ~ WHITESPACE_S* ~ t_sentence+ ~ WHITESPACE_S* ~ ("|" ~ " "* ~ NEWLINE)? }
-table_seperator = { ("|"? ~ (WHITESPACE_S | ":")? ~ "-"+ ~ (WHITESPACE_S | ":")? ~ "|") }
+table_seperator = { ("|"? ~ (WHITESPACE_S | ":")* ~ "-"+ ~ (WHITESPACE_S | ":")* ~ "|") }
 
 u_list = { indent ~ ("-" | "*") ~ WHITESPACE_S ~ sentence+ }
 o_list = { indent ~ o_list_counter ~ sentence+ }
