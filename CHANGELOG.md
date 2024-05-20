@@ -1,9 +1,14 @@
 # Version 0.7.4
 
 - (#104) Files can now be opened in `$EDITOR` from `MDT`.
+  - Tested with Neovim and Vim.
 - (#110) Add a Nix flake.
 - (#105 partially) More flexible table dash parsing.
 - Add highlighting for css, html, php.
+- (#105) Length is defined by longest cell in column.
+  - Cell wrapping is not implemented yet.
+- Inline code can be written with triple ticks, but it checks if it's a
+  codeblock first.
 
 # Version 0.7.3
 
