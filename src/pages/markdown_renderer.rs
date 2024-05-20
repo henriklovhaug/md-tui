@@ -375,9 +375,20 @@ fn render_table(
 
     let titles = content.chunks(column_count).next().unwrap().to_vec();
 
-    let widths = meta_info
-        .iter()
-        .map(|c| Constraint::Length(c.content().len() as u16))
+    let mut widths = vec![0; column_count];
+
+    content.chunks(column_count).for_each(|c| {
+        c.iter().enumerate().for_each(|(i, c)| {
+            let len = c.iter().map(|c| c.content().len()).sum::<usize>() + 1;
+            if len > widths[i] as usize {
+                widths[i] = len as u16;
+            }
+        });
+    });
+
+    let widths = widths
+        .into_iter()
+        .map(Constraint::Length)
         .collect::<Vec<_>>();
 
     let moved_content = content.chunks(column_count).skip(1).collect::<Vec<_>>();
