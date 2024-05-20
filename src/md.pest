@@ -59,7 +59,7 @@ bold_italic = {
   | ((NEWLINE | WHITESPACE_S) ~ WHITESPACE_S* ~ !"\\" ~ "_**" ~ (bold_italic_word | (NEWLINE ~ quote_prefix?))+ ~ "**_")
 }
 
-code                 =  { NEWLINE? ~ WHITESPACE_S* ~ "`" ~ code_word+ ~ "`" }
+code                 =  { NEWLINE? ~ WHITESPACE_S* ~ ("`" ~ code_word+ ~ "`") | ("```" ~ code_word+ ~ "```")}
 code_line            =  { NEWLINE ~ (c_line_char | WHITESPACE_S)* }
 latex                =  { NEWLINE? ~ WHITESPACE_S* ~ !"\\" ~ "$"+ ~ WHITESPACE_S? ~ (latex_word | (NEWLINE ~ quote_prefix?))+ ~ "$"+ }
 link                 =  { NEWLINE? ~ WHITESPACE_S* ~ (link_line | wiki_link) }
