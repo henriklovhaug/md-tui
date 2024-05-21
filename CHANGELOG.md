@@ -1,3 +1,8 @@
+# Version 0.7.5
+
+- (#122) Fixes crash when codeblocks contained characters longer than one byte
+  and the codeblock is supposed to be highlighted.
+
 # Version 0.7.4
 
 - (#104) Files can now be opened in `$EDITOR` from `MDT`.

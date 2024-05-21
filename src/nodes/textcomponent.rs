@@ -372,7 +372,7 @@ fn transform_codeblock(component: &mut TextComponent) {
                 } else {
                     let mut start = 0;
                     let mut end;
-                    for (i, c) in word.content().chars().enumerate() {
+                    for (i, c) in word.content().char_indices() {
                         if c == '\n' {
                             end = i;
                             let new_word =
