@@ -40,10 +40,7 @@ pub fn find_md_files() -> FileTree {
             } else if path.extension().unwrap_or_default() == "md" {
                 let (path_str, path_name) =
                     if let (Some(path_str), Some(path_name)) = (path.to_str(), path.file_name()) {
-                        (
-                            path_str,
-                            path_name.to_str().unwrap_or("UNKNOWN").to_string(),
-                        )
+                        (path_str, path_name.to_str().unwrap_or("UNKNOWN"))
                     } else {
                         continue;
                     };
@@ -55,7 +52,7 @@ pub fn find_md_files() -> FileTree {
                     continue;
                 }
 
-                tree.add_file(MdFile::new(path_str.to_string(), path_name));
+                tree.add_file(MdFile::new(path_str.to_string(), path_name.to_string()));
             }
         }
     }
