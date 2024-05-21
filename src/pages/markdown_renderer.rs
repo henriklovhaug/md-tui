@@ -34,11 +34,6 @@ enum Clipping {
 
 impl Widget for TextComponent {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        if self.y_offset().saturating_sub(self.scroll_offset()) > area.height
-            || self.scroll_offset() > self.y_offset() + self.height()
-        {
-            return;
-        }
         let kind = self.kind();
 
         let y = self.y_offset().saturating_sub(self.scroll_offset());

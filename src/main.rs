@@ -294,7 +294,15 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
 
     for child in markdown.children_mut() {
         match child {
-            Component::TextComponent(comp) => f.render_widget(comp.clone(), area),
+            Component::TextComponent(comp) => {
+                if comp.y_offset().saturating_sub(comp.scroll_offset()) >= area.height
+                    || comp.y_offset().saturating_sub(comp.scroll_offset()) + comp.height() == 0
+                {
+                    continue;
+                }
+
+                f.render_widget(comp.clone(), area)
+            }
             Component::Image(img) => {
                 if img.y_offset().saturating_sub(img.scroll_offset()) >= area.height
                     || img.y_offset().saturating_sub(img.scroll_offset()) + img.height() == 0
