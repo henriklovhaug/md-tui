@@ -2,6 +2,8 @@
 
 - (#122) Fixes crash when codeblocks contained characters longer than one byte
   and the codeblock is supposed to be highlighted.
+- Delay cloning text blocks until they are within viewport. Large improvement in
+  debug mode.
 
 # Version 0.7.4
 
