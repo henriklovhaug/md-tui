@@ -4,13 +4,13 @@ use strsim::damerau_levenshtein;
 use crate::{
     nodes::word::{Word, WordType},
     pages::file_explorer::{FileTree, MdFile},
-    util::CONFIG,
+    util::colors::COLOR_CONFIG,
 };
 
 pub fn find_md_files() -> FileTree {
     let mut ignored_files = Vec::new();
 
-    if CONFIG.gitignore {
+    if COLOR_CONFIG.gitignore {
         let gitignore = std::fs::read_to_string(".gitignore");
         if let Ok(gitignore) = gitignore {
             for line in gitignore.lines() {

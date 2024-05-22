@@ -9,6 +9,8 @@
   - [Key binds](#key-binds)
   - [Syntax highlighting](#syntax-highlighting)
   - [Configuration](#configuration)
+    - [Keyboard actions](#keyboard-actions)
+    - [Colors and misc](#colors-and-misc)
   - [Links](#links)
   - [Neovim plugin](#neovim-plugin)
   - [Contributions](#contributions)
@@ -45,23 +47,27 @@ _file tree_.
 
 ## Key binds
 
+These are the default settings. See [keyboard configuration](#keyboard-actions)
+for configuration options.
+
 | Key              | Action                                                                 |
 | ---------------- | ---------------------------------------------------------------------- |
 | `j` or `<Down>`  | Scroll down                                                            |
 | `k` or `<Up>`    | Scroll up                                                              |
-| `l` or `<Left>`  | Scroll one page down                                                   |
-| `h` or `<Right>` | Scroll one page up                                                     |
+| `h`              | Go down half a page                                                    |
+| `l`              | Go up half a page                                                      |
+| `d` or `<Left>`  | Scroll one page down                                                   |
+| `u` or `<Right>` | Scroll one page up                                                     |
 | `f` or `/`       | Search                                                                 |
 | `n` or `N`       | Jump to next or previous search result                                 |
 | `s` or `S`       | Enter select link mode. Different selection strategy.                  |
+| `K`              | Hover. Preview where a link is going without going there               |
 | `<Enter>`        | Select. Depending on which mode it can: open file, select link, search |
 | `Esc`            | Go back to _normal_ mode                                               |
 | `t`              | Go back to files                                                       |
 | `b`              | Go back to previous file (file tree if no previous file)               |
 | `g`              | Go to top of file                                                      |
 | `G`              | Go to bottom of the file                                               |
-| `d`              | Go down half a page                                                    |
-| `u`              | Go up half a page                                                      |
 | `e`              | Edit file in `$EDITOR`                                                 |
 | `q`              | Quit the application                                                   |
 
@@ -90,9 +96,50 @@ languages:
 ## Configuration
 
 The program checks for the file `~/.config/mdt/config.toml` at startup. The
-following parameters and their defaults are written below. Setting color to `""`
-will not remove it, but leave it as its default. To remove colors, set it to
-`reset`.
+following parameters and their defaults are written below.
+
+### Keyboard actions
+
+Some key actions are not configurable. Like the following:
+
+- Enter
+- Arrow keys
+- Escape
+- Question mark for help menu
+- 'q' to quit the application
+- '/' for search
+
+> If you override another default key, it's undefined behavior if that key does
+> not get reassigned.
+
+> Actions can only be assigned to single characters. Space, fn keys, ctrl+key,
+> backspace etc., will not take affect and the default will be in use.
+
+```toml
+# Keyboard actions
+up = 'k'
+down = 'j'
+page_up = 'u'
+page_down = 'd'
+half_page_down = 'l'
+half_page_up = 'h'
+top = 'g'
+bottom = 'G'
+search = 'f'
+search_next = 'n'
+search_previous = 'N'
+select_link = 's'
+select_link_alt = 'S' # Finds the link 2/3 up the page
+edit = 'e'
+hover = 'K'
+back = 'b'
+file_tree = 't'
+```
+
+### Colors and misc
+
+Setting color to `""` will not remove it, but leave it as its default. To remove
+colors, set it to `reset`.
 
 ```toml
 # General settings

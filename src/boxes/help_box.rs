@@ -6,7 +6,7 @@ use ratatui::{
     widgets::{Row, Table, Widget},
 };
 
-use crate::util::{Mode, CONFIG};
+use crate::util::{colors::COLOR_CONFIG, keys::KEY_CONFIG, Mode};
 
 #[derive(Debug, Clone, Copy, Default)]
 pub struct HelpBox {
@@ -54,20 +54,42 @@ fn render_file_tree_help(expanded: bool, area: Rect, buf: &mut Buffer) {
     let header = Row::new(vec!["Key", "Action"]);
 
     let key_actions = [
-        Row::new(vec!["j or \u{2193}", "Move down"]),
-        Row::new(vec!["k or \u{2191}", "Move up"]),
-        Row::new(vec!["h or \u{2190}", "Go to previous page"]),
-        Row::new(vec!["l or \u{2192}", "Go to next page"]),
-        Row::new(vec!["g", "Move to top"]),
-        Row::new(vec!["G", "Move to bottom"]),
-        Row::new(vec!["/ or f", "Search"]),
+        Row::new(vec![
+            format!("{} or \u{2193}", KEY_CONFIG.down),
+            "Move down".to_string(),
+        ]),
+        Row::new(vec![
+            format!("{} or \u{2191}", KEY_CONFIG.up),
+            "Move up".to_string(),
+        ]),
+        Row::new(vec![
+            format!("{} or \u{2190}", KEY_CONFIG.page_up),
+            "Go to previous page".to_string(),
+        ]),
+        Row::new(vec![
+            format!("{} or \u{2192}", KEY_CONFIG.page_down),
+            "Go to next page".to_string(),
+        ]),
+        Row::new(vec![
+            format!("{}", KEY_CONFIG.top),
+            "Move to first file".to_string(),
+        ]),
+        Row::new(vec![
+            format!("{}", KEY_CONFIG.bottom),
+            "Move to last file".to_string(),
+        ]),
+        Row::new(vec![
+            format!("/ or {}", KEY_CONFIG.search),
+            "Search".to_string(),
+        ]),
         Row::new(vec!["\u{21b5}", "Open file"]),
         Row::new(vec!["q", "Quit"]),
     ];
 
     let widths = [12, 20];
 
-    let table = Table::new(key_actions, widths).header(header.fg(CONFIG.table_header_fg_color));
+    let table =
+        Table::new(key_actions, widths).header(header.fg(COLOR_CONFIG.table_header_fg_color));
     table.render(area, buf);
 }
 
@@ -81,26 +103,66 @@ fn render_markdown_help(expandend: bool, area: Rect, buf: &mut Buffer) {
     let header = Row::new(vec!["Key", "Action"]);
 
     let key_actions = [
-        Row::new(vec!["j or \u{2193}", "Move down"]),
-        Row::new(vec!["k or \u{2191}", "Move up"]),
-        Row::new(vec!["l or \u{2192}", "Move full page down"]),
-        Row::new(vec!["h or \u{2190}", "Move full page up"]),
-        Row::new(vec!["d", "Move half page down"]),
-        Row::new(vec!["u", "Move half page up"]),
-        Row::new(vec!["G", "Move to bottom"]),
-        Row::new(vec!["g", "Move to top"]),
-        Row::new(vec!["/ or f", "Search"]),
-        Row::new(vec!["b", "Go back to previous file"]),
-        Row::new(vec!["t", "Toggle file tree"]),
-        Row::new(vec!["s", "Enter select mode"]),
+        Row::new(vec![
+            format!("{} or \u{2193}", KEY_CONFIG.down),
+            "Move down".to_string(),
+        ]),
+        Row::new(vec![
+            format!("{} or \u{2191}", KEY_CONFIG.up),
+            "Move up".to_string(),
+        ]),
+        Row::new(vec![
+            format!("{}", KEY_CONFIG.half_page_down),
+            "Move half page down".to_string(),
+        ]),
+        Row::new(vec![
+            format!("{}", KEY_CONFIG.half_page_up),
+            "Move half page up".to_string(),
+        ]),
+        Row::new(vec![
+            format!("{} or \u{2192}", KEY_CONFIG.page_down),
+            "Move full page down".to_string(),
+        ]),
+        Row::new(vec![
+            format!("{} or \u{2190}", KEY_CONFIG.page_up),
+            "Move full page up".to_string(),
+        ]),
+        Row::new(vec![
+            format!("{}", KEY_CONFIG.bottom),
+            "Move to bottom".to_string(),
+        ]),
+        Row::new(vec![
+            format!("{}", KEY_CONFIG.top),
+            "Move to top".to_string(),
+        ]),
+        Row::new(vec![
+            format!("/ or {}", KEY_CONFIG.search),
+            "Search".to_string(),
+        ]),
+        Row::new(vec![
+            format!("{}", KEY_CONFIG.back),
+            "Go back to previous file".to_string(),
+        ]),
+        Row::new(vec![
+            format!("{}", KEY_CONFIG.file_tree),
+            "To file tree".to_string(),
+        ]),
+        Row::new(vec![
+            format!("{}", KEY_CONFIG.select_link),
+            "Enter select mode".to_string(),
+        ]),
         Row::new(vec!["\u{21b5}", "Open link/file"]),
-        Row::new(vec!["e", "Edit file"]),
+        Row::new(vec![
+            format!("{}", KEY_CONFIG.edit),
+            "Edit file".to_string(),
+        ]),
         Row::new(vec!["q", "Quit"]),
     ];
 
     let widths = [12, 25];
 
-    let table = Table::new(key_actions, widths).header(header.fg(CONFIG.table_header_fg_color));
+    let table =
+        Table::new(key_actions, widths).header(header.fg(COLOR_CONFIG.table_header_fg_color));
 
     table.render(area, buf);
 }
