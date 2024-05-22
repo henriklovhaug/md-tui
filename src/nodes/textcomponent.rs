@@ -419,6 +419,7 @@ fn transform_list(component: &mut TextComponent, width: u16) {
     let mut zip_iter = indent_iter.zip(list_type_iter);
 
     let mut o_list_counter_stack = vec![0];
+    let mut max_stack_len = 1;
     let mut indent = 0;
     let mut extra_indent = 0;
     let mut tmp = indent;
@@ -432,6 +433,7 @@ fn transform_list(component: &mut TextComponent, width: u16) {
                     match tmp.cmp(&meta.content().len()) {
                         cmp::Ordering::Less => {
                             o_list_counter_stack.push(0);
+                            max_stack_len += 1;
                         }
                         cmp::Ordering::Greater => {
                             o_list_counter_stack.pop();
@@ -474,6 +476,76 @@ fn transform_list(component: &mut TextComponent, width: u16) {
     lines.push(line);
     // Remove empty lines
     lines.retain(|l| l.iter().any(|c| c.content() != ""));
+
+    // Find out if there are ordered indexes longer than 3 chars. F.ex. `1. ` is three chars, but `10. ` is four chars.
+    // To align the list on the same column, we need to find the longest index and add the difference to the shorter indexes.
+    let mut indent_correction = vec![0; max_stack_len];
+    let mut indent_index: u32 = 0;
+    let mut indent_len = 0;
+
+    for line in lines.iter() {
+        if !line[1]
+            .content()
+            .starts_with(['1', '2', '3', '4', '5', '6', '7', '8', '9'])
+        {
+            continue;
+        }
+
+        match indent_len.cmp(&line[0].content().len()) {
+            cmp::Ordering::Less => {
+                indent_index += 1;
+                indent_len = line[0].content().len();
+            }
+            cmp::Ordering::Greater => {
+                indent_index = indent_index.saturating_sub(1);
+                indent_len = line[0].content().len();
+            }
+            cmp::Ordering::Equal => (),
+        }
+
+        indent_correction[indent_index as usize] = cmp::max(
+            indent_correction[indent_index as usize],
+            line[1].content().len(),
+        );
+    }
+
+    // Finally, apply the indent correction to the list for each ordered index which is shorter
+    // than the longest index.
+
+    indent_index = 0;
+    indent_len = 0;
+
+    for line in lines.iter_mut() {
+        if line[1].content() == "• " {
+            continue;
+        }
+
+        let amount = if line[1]
+            .content()
+            .starts_with(['1', '2', '3', '4', '5', '6', '7', '8', '9'])
+            && line[1].content().ends_with(". ")
+        {
+            match indent_len.cmp(&line[0].content().len()) {
+                cmp::Ordering::Less => {
+                    indent_index += 1;
+                    indent_len = line[0].content().len();
+                }
+                cmp::Ordering::Greater => {
+                    indent_index = indent_index.saturating_sub(1);
+                    indent_len = line[0].content().len();
+                }
+                cmp::Ordering::Equal => (),
+            }
+            indent_correction[indent_index as usize].saturating_sub(line[1].content().len())
+                + line[0].content().len()
+        } else {
+            // -3 because that is the length of the shortest ordered index (1. )
+            indent_correction[indent_index as usize] - 3 + line[0].content().len()
+        };
+
+        line[0].set_content(" ".repeat(amount));
+    }
+
     component.height = lines.len() as u16;
     component.content = lines;
 }
