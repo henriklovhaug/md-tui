@@ -99,7 +99,7 @@ following parameters and their defaults are written below.
 
 ### Keyboard actions
 
-Some key actions are not configurable. Like the following
+Some key actions are not configurable. Like the following:
 
 - Enter
 - Arrow keys
@@ -108,13 +108,11 @@ Some key actions are not configurable. Like the following
 - 'q' to quit the application
 - '/' for search
 
-> [!NOTE]
->
 > If you override another default key, it's undefined behavior if that key does
 > not get reassigned.
->
+
 > Actions can only be assigned to single characters. Space, fn keys, ctrl+key,
-> backspace etc. will not take affect and the default will be in use.
+> backspace etc., will not take affect and the default will be in use.
 
 ```toml
 # Keyboard actions
