@@ -781,7 +781,7 @@ dependencies = [
 
 [[package]]
 name = "md-tui"
-version = "0.7.4"
+version = "0.8.0"
 dependencies = [
  "better-panic",
  "cc",

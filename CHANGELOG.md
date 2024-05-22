@@ -1,4 +1,4 @@
-# Version 0.7.5
+# Version 0.8.0
 
 - (#122) Fixes crash when codeblocks contained characters longer than one byte
   and the codeblock is supposed to be highlighted.
