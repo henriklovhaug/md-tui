@@ -4,6 +4,7 @@
   and the codeblock is supposed to be highlighted.
 - Delay cloning text blocks until they are within viewport. Large improvement in
   debug mode.
+- (#120) Fixes aligning of ordered list with indexes over 9.
 
 # Version 0.7.4
 
