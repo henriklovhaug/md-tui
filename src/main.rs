@@ -296,7 +296,7 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
         match child {
             Component::TextComponent(comp) => {
                 if comp.y_offset().saturating_sub(comp.scroll_offset()) >= area.height
-                    || comp.y_offset().saturating_sub(comp.scroll_offset()) + comp.height() == 0
+                    || (comp.y_offset() + comp.height()).saturating_sub(comp.scroll_offset()) == 0
                 {
                     continue;
                 }
@@ -305,7 +305,7 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
             }
             Component::Image(img) => {
                 if img.y_offset().saturating_sub(img.scroll_offset()) >= area.height
-                    || img.y_offset().saturating_sub(img.scroll_offset()) + img.height() == 0
+                    || (img.y_offset() + img.height()).saturating_sub(img.scroll_offset()) == 0
                 {
                     continue;
                 }
