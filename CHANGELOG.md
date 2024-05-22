@@ -5,7 +5,8 @@
 - Delay cloning text blocks until they are within viewport. Large improvement in
   debug mode.
 - (#120) Fixes aligning of ordered list with indexes over 9.
-- (#50) Add customizing keyboard inputs.
+- (#50) Add customizing keyboard inputs. (**BREAKING** Some default were
+  changed)
 
 # Version 0.7.4
 
