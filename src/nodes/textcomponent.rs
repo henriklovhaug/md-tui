@@ -514,9 +514,19 @@ fn transform_list(component: &mut TextComponent, width: u16) {
 
     indent_index = 0;
     indent_len = 0;
+    let mut unordered_list_skip = false; // Skip unordered list items. They are already aligned.
 
     for line in lines.iter_mut() {
-        if line[1].content() == "• " {
+        if line[1]
+            .content()
+            .starts_with(['1', '2', '3', '4', '5', '6', '7', '8', '9'])
+            && !line[1].content().ends_with(". ")
+        {
+            unordered_list_skip = false;
+        }
+
+        if line[1].content() == "• " || unordered_list_skip {
+            unordered_list_skip = true;
             continue;
         }
 
@@ -540,7 +550,7 @@ fn transform_list(component: &mut TextComponent, width: u16) {
                 + line[0].content().len()
         } else {
             // -3 because that is the length of the shortest ordered index (1. )
-            indent_correction[indent_index as usize] - 3 + line[0].content().len()
+            (indent_correction[indent_index as usize] + line[0].content().len()).saturating_sub(3)
         };
 
         line[0].set_content(" ".repeat(amount));
