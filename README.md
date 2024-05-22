@@ -54,13 +54,14 @@ for configuration options.
 | ---------------- | ---------------------------------------------------------------------- |
 | `j` or `<Down>`  | Scroll down                                                            |
 | `k` or `<Up>`    | Scroll up                                                              |
-| `d`              | Go down half a page                                                    |
-| `u`              | Go up half a page                                                      |
+| `h`              | Go down half a page                                                    |
+| `l`              | Go up half a page                                                      |
 | `d` or `<Left>`  | Scroll one page down                                                   |
 | `u` or `<Right>` | Scroll one page up                                                     |
 | `f` or `/`       | Search                                                                 |
 | `n` or `N`       | Jump to next or previous search result                                 |
 | `s` or `S`       | Enter select link mode. Different selection strategy.                  |
+| `K`              | Hover. Preview where a link is going without going there               |
 | `<Enter>`        | Select. Depending on which mode it can: open file, select link, search |
 | `Esc`            | Go back to _normal_ mode                                               |
 | `t`              | Go back to files                                                       |
