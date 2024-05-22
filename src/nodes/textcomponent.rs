@@ -539,6 +539,7 @@ fn transform_list(component: &mut TextComponent, width: u16) {
             indent_correction[indent_index as usize].saturating_sub(line[1].content().len())
                 + line[0].content().len()
         } else {
+            // -3 because that is the length of the shortest ordered index (1. )
             indent_correction[indent_index as usize] - 3 + line[0].content().len()
         };
 
