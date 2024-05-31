@@ -95,7 +95,9 @@ fn parse_component(parse_node: ParseNode) -> Component {
             }
 
             if let Some(img) = image.as_ref() {
-                let comp = ImageComponent::new(img.to_owned(), 20, alt_text.clone());
+                let height = img.height();
+
+                let comp = ImageComponent::new(img.to_owned(), height, alt_text.clone());
 
                 if let Some(comp) = comp {
                     Component::Image(comp)

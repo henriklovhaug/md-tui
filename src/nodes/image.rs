@@ -1,3 +1,5 @@
+use std::cmp;
+
 use image::{DynamicImage, Rgb};
 use ratatui_image::{picker::Picker, protocol::StatefulProtocol};
 
@@ -12,12 +14,16 @@ pub struct ImageComponent {
 }
 
 impl ImageComponent {
-    pub fn new<T: ToString>(image: DynamicImage, height: u16, alt_text: T) -> Option<Self> {
+    pub fn new<T: ToString>(image: DynamicImage, height: u32, alt_text: T) -> Option<Self> {
         let mut picker = Picker::from_termios().ok()?;
         picker.guess_protocol();
         picker.background_color = Some(Rgb::<u8>([0, 0, 0]));
 
         let image = picker.new_resize_protocol(image);
+
+        let (_, f_height) = picker.font_size;
+
+        let height = cmp::min(height / f_height as u32, 20) as u16;
 
         Some(Self {
             height,
