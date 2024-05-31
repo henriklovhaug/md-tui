@@ -128,8 +128,10 @@ bottom = 'G'
 search = 'f'
 search_next = 'n'
 search_previous = 'N'
+# This will search downwards until it finds one or select the last link in document.
 select_link = 's'
-select_link_alt = 'S' # Finds the link 2/3 up the page
+# Finds the link 2/3 up the page. It will search then for closest in both direction.
+select_link_alt = 'S'
 edit = 'e'
 hover = 'K'
 back = 'b'
