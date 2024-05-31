@@ -1,3 +1,8 @@
+# Version 0.8.1
+
+- (#113) Small images does not get the maximum space of 20 font heights, but the
+  space they occupy.
+
 # Version 0.8.0
 
 - (#122) Fixes crash when codeblocks contained characters longer than one byte
