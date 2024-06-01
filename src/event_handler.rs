@@ -171,6 +171,10 @@ pub fn keyboard_mode_file_tree(
                 file_tree.unselect();
                 file_tree.search(None);
             }
+
+            Action::Sort => {
+                file_tree.sort_name();
+            }
             _ => {}
         },
         Boxes::LinkPreview => {

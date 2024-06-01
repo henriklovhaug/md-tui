@@ -180,7 +180,6 @@ fn run_app<B: Backend>(
                                 }
                             }
                         }
-                        file_tree.sort_name();
                     }
                     render_file_tree(f, &app, file_tree.clone());
                 }
