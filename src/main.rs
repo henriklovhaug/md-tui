@@ -84,9 +84,7 @@ fn run_app<B: Backend>(
 ) -> io::Result<()> {
     let (f_tx, f_rx) = mpsc::channel::<FileTree>();
 
-    thread::spawn(move || loop {
-        find_md_files_and_send(f_tx.clone())
-    });
+    thread::spawn(move || find_md_files_and_send(f_tx.clone()));
 
     let mut last_tick = Instant::now();
 
