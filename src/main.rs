@@ -160,8 +160,6 @@ fn run_app<B: Backend>(
 
         markdown.set_scroll(app.vertical_scroll);
 
-        app.mode = Mode::FileTree;
-
         terminal.draw(|f| {
             match app.mode {
                 Mode::View => {
