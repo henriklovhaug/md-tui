@@ -1,4 +1,4 @@
-use std::collections::VecDeque;
+use std::{collections::VecDeque, sync::mpsc::Sender};
 
 use itertools::Itertools;
 use strsim::damerau_levenshtein;
@@ -19,6 +19,11 @@ fn add_to_gitingore(path: &str, ignored_files: &mut Vec<String>) {
             ignored_files.push(line.to_string());
         }
     }
+}
+
+pub fn find_md_files_and_send(tx: Sender<FileTree>) {
+    let tree = find_md_files();
+    tx.send(tree.finish()).unwrap();
 }
 
 pub fn find_md_files() -> FileTree {

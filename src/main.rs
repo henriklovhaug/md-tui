@@ -4,6 +4,7 @@ use std::{
     fs::read_to_string,
     io, panic,
     sync::mpsc,
+    thread,
     time::{Duration, Instant},
 };
 
@@ -26,7 +27,7 @@ use ratatui::{
     Frame, Terminal,
 };
 use ratatui_image::{FilterType, Resize, StatefulImage};
-use search::find_md_files;
+use search::find_md_files_and_send;
 use util::{destruct_terminal, App, Boxes, Mode};
 
 mod boxes;
@@ -91,11 +92,11 @@ fn run_app<B: Backend>(
     )
     .unwrap();
 
-    terminal.draw(|f| {
-        render_loading(f, &app);
-    })?;
+    let (f_tx, f_rx) = mpsc::channel::<FileTree>();
 
-    let mut file_tree = find_md_files();
+    thread::spawn(move || loop {
+        find_md_files_and_send(f_tx.clone())
+    });
 
     app.set_width(terminal.size()?.width);
     let mut markdown = parse_markdown(None, EMPTY_FILE, app.width() - 2);
@@ -111,9 +112,11 @@ fn run_app<B: Backend>(
             app.error_box
                 .set_message(format!("Could not open file {:?}", arg));
             app.boxes = Boxes::Error;
-            app.mode = Mode::FileTree;
+            app.mode = Mode::Loading;
         }
     }
+
+    let mut file_tree = FileTree::default();
 
     loop {
         let height = terminal.size()?.height;
@@ -166,7 +169,17 @@ fn run_app<B: Backend>(
                     render_markdown(f, &app, &mut markdown);
                 }
                 Mode::FileTree => {
+                    if !file_tree.loaded() {
+                        app.mode = Mode::Loading;
+                    }
                     render_file_tree(f, &app, file_tree.clone());
+                }
+                Mode::Loading => {
+                    render_loading(f, &app);
+                    if let Ok(e) = f_rx.try_recv() {
+                        file_tree = e;
+                        app.mode = Mode::FileTree;
+                    }
                 }
             };
             if app.boxes == Boxes::Search {

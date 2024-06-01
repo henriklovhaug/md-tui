@@ -19,6 +19,7 @@ pub mod keys;
 pub enum Mode {
     View,
     FileTree,
+    Loading,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -31,7 +32,7 @@ pub enum Boxes {
 
 impl Default for Mode {
     fn default() -> Self {
-        Self::FileTree
+        Self::Loading
     }
 }
 

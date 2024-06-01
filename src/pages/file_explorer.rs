@@ -75,6 +75,7 @@ pub struct FileTree {
     page: u32,
     list_state: ListState,
     search: Option<String>,
+    loaded: bool,
 }
 
 impl FileTree {
@@ -85,7 +86,18 @@ impl FileTree {
             list_state: ListState::default(),
             page: 0,
             search: None,
+            loaded: false,
         }
+    }
+
+    pub fn loaded(&self) -> bool {
+        self.loaded
+    }
+
+    pub fn finish(self) -> Self {
+        let mut this = self;
+        this.loaded = true;
+        this
     }
 
     pub fn sort(&mut self) {
