@@ -108,7 +108,7 @@ impl FileTree {
             .collect::<Vec<_>>();
     }
 
-    pub fn sort_2(&mut self) {
+    pub fn sort_name(&mut self) {
         // Separate files and spacers into two vectors
         let (mut files, mut spacers): (Vec<_>, Vec<_>) = self
             .files
@@ -117,7 +117,22 @@ impl FileTree {
 
         // Sort the files in-place by name
         files.sort_unstable_by(|a, b| match (a, b) {
-            (MdFileComponent::File(fa), MdFileComponent::File(fb)) => fb.path.cmp(&fa.path),
+            (MdFileComponent::File(fa), MdFileComponent::File(fb)) => {
+                let a = fa
+                    .path()
+                    .to_str()
+                    .unwrap()
+                    .trim_start_matches("./")
+                    .trim_start_matches(char::is_alphabetic);
+                let b = fb
+                    .path()
+                    .to_str()
+                    .unwrap()
+                    .trim_start_matches("./")
+                    .trim_start_matches(char::is_alphabetic);
+
+                b.to_lowercase().cmp(&a.to_lowercase())
+            }
             _ => unreachable!(), // This case should not happen
         });
 
@@ -153,7 +168,7 @@ impl FileTree {
             }
         }
         self.fill_spacers();
-        self.sort_2();
+        self.sort_name();
     }
 
     fn fill_spacers(&mut self) {
