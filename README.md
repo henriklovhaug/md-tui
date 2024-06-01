@@ -69,6 +69,7 @@ for configuration options.
 | `g`              | Go to top of file                                                      |
 | `G`              | Go to bottom of the file                                               |
 | `e`              | Edit file in `$EDITOR`                                                 |
+| `o`              | Sort files in file tree                                                |
 | `q`              | Quit the application                                                   |
 
 ## Syntax highlighting
@@ -136,6 +137,7 @@ edit = 'e'
 hover = 'K'
 back = 'b'
 file_tree = 't'
+sort = 'o'
 ```
 
 ### Colors and misc

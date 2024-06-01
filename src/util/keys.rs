@@ -23,6 +23,7 @@ pub enum Action {
     Help,
     Back,
     ToFileTree,
+    Sort,
     None,
 }
 
@@ -45,6 +46,7 @@ pub struct KeyConfig {
     pub bottom: char,
     pub back: char,
     pub file_tree: char,
+    pub sort: char,
 }
 
 pub fn key_to_action(key: KeyCode) -> Action {
@@ -118,6 +120,10 @@ pub fn key_to_action(key: KeyCode) -> Action {
                 return Action::ToFileTree;
             }
 
+            if c == KEY_CONFIG.sort {
+                return Action::Sort;
+            }
+
             if c == '?' {
                 return Action::Help;
             }
@@ -164,6 +170,7 @@ lazy_static! {
             bottom: settings.get::<char>("bottom").unwrap_or('G'),
             back: settings.get::<char>("back").unwrap_or('b'),
             file_tree: settings.get::<char>("file_tree").unwrap_or('t'),
+            sort: settings.get::<char>("sort").unwrap_or('o'),
         }
     };
 }

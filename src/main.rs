@@ -4,6 +4,7 @@ use std::{
     fs::read_to_string,
     io, panic,
     sync::mpsc,
+    thread,
     time::{Duration, Instant},
 };
 
@@ -16,17 +17,17 @@ use crossterm::{
 use event_handler::{handle_keyboard_input, KeyBoardAction};
 use nodes::root::{Component, ComponentRoot};
 use notify::{Config, PollWatcher, Watcher};
-use pages::file_explorer::FileTree;
+use pages::file_explorer::{FileTree, MdFile};
 use parser::parse_markdown;
 use ratatui::{
     backend::{Backend, CrosstermBackend},
     layout::Rect,
     style::{Color, Stylize},
-    widgets::{Block, Clear, Paragraph},
+    widgets::{Block, Clear},
     Frame, Terminal,
 };
 use ratatui_image::{FilterType, Resize, StatefulImage};
-use search::find_md_files;
+use search::find_md_files_channel;
 use util::{destruct_terminal, App, Boxes, Mode};
 
 mod boxes;
@@ -56,7 +57,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut terminal = Terminal::new(backend)?;
 
     // create app and run it
-    let tick_rate = Duration::from_millis(250);
+    let tick_rate = Duration::from_millis(100);
     let app = App::default();
     let res = run_app(&mut terminal, app, tick_rate);
 
@@ -81,6 +82,10 @@ fn run_app<B: Backend>(
     mut app: App,
     tick_rate: Duration,
 ) -> io::Result<()> {
+    let (f_tx, f_rx) = mpsc::channel::<Option<MdFile>>();
+
+    thread::spawn(move || find_md_files_channel(f_tx.clone()));
+
     let mut last_tick = Instant::now();
 
     let (tx, rx) = mpsc::channel();
@@ -90,12 +95,6 @@ fn run_app<B: Backend>(
         Config::default().with_poll_interval(Duration::from_secs(1)),
     )
     .unwrap();
-
-    terminal.draw(|f| {
-        render_loading(f, &app);
-    })?;
-
-    let mut file_tree = find_md_files();
 
     app.set_width(terminal.size()?.width);
     let mut markdown = parse_markdown(None, EMPTY_FILE, app.width() - 2);
@@ -111,9 +110,10 @@ fn run_app<B: Backend>(
             app.error_box
                 .set_message(format!("Could not open file {:?}", arg));
             app.boxes = Boxes::Error;
-            app.mode = Mode::FileTree;
         }
     }
+
+    let mut file_tree = FileTree::default();
 
     loop {
         let height = terminal.size()?.height;
@@ -166,6 +166,19 @@ fn run_app<B: Backend>(
                     render_markdown(f, &app, &mut markdown);
                 }
                 Mode::FileTree => {
+                    if !file_tree.loaded() {
+                        while let Ok(e) = f_rx.try_recv() {
+                            match e {
+                                Some(file) => {
+                                    file_tree.add_file(file);
+                                }
+                                None => {
+                                    file_tree = file_tree.clone().finish();
+                                    break;
+                                }
+                            }
+                        }
+                    }
                     render_file_tree(f, &app, file_tree.clone());
                 }
             };
@@ -376,29 +389,6 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
     if app.boxes != Boxes::Search {
         f.render_widget(app.help_box, area)
     }
-}
-
-fn render_loading(f: &mut Frame, _app: &App) {
-    let size = f.size();
-    let area = Rect {
-        x: 2,
-        width: size.width - 3,
-        height: size.height - 5,
-        ..size
-    };
-
-    const LOADING_TEXT: &str = r#"
-  _        ___       _      ____    ___   _   _    ____             
- | |      / _ \     / \    |  _ \  |_ _| | \ | |  / ___|            
- | |     | | | |   / _ \   | | | |  | |  |  \| | | |  _             
- | |___  | |_| |  / ___ \  | |_| |  | |  | |\  | | |_| |  _   _   _ 
- |_____|  \___/  /_/   \_\ |____/  |___| |_| \_|  \____| (_) (_) (_)
-                                                                    
-"#;
-
-    let page = Paragraph::new(LOADING_TEXT);
-
-    f.render_widget(page, area);
 }
 
 fn open_editor(f: &mut Frame, app: &mut App, file_name: Option<&str>) {
