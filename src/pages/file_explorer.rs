@@ -180,7 +180,6 @@ impl FileTree {
             }
         }
         self.fill_spacers();
-        self.sort_name();
     }
 
     fn fill_spacers(&mut self) {
