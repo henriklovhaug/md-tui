@@ -35,6 +35,21 @@ pub fn find_md_files_channel(tx: Sender<Option<MdFile>>) {
     while let Some(path) = stack.pop_front() {
         for entry in if let Ok(entries) = std::fs::read_dir(&path) {
             entries
+                .into_iter()
+                .sorted_unstable_by(|a, b| {
+                    let a = if let Ok(a) = a {
+                        a
+                    } else {
+                        return std::cmp::Ordering::Equal;
+                    };
+                    let b = if let Ok(b) = b {
+                        b
+                    } else {
+                        return std::cmp::Ordering::Equal;
+                    };
+                    a.path().cmp(&b.path())
+                })
+                .collect::<Vec<_>>()
         } else {
             continue;
         } {
