@@ -2,6 +2,7 @@
 
 - (#113) Small images does not get the maximum space of 20 font heights, but the
   space they occupy.
+- (#127) `MDT` now loads files lazily. No more loading screen :).
 
 # Version 0.8.0
 
