@@ -57,7 +57,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut terminal = Terminal::new(backend)?;
 
     // create app and run it
-    let tick_rate = Duration::from_millis(250);
+    let tick_rate = Duration::from_millis(100);
     let app = App::default();
     let res = run_app(&mut terminal, app, tick_rate);
 
@@ -82,6 +82,12 @@ fn run_app<B: Backend>(
     mut app: App,
     tick_rate: Duration,
 ) -> io::Result<()> {
+    let (f_tx, f_rx) = mpsc::channel::<FileTree>();
+
+    thread::spawn(move || loop {
+        find_md_files_and_send(f_tx.clone())
+    });
+
     let mut last_tick = Instant::now();
 
     let (tx, rx) = mpsc::channel();
@@ -91,12 +97,6 @@ fn run_app<B: Backend>(
         Config::default().with_poll_interval(Duration::from_secs(1)),
     )
     .unwrap();
-
-    let (f_tx, f_rx) = mpsc::channel::<FileTree>();
-
-    thread::spawn(move || loop {
-        find_md_files_and_send(f_tx.clone())
-    });
 
     app.set_width(terminal.size()?.width);
     let mut markdown = parse_markdown(None, EMPTY_FILE, app.width() - 2);
