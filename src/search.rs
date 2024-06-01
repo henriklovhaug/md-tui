@@ -21,9 +21,59 @@ fn add_to_gitingore(path: &str, ignored_files: &mut Vec<String>) {
     }
 }
 
-pub fn find_md_files_and_send(tx: Sender<FileTree>) {
-    let tree = find_md_files();
-    tx.send(tree.finish()).unwrap();
+pub fn find_md_files_channel(tx: Sender<Option<MdFile>>) {
+    let mut ignored_files = Vec::new();
+
+    if COLOR_CONFIG.gitignore {
+        add_to_gitingore(".gitignore", &mut ignored_files);
+    }
+
+    let mut stack = VecDeque::new();
+
+    stack.push_back(std::path::PathBuf::from("."));
+
+    while let Some(path) = stack.pop_front() {
+        for entry in if let Ok(entries) = std::fs::read_dir(&path) {
+            entries
+        } else {
+            continue;
+        } {
+            let path = if let Ok(path) = entry {
+                path.path()
+            } else {
+                continue;
+            };
+            if path.is_dir() {
+                stack.push_back(path);
+            } else if path.extension().unwrap_or_default() == "md" {
+                let (path_str, path_name) =
+                    if let (Some(path_str), Some(path_name)) = (path.to_str(), path.file_name()) {
+                        (path_str, path_name.to_str().unwrap_or("UNKNOWN"))
+                    } else {
+                        continue;
+                    };
+                // Check if the file is in the ignored files list
+                if ignored_files
+                    .iter()
+                    .any(|ignored_file| !find(ignored_file, path_str, 0).is_empty())
+                {
+                    continue;
+                }
+
+                tx.send(Some(MdFile::new(
+                    path_str.to_string(),
+                    path_name.to_string(),
+                )))
+                .unwrap();
+            } else if let (Some(file_name), Some(path)) = (path.file_name(), path.to_str()) {
+                if COLOR_CONFIG.gitignore && file_name == ".gitignore" {
+                    add_to_gitingore(path, &mut ignored_files);
+                }
+            }
+        }
+    }
+
+    tx.send(None).unwrap();
 }
 
 pub fn find_md_files() -> FileTree {

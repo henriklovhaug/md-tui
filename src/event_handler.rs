@@ -34,7 +34,6 @@ pub fn handle_keyboard_input(
     match app.mode {
         Mode::FileTree => keyboard_mode_file_tree(key, app, markdown, file_tree, height, watcher),
         Mode::View => keyboard_mode_view(key, app, markdown, height, watcher),
-        Mode::Loading => KeyBoardAction::Continue,
     }
 }
 

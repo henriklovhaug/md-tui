@@ -40,7 +40,6 @@ impl Widget for HelpBox {
         match self.mode {
             Mode::View => render_markdown_help(self.expanded, area, buf),
             Mode::FileTree => render_file_tree_help(self.expanded, area, buf),
-            Mode::Loading => {}
         }
     }
 }

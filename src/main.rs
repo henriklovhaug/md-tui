@@ -17,17 +17,17 @@ use crossterm::{
 use event_handler::{handle_keyboard_input, KeyBoardAction};
 use nodes::root::{Component, ComponentRoot};
 use notify::{Config, PollWatcher, Watcher};
-use pages::file_explorer::FileTree;
+use pages::file_explorer::{FileTree, MdFile};
 use parser::parse_markdown;
 use ratatui::{
     backend::{Backend, CrosstermBackend},
     layout::Rect,
     style::{Color, Stylize},
-    widgets::{Block, Clear, Paragraph},
+    widgets::{Block, Clear},
     Frame, Terminal,
 };
 use ratatui_image::{FilterType, Resize, StatefulImage};
-use search::find_md_files_and_send;
+use search::find_md_files_channel;
 use util::{destruct_terminal, App, Boxes, Mode};
 
 mod boxes;
@@ -82,9 +82,9 @@ fn run_app<B: Backend>(
     mut app: App,
     tick_rate: Duration,
 ) -> io::Result<()> {
-    let (f_tx, f_rx) = mpsc::channel::<FileTree>();
+    let (f_tx, f_rx) = mpsc::channel::<Option<MdFile>>();
 
-    thread::spawn(move || find_md_files_and_send(f_tx.clone()));
+    thread::spawn(move || find_md_files_channel(f_tx.clone()));
 
     let mut last_tick = Instant::now();
 
@@ -110,7 +110,6 @@ fn run_app<B: Backend>(
             app.error_box
                 .set_message(format!("Could not open file {:?}", arg));
             app.boxes = Boxes::Error;
-            app.mode = Mode::Loading;
         }
     }
 
@@ -161,6 +160,8 @@ fn run_app<B: Backend>(
 
         markdown.set_scroll(app.vertical_scroll);
 
+        app.mode = Mode::FileTree;
+
         terminal.draw(|f| {
             match app.mode {
                 Mode::View => {
@@ -168,16 +169,20 @@ fn run_app<B: Backend>(
                 }
                 Mode::FileTree => {
                     if !file_tree.loaded() {
-                        app.mode = Mode::Loading;
+                        while let Ok(e) = f_rx.try_recv() {
+                            match e {
+                                Some(file) => {
+                                    file_tree.add_file(file);
+                                }
+                                None => {
+                                    file_tree = file_tree.clone().finish();
+                                    break;
+                                }
+                            }
+                        }
+                        file_tree.sort_name();
                     }
                     render_file_tree(f, &app, file_tree.clone());
-                }
-                Mode::Loading => {
-                    render_loading(f, &app);
-                    if let Ok(e) = f_rx.try_recv() {
-                        file_tree = e;
-                        app.mode = Mode::FileTree;
-                    }
                 }
             };
             if app.boxes == Boxes::Search {
@@ -387,29 +392,6 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
     if app.boxes != Boxes::Search {
         f.render_widget(app.help_box, area)
     }
-}
-
-fn render_loading(f: &mut Frame, _app: &App) {
-    let size = f.size();
-    let area = Rect {
-        x: 2,
-        width: size.width - 3,
-        height: size.height - 5,
-        ..size
-    };
-
-    const LOADING_TEXT: &str = r#"
-  _        ___       _      ____    ___   _   _    ____             
- | |      / _ \     / \    |  _ \  |_ _| | \ | |  / ___|            
- | |     | | | |   / _ \   | | | |  | |  |  \| | | |  _             
- | |___  | |_| |  / ___ \  | |_| |  | |  | |\  | | |_| |  _   _   _ 
- |_____|  \___/  /_/   \_\ |____/  |___| |_| \_|  \____| (_) (_) (_)
-                                                                    
-"#;
-
-    let page = Paragraph::new(LOADING_TEXT);
-
-    f.render_widget(page, area);
 }
 
 fn open_editor(f: &mut Frame, app: &mut App, file_name: Option<&str>) {
