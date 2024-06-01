@@ -1,3 +1,5 @@
+use std::collections::VecDeque;
+
 use itertools::Itertools;
 use strsim::damerau_levenshtein;
 
@@ -7,24 +9,32 @@ use crate::{
     util::colors::COLOR_CONFIG,
 };
 
+fn add_to_gitingore(path: &str, ignored_files: &mut Vec<String>) {
+    let gitignore = std::fs::read_to_string(path);
+    if let Ok(gitignore) = gitignore {
+        for line in gitignore.lines() {
+            if line.starts_with('#') || line.is_empty() {
+                continue;
+            }
+            ignored_files.push(line.to_string());
+        }
+    }
+}
+
 pub fn find_md_files() -> FileTree {
     let mut ignored_files = Vec::new();
 
     if COLOR_CONFIG.gitignore {
-        let gitignore = std::fs::read_to_string(".gitignore");
-        if let Ok(gitignore) = gitignore {
-            for line in gitignore.lines() {
-                if line.starts_with('#') || line.is_empty() {
-                    continue;
-                }
-                ignored_files.push(line.to_string());
-            }
-        }
+        add_to_gitingore(".gitignore", &mut ignored_files);
     }
 
     let mut tree = FileTree::new();
-    let mut stack = vec![std::path::PathBuf::from(".")];
-    while let Some(path) = stack.pop() {
+
+    let mut stack = VecDeque::new();
+
+    stack.push_back(std::path::PathBuf::from("."));
+
+    while let Some(path) = stack.pop_front() {
         for entry in if let Ok(entries) = std::fs::read_dir(&path) {
             entries
         } else {
@@ -36,7 +46,7 @@ pub fn find_md_files() -> FileTree {
                 continue;
             };
             if path.is_dir() {
-                stack.push(path);
+                stack.push_back(path);
             } else if path.extension().unwrap_or_default() == "md" {
                 let (path_str, path_name) =
                     if let (Some(path_str), Some(path_name)) = (path.to_str(), path.file_name()) {
@@ -53,10 +63,14 @@ pub fn find_md_files() -> FileTree {
                 }
 
                 tree.add_file(MdFile::new(path_str.to_string(), path_name.to_string()));
+            } else if let (Some(file_name), Some(path)) = (path.file_name(), path.to_str()) {
+                if COLOR_CONFIG.gitignore && file_name == ".gitignore" {
+                    add_to_gitingore(path, &mut ignored_files);
+                }
             }
         }
     }
-    tree.sort_2();
+    tree.sort_name();
     tree
 }
 
