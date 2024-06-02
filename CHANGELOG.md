@@ -1,3 +1,9 @@
+# Version 0.8.2
+
+- Escape resets to original ordering in file tree.
+- Fix crash in list if newline started with a number. It was parsed as index of
+  a list even if it wasn't.
+
 # Version 0.8.1
 
 - (#113) Small images does not get the maximum space of 20 font heights, but the
