@@ -520,8 +520,8 @@ fn transform_list(component: &mut TextComponent, width: u16) {
     for line in lines.iter_mut() {
         if line[1]
             .content()
-            .starts_with(['1', '2', '3', '4', '5', '6', '7', '8', '9'])
-            && line[1].content().ends_with(". ")
+            .strip_prefix(['1', '2', '3', '4', '5', '6', '7', '8', '9'])
+            .is_some_and(|c| c.ends_with(". "))
         {
             unordered_list_skip = false;
         }
@@ -533,8 +533,8 @@ fn transform_list(component: &mut TextComponent, width: u16) {
 
         let amount = if line[1]
             .content()
-            .starts_with(['1', '2', '3', '4', '5', '6', '7', '8', '9'])
-            && line[1].content().ends_with(". ")
+            .strip_prefix(['1', '2', '3', '4', '5', '6', '7', '8', '9'])
+            .is_some_and(|c| c.ends_with(". "))
         {
             match indent_len.cmp(&line[0].content().len()) {
                 cmp::Ordering::Less => {
