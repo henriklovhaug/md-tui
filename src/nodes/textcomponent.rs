@@ -486,7 +486,8 @@ fn transform_list(component: &mut TextComponent, width: u16) {
     for line in lines.iter() {
         if !line[1]
             .content()
-            .starts_with(['1', '2', '3', '4', '5', '6', '7', '8', '9'])
+            .strip_prefix(['1', '2', '3', '4', '5', '6', '7', '8', '9'])
+            .is_some_and(|c| c.ends_with(". "))
         {
             continue;
         }
@@ -514,13 +515,13 @@ fn transform_list(component: &mut TextComponent, width: u16) {
 
     indent_index = 0;
     indent_len = 0;
-    let mut unordered_list_skip = false; // Skip unordered list items. They are already aligned.
+    let mut unordered_list_skip = true; // Skip unordered list items. They are already aligned.
 
     for line in lines.iter_mut() {
         if line[1]
             .content()
             .starts_with(['1', '2', '3', '4', '5', '6', '7', '8', '9'])
-            && !line[1].content().ends_with(". ")
+            && line[1].content().ends_with(". ")
         {
             unordered_list_skip = false;
         }
