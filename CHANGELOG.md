@@ -3,6 +3,8 @@
 - Escape resets to original ordering in file tree.
 - Fix crash in list if newline started with a number. It was parsed as index of
   a list even if it wasn't.
+- Fix divide by zero error on tables.
+- Allow codeblocks to start indented.
 
 # Version 0.8.1
 
