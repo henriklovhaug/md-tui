@@ -278,7 +278,7 @@ impl TextComponent {
             }
             TextNode::Table => {
                 self.content.retain(|c| !c.is_empty());
-                let height = (self.content.len() / self.meta_info().len()) as u16;
+                let height = (self.content.len() / cmp::max(self.meta_info().len(), 1)) as u16;
                 self.height = height;
             }
             TextNode::HorizontalSeperator => self.height = 1,
