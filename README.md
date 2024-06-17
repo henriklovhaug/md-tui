@@ -148,6 +148,7 @@ colors, set it to `reset`.
 ```toml
 # General settings
 width = 100
+gitignore = false
 
 # Inline styling
 bold_color = "reset"
@@ -171,7 +172,6 @@ file_tree_name_color = "blue"
 file_tree_page_count_color = "lightgreen"
 file_tree_path_color = "gray"
 file_tree_selected_fg_color = "lightgreen"
-gitignore = false
 
 # Quote bar
 quote_caution = "lightmagenta"

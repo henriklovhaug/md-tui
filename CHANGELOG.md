@@ -5,6 +5,7 @@
   a list even if it wasn't.
 - Fix divide by zero error on tables.
 - Allow codeblocks to start indented.
+- Actually make use of default quote coloring.
 
 # Version 0.8.1
 
