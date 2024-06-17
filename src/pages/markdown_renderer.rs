@@ -1,4 +1,4 @@
-use std::{cmp, usize};
+use std::cmp;
 
 use ratatui::{
     buffer::Buffer,
