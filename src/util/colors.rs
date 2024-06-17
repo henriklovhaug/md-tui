@@ -8,6 +8,7 @@ use ratatui::style::Color;
 pub struct MdConfig {
     // General settings
     pub width: u16,
+    pub gitignore: bool,
 
     // Inline styles
     pub italic_color: Color,
@@ -33,7 +34,6 @@ pub struct MdConfig {
     pub file_tree_page_count_color: Color,
     pub file_tree_name_color: Color,
     pub file_tree_path_color: Color,
-    pub gitignore: bool,
 
     // Quote markings
     pub quote_important: Color,

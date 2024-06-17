@@ -184,7 +184,7 @@ fn render_quote(area: Rect, buf: &mut Buffer, component: TextComponent, clip: Cl
                 "[!caution]" => COLOR_CONFIG.quote_caution,
                 "[!important]" => COLOR_CONFIG.quote_important,
                 "[!note]" => COLOR_CONFIG.quote_note,
-                _ => Color::White,
+                _ => COLOR_CONFIG.quote_default,
             })
             .unwrap_or(COLOR_CONFIG.quote_bg_color)
     } else {
