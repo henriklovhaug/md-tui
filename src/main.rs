@@ -28,7 +28,7 @@ use ratatui::{
 };
 use ratatui_image::{FilterType, Resize, StatefulImage};
 use search::find_md_files_channel;
-use util::{destruct_terminal, App, Boxes, Mode};
+use util::{destruct_terminal, general::GENERAL_CONFIG, App, Boxes, Mode};
 
 mod boxes;
 mod event_handler;
@@ -298,10 +298,32 @@ fn render_file_tree(f: &mut Frame, app: &App, file_tree: FileTree) {
 
 fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
     let size = f.size();
+
+    let x = match GENERAL_CONFIG.centering {
+        util::general::Centering::Left => 2,
+        util::general::Centering::Center => {
+            let x = (size.width / 2).saturating_sub(GENERAL_CONFIG.width / 2);
+
+            if x > 2 {
+                x
+            } else {
+                2
+            }
+        }
+        util::general::Centering::Right => {
+            let x = size.width.saturating_sub(GENERAL_CONFIG.width + 2);
+            if x > 2 {
+                x
+            } else {
+                2
+            }
+        }
+    };
+
     let area = Rect {
-        x: 2,
         width: app.width() - 3,
         height: size.height - 5,
+        x,
         ..size
     };
 
@@ -357,12 +379,14 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
         Rect {
             y: size.height - 4,
             height: 3,
+            x,
             ..area
         }
     } else {
         Rect {
             y: size.height - 19,
             height: 18,
+            x,
             ..area
         }
     };
@@ -372,14 +396,14 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
 
     let area = if app.help_box.expanded() {
         Rect {
-            x: 4,
+            x: x + 2,
             y: size.height - 18,
             height: 16,
             width: app.width() - 5,
         }
     } else {
         Rect {
-            x: 4,
+            x: x + 2,
             y: size.height - 3,
             height: 3,
             width: app.width() - 5,
