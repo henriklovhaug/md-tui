@@ -13,7 +13,10 @@ use crate::{
         textcomponent::{TextComponent, TextNode},
         word::{MetaData, Word, WordType},
     },
-    util::{colors::{COLOR_CONFIG, HEADER_COLOR}, general::GENERAL_CONFIG},
+    util::{
+        colors::{COLOR_CONFIG, HEADER_COLOR},
+        general::GENERAL_CONFIG,
+    },
 };
 
 fn clips_upper_bound(_area: Rect, component: &TextComponent) -> bool {

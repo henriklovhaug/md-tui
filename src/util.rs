@@ -10,11 +10,10 @@ use general::GENERAL_CONFIG;
 
 use crate::boxes::{errorbox::ErrorBox, help_box::HelpBox, linkbox::LinkBox, searchbox::SearchBox};
 
-
 pub mod colors;
+pub mod general;
 pub mod keybinds;
 pub mod keys;
-pub mod general;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Mode {
