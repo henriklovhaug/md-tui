@@ -30,7 +30,7 @@ lazy_static! {
             width: settings.get::<u16>("width").unwrap_or(100),
             gitignore: settings.get::<bool>("gitignore").unwrap_or(false),
             centering: settings
-                .get::<Centering>("centering")
+                .get::<Centering>("alignment")
                 .unwrap_or(Centering::Left),
         }
     };
