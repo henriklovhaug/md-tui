@@ -149,6 +149,7 @@ colors, set it to `reset`.
 # General settings
 width = 100
 gitignore = false
+alignment = "left" # "center" | "right"
 
 # Inline styling
 bold_color = "reset"

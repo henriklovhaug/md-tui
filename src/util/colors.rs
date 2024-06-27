@@ -5,11 +5,7 @@ use lazy_static::lazy_static;
 use ratatui::style::Color;
 
 #[derive(Debug)]
-pub struct MdConfig {
-    // General settings
-    pub width: u16,
-    pub gitignore: bool,
-
+pub struct ColorConfig {
     // Inline styles
     pub italic_color: Color,
     pub bold_color: Color,
@@ -45,7 +41,7 @@ pub struct MdConfig {
 }
 
 lazy_static! {
-    pub static ref COLOR_CONFIG: MdConfig = {
+    pub static ref COLOR_CONFIG: ColorConfig = {
         let config_dir = dirs::home_dir().unwrap();
         let config_file = config_dir.join(".config").join("mdt").join("config.toml");
         let settings = Config::builder()
@@ -54,8 +50,7 @@ lazy_static! {
             .build()
             .unwrap();
 
-        MdConfig {
-            width: settings.get::<u16>("width").unwrap_or(100),
+        ColorConfig {
             heading_bg_color: Color::from_str(
                 &settings.get::<String>("h_bg_color").unwrap_or_default(),
             )
@@ -150,7 +145,6 @@ lazy_static! {
                     .unwrap_or_default(),
             )
             .unwrap_or(Color::Reset),
-            gitignore: settings.get::<bool>("gitignore").unwrap_or_default(),
             quote_important: Color::from_str(
                 &settings
                     .get::<String>("quote_important")
