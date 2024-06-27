@@ -8,9 +8,7 @@ use crate::{
     pages::file_explorer::FileTree,
     parser::parse_markdown,
     util::{
-        colors::COLOR_CONFIG,
-        keys::{key_to_action, Action},
-        App, Boxes, Jump, LinkType, Mode,
+        general::GENERAL_CONFIG, keys::{key_to_action, Action}, App, Boxes, Jump, LinkType, Mode
     },
 };
 
@@ -381,7 +379,7 @@ fn keyboard_mode_view(
             Action::Search => {
                 app.search_box.clear();
                 app.search_box.set_position(2, height - 3);
-                app.search_box.set_width(COLOR_CONFIG.width - 3);
+                app.search_box.set_width(GENERAL_CONFIG.width - 3);
                 app.boxes = Boxes::Search;
                 app.help_box.close();
             }

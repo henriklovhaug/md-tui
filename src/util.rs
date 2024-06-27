@@ -6,14 +6,15 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, LeaveAlternateScreen},
 };
+use general::GENERAL_CONFIG;
 
 use crate::boxes::{errorbox::ErrorBox, help_box::HelpBox, linkbox::LinkBox, searchbox::SearchBox};
 
-use self::colors::COLOR_CONFIG;
 
 pub mod colors;
 pub mod keybinds;
 pub mod keys;
+pub mod general;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Mode {
@@ -79,7 +80,7 @@ impl App {
 
     pub fn set_width(&mut self, width: u16) -> bool {
         let temp_width = self.width;
-        self.width = cmp::min(width, COLOR_CONFIG.width);
+        self.width = cmp::min(width, GENERAL_CONFIG.width);
         temp_width != self.width
     }
 

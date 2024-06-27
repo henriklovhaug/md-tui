@@ -13,7 +13,7 @@ use crate::{
         textcomponent::{TextComponent, TextNode},
         word::{MetaData, Word, WordType},
     },
-    util::colors::{COLOR_CONFIG, HEADER_COLOR},
+    util::{colors::{COLOR_CONFIG, HEADER_COLOR}, general::GENERAL_CONFIG},
 };
 
 fn clips_upper_bound(_area: Rect, component: &TextComponent) -> bool {
@@ -201,7 +201,7 @@ fn render_quote(area: Rect, buf: &mut Buffer, component: TextComponent, clip: Cl
 
     let area = Rect {
         x: area.x + 1,
-        width: cmp::min(area.width, COLOR_CONFIG.width) - 1,
+        width: cmp::min(area.width, GENERAL_CONFIG.width) - 1,
         ..area
     };
 
@@ -519,7 +519,7 @@ fn render_task(
 
 fn render_horizontal_seperator(area: Rect, buf: &mut Buffer) {
     let paragraph = Paragraph::new(Line::from(vec![Span::raw(
-        "\u{2014}".repeat(COLOR_CONFIG.width.into()),
+        "\u{2014}".repeat(GENERAL_CONFIG.width.into()),
     )]));
 
     paragraph.render(area, buf);

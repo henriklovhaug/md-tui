@@ -33,13 +33,14 @@ crossterm = "0.27.0"
 dirs = "5.0.1"
 image = "0.25.1"
 itertools = "0.13.0"
-lazy_static = "1.4.0"
+lazy_static = "1.5.0"
 notify = "6.1.1"
 open = "5.1.4"
 pest = "2.7.10"
 pest_derive = "2.7.10"
-ratatui = { version = "0.26.3", default-features = true, features = ["macros", "all-widgets", "serde"] }
+ratatui = { version = "0.26.3", features = ["macros", "all-widgets", "serde"] }
 ratatui-image = { version = "1.0.1", features = ["crossterm"] }
+serde = { version = "1.0.203", features = ["derive"] }
 strsim = "0.11.1"
 tree-sitter-bash = "0.21.0"
 tree-sitter-c = "0.21.4"

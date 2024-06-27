@@ -6,7 +6,7 @@ use strsim::damerau_levenshtein;
 use crate::{
     nodes::word::{Word, WordType},
     pages::file_explorer::{FileTree, MdFile},
-    util::colors::COLOR_CONFIG,
+    util::general::GENERAL_CONFIG,
 };
 
 fn add_to_gitingore(path: &str, ignored_files: &mut Vec<String>) {
@@ -24,7 +24,7 @@ fn add_to_gitingore(path: &str, ignored_files: &mut Vec<String>) {
 pub fn find_md_files_channel(tx: Sender<Option<MdFile>>) {
     let mut ignored_files = Vec::new();
 
-    if COLOR_CONFIG.gitignore {
+    if GENERAL_CONFIG.gitignore {
         add_to_gitingore(".gitignore", &mut ignored_files);
     }
 
@@ -81,7 +81,7 @@ pub fn find_md_files_channel(tx: Sender<Option<MdFile>>) {
                 )))
                 .unwrap();
             } else if let (Some(file_name), Some(path)) = (path.file_name(), path.to_str()) {
-                if COLOR_CONFIG.gitignore && file_name == ".gitignore" {
+                if GENERAL_CONFIG.gitignore && file_name == ".gitignore" {
                     add_to_gitingore(path, &mut ignored_files);
                 }
             }
@@ -94,7 +94,7 @@ pub fn find_md_files_channel(tx: Sender<Option<MdFile>>) {
 pub fn find_md_files() -> FileTree {
     let mut ignored_files = Vec::new();
 
-    if COLOR_CONFIG.gitignore {
+    if GENERAL_CONFIG.gitignore {
         add_to_gitingore(".gitignore", &mut ignored_files);
     }
 
@@ -134,7 +134,7 @@ pub fn find_md_files() -> FileTree {
 
                 tree.add_file(MdFile::new(path_str.to_string(), path_name.to_string()));
             } else if let (Some(file_name), Some(path)) = (path.file_name(), path.to_str()) {
-                if COLOR_CONFIG.gitignore && file_name == ".gitignore" {
+                if GENERAL_CONFIG.gitignore && file_name == ".gitignore" {
                     add_to_gitingore(path, &mut ignored_files);
                 }
             }
