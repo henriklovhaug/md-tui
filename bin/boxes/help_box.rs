@@ -6,7 +6,10 @@ use ratatui::{
     widgets::{Row, Table, Widget},
 };
 
-use crate::util::{colors::COLOR_CONFIG, keys::KEY_CONFIG, Mode};
+use md_tui::config::colors::COLOR_CONFIG;
+
+use crate::util::keys::KEY_CONFIG;
+use crate::util::Mode;
 
 #[derive(Debug, Clone, Copy, Default)]
 pub struct HelpBox {

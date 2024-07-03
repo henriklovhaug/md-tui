@@ -1,3 +1,9 @@
+mod boxes;
+mod event_handler;
+mod pages;
+mod search;
+mod util;
+
 use std::{
     cmp, env,
     error::Error,
@@ -8,17 +14,15 @@ use std::{
     time::{Duration, Instant},
 };
 
+use notify::{Config, PollWatcher, Watcher};
+
 use crossterm::{
     cursor,
     event::{self, DisableMouseCapture, EnableMouseCapture, Event},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use event_handler::{handle_keyboard_input, KeyBoardAction};
-use nodes::root::{Component, ComponentRoot};
-use notify::{Config, PollWatcher, Watcher};
-use pages::file_explorer::{FileTree, MdFile};
-use parser::parse_markdown;
+
 use ratatui::{
     backend::{Backend, CrosstermBackend},
     layout::Rect,
@@ -27,17 +31,16 @@ use ratatui::{
     Frame, Terminal,
 };
 use ratatui_image::{FilterType, Resize, StatefulImage};
-use search::find_md_files_channel;
-use util::{destruct_terminal, general::GENERAL_CONFIG, App, Boxes, Mode};
 
-mod boxes;
-mod event_handler;
-pub mod highlight;
-mod nodes;
-mod pages;
-pub mod parser;
-pub mod search;
-mod util;
+use md_tui::config;
+use md_tui::config::general::GENERAL_CONFIG;
+use md_tui::nodes::root::{Component, ComponentRoot};
+use md_tui::parser::parse_markdown;
+
+use event_handler::{handle_keyboard_input, KeyBoardAction};
+use pages::file_explorer::{FileTree, MdFile};
+use search::find_md_files_channel;
+use util::{destruct_terminal, App, Boxes, Mode};
 
 const EMPTY_FILE: &str = "";
 
@@ -253,8 +256,8 @@ fn run_app<B: Backend>(
 fn render_file_tree(f: &mut Frame, app: &App, file_tree: FileTree) {
     let size = f.size();
     let x = match GENERAL_CONFIG.centering {
-        util::general::Centering::Left => 2,
-        util::general::Centering::Center => {
+        config::general::Centering::Left => 2,
+        config::general::Centering::Center => {
             let x = (size.width / 2).saturating_sub(GENERAL_CONFIG.width / 2);
 
             if x > 2 {
@@ -263,7 +266,7 @@ fn render_file_tree(f: &mut Frame, app: &App, file_tree: FileTree) {
                 2
             }
         }
-        util::general::Centering::Right => {
+        config::general::Centering::Right => {
             let x = size.width.saturating_sub(GENERAL_CONFIG.width + 2);
             if x > 2 {
                 x
@@ -320,8 +323,8 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
     let size = f.size();
 
     let x = match GENERAL_CONFIG.centering {
-        util::general::Centering::Left => 2,
-        util::general::Centering::Center => {
+        config::general::Centering::Left => 2,
+        config::general::Centering::Center => {
             let x = (size.width / 2).saturating_sub(GENERAL_CONFIG.width / 2);
 
             if x > 2 {
@@ -330,7 +333,7 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
                 2
             }
         }
-        util::general::Centering::Right => {
+        config::general::Centering::Right => {
             let x = size.width.saturating_sub(GENERAL_CONFIG.width + 2);
             if x > 2 {
                 x
