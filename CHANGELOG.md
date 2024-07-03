@@ -1,3 +1,7 @@
+# Unreleased
+
+- Split into library and binary
+
 # Version 0.8.3
 
 - (#132) Allows the user to center the markdown. Config options are
