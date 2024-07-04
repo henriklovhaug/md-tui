@@ -1,7 +1,6 @@
 /target
 md_tests/
 .tags
-bin
 file_creator.py
 .DS_Store
 test3.md
