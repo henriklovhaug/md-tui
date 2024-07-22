@@ -13,7 +13,7 @@ categories = ["command-line-interface", "command-line-utilities"]
 
 [[bin]]
 name = "mdt"
-path = "src/main.rs"
+path = "bin/main.rs"
 
 [profile.release]
 lto = true

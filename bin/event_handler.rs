@@ -4,15 +4,16 @@ use crossterm::event::KeyCode;
 use notify::{PollWatcher, Watcher};
 
 use crate::{
-    nodes::root::ComponentRoot,
     pages::file_explorer::FileTree,
-    parser::parse_markdown,
     util::{
-        general::GENERAL_CONFIG,
         keys::{key_to_action, Action},
         App, Boxes, Jump, LinkType, Mode,
     },
 };
+
+use md_tui::config::general::GENERAL_CONFIG;
+use md_tui::nodes::root::ComponentRoot;
+use md_tui::parser::parse_markdown;
 
 pub enum KeyBoardAction {
     Continue,

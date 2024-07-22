@@ -1,9 +1,7 @@
-use crate::search::{compare_heading, find_and_mark};
-
 use super::{
     image::ImageComponent,
     textcomponent::{TextComponent, TextNode},
-    word::{Word, WordType},
+    word::{compare_heading, find_and_mark, Word, WordType},
 };
 
 pub struct ComponentRoot {
