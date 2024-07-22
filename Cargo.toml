@@ -31,36 +31,36 @@ better-panic = "0.3.0"
 config = "0.14.0"
 crossterm = "0.27.0"
 dirs = "5.0.1"
-image = "0.25.1"
+image = "0.25.2"
 itertools = "0.13.0"
 lazy_static = "1.5.0"
 notify = "6.1.1"
-open = "5.1.4"
-pest = "2.7.10"
-pest_derive = "2.7.10"
+open = "5.3.0"
+pest = "2.7.11"
+pest_derive = "2.7.11"
 ratatui = { version = "0.27.0", features = ["macros", "all-widgets", "serde"] }
-ratatui-image = { version = "1.0.1", features = ["crossterm"] }
-serde = { version = "1.0.203", features = ["derive"] }
+ratatui-image = { version = "1.0.5", features = ["crossterm"] }
+serde = { version = "1.0.204", features = ["derive"] }
 strsim = "0.11.1"
 tree-sitter-bash = "0.21.0"
 tree-sitter-c = "0.21.4"
-tree-sitter-cpp = "0.22.2"
+tree-sitter-cpp = "0.22.3"
 tree-sitter-css = "0.21.0"
 tree-sitter-elixir = "0.2.0"
 tree-sitter-go = "0.21.0"
 tree-sitter-highlight = "0.21.0"
 tree-sitter-html = "0.20.3"
 tree-sitter-java = "0.21.0"
-tree-sitter-javascript = "0.21.3"
+tree-sitter-javascript = "0.21.4"
 tree-sitter-json = "0.21.0"
 tree-sitter-lua = "0.1.0"
 tree-sitter-ocaml = "0.21.2"
-tree-sitter-php = "0.22.5"
+tree-sitter-php = "0.22.7"
 tree-sitter-python = "0.21.0"
 tree-sitter-rust = "0.21.2"
 tree-sitter-scala = "0.21.0"
-tree-sitter-typescript = "0.21.1"
-ureq = "2.9.7"
+tree-sitter-typescript = "0.21.2"
+ureq = "2.10.0"
 
 [build-dependencies]
 cc="1"
@@ -68,7 +68,7 @@ cc="1"
 # Config for 'cargo dist'
 [workspace.metadata.dist]
 # The preferred cargo-dist version to use in CI (Cargo.toml SemVer syntax)
-cargo-dist-version = "0.16.0"
+cargo-dist-version = "0.19.1"
 # CI backends to support
 ci = "github"
 # The installers to generate for each app
@@ -79,3 +79,5 @@ targets = ["aarch64-apple-darwin", "x86_64-apple-darwin", "x86_64-unknown-linux-
 pr-run-mode = "plan"
 # Whether to install an updater program
 install-updater = true
+# Path that installers should place binaries in
+install-path = "CARGO_HOME"

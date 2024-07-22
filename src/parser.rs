@@ -1,3 +1,4 @@
+use image::ImageReader;
 use itertools::Itertools;
 use pest::{
     iterators::{Pair, Pairs},
@@ -88,7 +89,7 @@ fn parse_component(parse_node: ParseNode) -> Component {
                         image::load_from_memory(&buf).ok()
                     });
                 } else {
-                    image = image::io::Reader::open(node.content())
+                    image = ImageReader::open(node.content())
                         .ok()
                         .and_then(|r| r.decode().ok());
                 }

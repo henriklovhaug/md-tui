@@ -2,6 +2,7 @@
 
 - (#132) Allows the user to center the markdown. Config options are
   `left|center|right`
+- (#135) Fix crash when quote block was left empty.
 
 # Version 0.8.2
 
