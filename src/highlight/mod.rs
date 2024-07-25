@@ -6,7 +6,7 @@ use self::{
     go::highlight_go, html::highlight_html, java::highlight_java, javascript::highlight_javascript,
     json::highlight_json, lua::highlight_lua, php::highlight_php, python::highlight_python,
     rust::highlight_rust, scala::highlight_scala, tsx::highlight_tsx,
-    typescript::highlight_typescript,
+    typescript::highlight_typescript, yaml::highlight_yaml,
 };
 
 mod bash;
@@ -27,6 +27,7 @@ mod rust;
 mod scala;
 mod tsx;
 mod typescript;
+mod yaml;
 
 static HIGHLIGHT_NAMES: [&str; 18] = [
     "attribute",
@@ -95,6 +96,7 @@ pub fn highlight_code(language: &str, lines: &[u8]) -> HighlightInfo {
         "scala" => HighlightInfo::Highlighted(highlight_scala(lines).unwrap()),
         "tsx" => HighlightInfo::Highlighted(highlight_tsx(lines).unwrap()),
         "typescript" | "ts" => HighlightInfo::Highlighted(highlight_typescript(lines).unwrap()),
+        "yaml" | "yml" => HighlightInfo::Highlighted(highlight_yaml(lines).unwrap()),
         _ => HighlightInfo::Unhighlighted,
     }
 }
