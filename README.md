@@ -93,6 +93,7 @@ languages:
 - Rust
 - Scala
 - Typescript
+- Yaml
 
 ## Configuration
 
