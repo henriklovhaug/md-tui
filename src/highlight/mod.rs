@@ -94,9 +94,9 @@ pub fn highlight_code(language: &str, lines: &[u8]) -> HighlightInfo {
         "python" => HighlightInfo::Highlighted(highlight_python(lines).unwrap()),
         "rust" => HighlightInfo::Highlighted(highlight_rust(lines).unwrap()),
         "scala" => HighlightInfo::Highlighted(highlight_scala(lines).unwrap()),
-        "yaml" | "yml" => HighlightInfo::Highlighted(highlight_yaml(lines).unwrap()),
         "tsx" => HighlightInfo::Highlighted(highlight_tsx(lines).unwrap()),
         "typescript" | "ts" => HighlightInfo::Highlighted(highlight_typescript(lines).unwrap()),
+        "yaml" | "yml" => HighlightInfo::Highlighted(highlight_yaml(lines).unwrap()),
         _ => HighlightInfo::Unhighlighted,
     }
 }
