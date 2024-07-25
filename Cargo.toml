@@ -60,6 +60,7 @@ tree-sitter-python = "0.21.0"
 tree-sitter-rust = "0.21.2"
 tree-sitter-scala = "0.21.0"
 tree-sitter-typescript = "0.21.2"
+tree-sitter-yaml = "0.6.1"
 ureq = "2.10.0"
 
 [build-dependencies]

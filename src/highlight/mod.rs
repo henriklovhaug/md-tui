@@ -1,5 +1,6 @@
 use ratatui::style::Color;
 use tree_sitter_highlight::HighlightEvent;
+use yaml::highlight_yaml;
 
 use self::{
     c::highlight_c, cpp::highlight_cpp, css::highlight_css, elixir::highlight_elixir,
@@ -27,6 +28,7 @@ mod rust;
 mod scala;
 mod tsx;
 mod typescript;
+mod yaml;
 
 static HIGHLIGHT_NAMES: [&str; 18] = [
     "attribute",
@@ -93,6 +95,7 @@ pub fn highlight_code(language: &str, lines: &[u8]) -> HighlightInfo {
         "python" => HighlightInfo::Highlighted(highlight_python(lines).unwrap()),
         "rust" => HighlightInfo::Highlighted(highlight_rust(lines).unwrap()),
         "scala" => HighlightInfo::Highlighted(highlight_scala(lines).unwrap()),
+        "yaml" | "yml" => HighlightInfo::Highlighted(highlight_yaml(lines).unwrap()),
         "tsx" => HighlightInfo::Highlighted(highlight_tsx(lines).unwrap()),
         "typescript" | "ts" => HighlightInfo::Highlighted(highlight_typescript(lines).unwrap()),
         _ => HighlightInfo::Unhighlighted,
