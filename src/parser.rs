@@ -40,7 +40,7 @@ fn parse_text(pair: Pair<'_, Rule>) -> ParseNode {
     let content = if pair.as_rule() != Rule::code_line {
         pair.as_str().replace('\n', " ")
     } else {
-        pair.as_str().replace('\t', "    ")
+        pair.as_str().replace('\t', "    ").replace('\r', "")
     };
     let mut component = ParseNode::new(pair.as_rule().into(), content);
     let children = parse_node_children(pair.into_inner());
