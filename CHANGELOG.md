@@ -2,6 +2,7 @@
 
 - (#137) Add yaml syntax highlighting.
 - (#139) Fix codeblocks which includes `\r` characters.
+- (#143) Add luau syntax highlighting.
 
 # Version 0.8.3
 
