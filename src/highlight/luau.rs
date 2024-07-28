@@ -7,7 +7,14 @@ pub fn highlight_luau(lines: &[u8]) -> Result<Vec<HighlightEvent>, String> {
     let mut highlither = Highlighter::new();
     let language = language();
 
-    let mut go_config = HighlightConfiguration::new(language, "luau", "", "", "").unwrap();
+    let mut go_config = HighlightConfiguration::new(
+        language,
+        "luau",
+        tree_sitter_luau_fork::HIGHLIGHTS_QUERY,
+        "",
+        "",
+    )
+    .unwrap();
 
     go_config.configure(&HIGHLIGHT_NAMES);
 
