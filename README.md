@@ -87,6 +87,7 @@ languages:
 - JavaScript
 - Json
 - Lua
+- Luau
 - Ocaml
 - PHP
 - Python
