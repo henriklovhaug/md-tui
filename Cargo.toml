@@ -29,7 +29,7 @@ lto = "thin"
 [dependencies]
 better-panic = "0.3.0"
 config = "0.14.0"
-crossterm = "0.27.0"
+crossterm = "0.28.1"
 dirs = "5.0.1"
 image = "0.25.2"
 itertools = "0.13.0"
@@ -40,16 +40,16 @@ pest = "2.7.11"
 pest_derive = "2.7.11"
 ratatui = { version = "0.28.0", features = ["macros", "all-widgets", "serde"] }
 ratatui-image = { version = "1.0.5", features = ["crossterm"] }
-serde = { version = "1.0.205", features = ["derive"] }
+serde = { version = "1.0.208", features = ["derive"] }
 strsim = "0.11.1"
 tree-sitter-bash = "0.21.0"
 tree-sitter-c = "0.21.4"
 tree-sitter-cpp = "0.22.3"
-tree-sitter-css = "0.21.0"
+tree-sitter-css = "0.21.1"
 tree-sitter-elixir = "0.2.0"
-tree-sitter-go = "0.21.0"
+tree-sitter-go = "0.21.2"
 tree-sitter-highlight = "0.21.0"
-tree-sitter-html = "0.20.3"
+tree-sitter-html = "0.20.4"
 tree-sitter-java = "0.21.0"
 tree-sitter-javascript = "0.21.4"
 tree-sitter-json = "0.21.0"
@@ -70,7 +70,7 @@ cc="1"
 # Config for 'cargo dist'
 [workspace.metadata.dist]
 # The preferred cargo-dist version to use in CI (Cargo.toml SemVer syntax)
-cargo-dist-version = "0.19.1"
+cargo-dist-version = "0.20.0"
 # CI backends to support
 ci = "github"
 # The installers to generate for each app
