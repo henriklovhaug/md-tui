@@ -1,3 +1,7 @@
+# Version 0.8.5
+
+- (#145) Allow `~~~` to be code blocks
+
 # Version 0.8.4
 
 - (#137) Add yaml syntax highlighting.
