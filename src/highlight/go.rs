@@ -8,7 +8,7 @@ pub fn highlight_go(lines: &[u8]) -> Result<Vec<HighlightEvent>, String> {
     let language = language();
 
     let mut go_config =
-        HighlightConfiguration::new(language, "go", tree_sitter_go::HIGHLIGHT_QUERY, "", "")
+        HighlightConfiguration::new(language, "go", tree_sitter_go::HIGHLIGHTS_QUERY, "", "")
             .unwrap();
 
     go_config.configure(&HIGHLIGHT_NAMES);
