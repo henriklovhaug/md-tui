@@ -1,3 +1,4 @@
+use image::ImageReader;
 use itertools::Itertools;
 use pest::{
     iterators::{Pair, Pairs},
@@ -39,7 +40,7 @@ fn parse_text(pair: Pair<'_, Rule>) -> ParseNode {
     let content = if pair.as_rule() != Rule::code_line {
         pair.as_str().replace('\n', " ")
     } else {
-        pair.as_str().replace('\t', "    ")
+        pair.as_str().replace('\t', "    ").replace('\r', "")
     };
     let mut component = ParseNode::new(pair.as_rule().into(), content);
     let children = parse_node_children(pair.into_inner());
@@ -88,7 +89,7 @@ fn parse_component(parse_node: ParseNode) -> Component {
                         image::load_from_memory(&buf).ok()
                     });
                 } else {
-                    image = image::io::Reader::open(node.content())
+                    image = ImageReader::open(node.content())
                         .ok()
                         .and_then(|r| r.decode().ok());
                 }

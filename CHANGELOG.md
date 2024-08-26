@@ -1,11 +1,22 @@
 # Unreleased
 
-- Split into library and binary
+- Allow using md-tui as a library
+
+# Version 0.8.5
+
+- (#145) Allow `~~~` to be code blocks
+
+# Version 0.8.4
+
+- (#137) Add yaml syntax highlighting.
+- (#139) Fix codeblocks which includes `\r` characters.
+- (#143) Add luau syntax highlighting.
 
 # Version 0.8.3
 
 - (#132) Allows the user to center the markdown. Config options are
   `left|center|right`
+- (#135) Fix crash when quote block was left empty.
 
 # Version 0.8.2
 

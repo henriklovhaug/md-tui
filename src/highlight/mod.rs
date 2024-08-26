@@ -1,13 +1,24 @@
+use c::highlight_c;
+use cpp::highlight_cpp;
+use css::highlight_css;
+use elixir::highlight_elixir;
+use go::highlight_go;
+use html::highlight_html;
+use java::highlight_java;
+use javascript::highlight_javascript;
+use json::highlight_json;
+use lua::highlight_lua;
+use luau::highlight_luau;
+use ocaml::highlight_ocaml;
+use php::highlight_php;
+use python::highlight_python;
 use ratatui::style::Color;
+use rust::highlight_rust;
+use scala::highlight_scala;
 use tree_sitter_highlight::HighlightEvent;
-
-use self::{
-    c::highlight_c, cpp::highlight_cpp, css::highlight_css, elixir::highlight_elixir,
-    go::highlight_go, html::highlight_html, java::highlight_java, javascript::highlight_javascript,
-    json::highlight_json, lua::highlight_lua, php::highlight_php, python::highlight_python,
-    rust::highlight_rust, scala::highlight_scala, tsx::highlight_tsx,
-    typescript::highlight_typescript,
-};
+use tsx::highlight_tsx;
+use typescript::highlight_typescript;
+use yaml::highlight_yaml;
 
 mod bash;
 mod c;
@@ -20,6 +31,7 @@ mod java;
 mod javascript;
 mod json;
 mod lua;
+mod luau;
 mod ocaml;
 mod php;
 mod python;
@@ -27,6 +39,7 @@ mod rust;
 mod scala;
 mod tsx;
 mod typescript;
+mod yaml;
 
 static HIGHLIGHT_NAMES: [&str; 18] = [
     "attribute",
@@ -88,13 +101,15 @@ pub fn highlight_code(language: &str, lines: &[u8]) -> HighlightInfo {
         "javascript" | "js" => HighlightInfo::Highlighted(highlight_javascript(lines).unwrap()),
         "json" => HighlightInfo::Highlighted(highlight_json(lines).unwrap()),
         "lua" => HighlightInfo::Highlighted(highlight_lua(lines).unwrap()),
-        "ocaml" => HighlightInfo::Highlighted(ocaml::highlight_ocaml(lines).unwrap()),
+        "luau" => HighlightInfo::Highlighted(highlight_luau(lines).unwrap()),
+        "ocaml" => HighlightInfo::Highlighted(highlight_ocaml(lines).unwrap()),
         "php" => HighlightInfo::Highlighted(highlight_php(lines).unwrap()),
         "python" => HighlightInfo::Highlighted(highlight_python(lines).unwrap()),
         "rust" => HighlightInfo::Highlighted(highlight_rust(lines).unwrap()),
         "scala" => HighlightInfo::Highlighted(highlight_scala(lines).unwrap()),
         "tsx" => HighlightInfo::Highlighted(highlight_tsx(lines).unwrap()),
         "typescript" | "ts" => HighlightInfo::Highlighted(highlight_typescript(lines).unwrap()),
+        "yaml" | "yml" => HighlightInfo::Highlighted(highlight_yaml(lines).unwrap()),
         _ => HighlightInfo::Unhighlighted,
     }
 }

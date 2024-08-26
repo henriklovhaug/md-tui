@@ -254,7 +254,7 @@ fn run_app<B: Backend>(
 }
 
 fn render_file_tree(f: &mut Frame, app: &App, file_tree: FileTree) {
-    let size = f.size();
+    let size = f.area();
     let x = match GENERAL_CONFIG.centering {
         config::general::Centering::Left => 2,
         config::general::Centering::Center => {
@@ -320,7 +320,7 @@ fn render_file_tree(f: &mut Frame, app: &App, file_tree: FileTree) {
 }
 
 fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
-    let size = f.size();
+    let size = f.area();
 
     let x = match GENERAL_CONFIG.centering {
         config::general::Centering::Left => 2,
@@ -472,5 +472,5 @@ fn open_editor(f: &mut Frame, app: &mut App, file_name: Option<&str>) {
     execute!(stdout, EnterAlternateScreen, EnableMouseCapture).unwrap();
 
     app.boxes = Boxes::None;
-    f.render_widget(Clear, f.size());
+    f.render_widget(Clear, f.area());
 }

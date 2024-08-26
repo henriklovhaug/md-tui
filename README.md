@@ -87,12 +87,14 @@ languages:
 - JavaScript
 - Json
 - Lua
+- Luau
 - Ocaml
 - PHP
 - Python
 - Rust
 - Scala
 - Typescript
+- Yaml
 
 ## Configuration
 

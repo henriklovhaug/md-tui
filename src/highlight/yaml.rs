@@ -1,20 +1,20 @@
-use tree_sitter_go::language;
 use tree_sitter_highlight::{HighlightConfiguration, HighlightEvent, Highlighter};
+use tree_sitter_yaml::language;
 
 use crate::highlight::HIGHLIGHT_NAMES;
 
-pub fn highlight_go(lines: &[u8]) -> Result<Vec<HighlightEvent>, String> {
+pub fn highlight_yaml(lines: &[u8]) -> Result<Vec<HighlightEvent>, String> {
     let mut highlither = Highlighter::new();
     let language = language();
 
-    let mut go_config =
-        HighlightConfiguration::new(language, "go", tree_sitter_go::HIGHLIGHTS_QUERY, "", "")
+    let mut yaml_config =
+        HighlightConfiguration::new(language, "yaml", tree_sitter_yaml::HIGHLIGHTS_QUERY, "", "")
             .unwrap();
 
-    go_config.configure(&HIGHLIGHT_NAMES);
+    yaml_config.configure(&HIGHLIGHT_NAMES);
 
     let highlights: Result<Vec<HighlightEvent>, String> =
-        if let Ok(lines) = highlither.highlight(&go_config, lines, None, |_| None) {
+        if let Ok(lines) = highlither.highlight(&yaml_config, lines, None, |_| None) {
             lines
                 .collect::<Result<Vec<_>, _>>()
                 .map_err(|e| e.to_string())

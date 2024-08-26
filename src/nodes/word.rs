@@ -57,9 +57,10 @@ impl From<MdParseEnum> for WordType {
             MdParseEnum::Digit => WordType::ListMarker,
 
             MdParseEnum::Paragraph
-            | MdParseEnum::TableRow
-            | MdParseEnum::Sentence
             | MdParseEnum::AltText
+            | MdParseEnum::Quote
+            | MdParseEnum::Sentence
+            | MdParseEnum::TableRow
             | MdParseEnum::Word => WordType::Normal,
 
             MdParseEnum::LinkData => WordType::LinkData,
@@ -70,20 +71,19 @@ impl From<MdParseEnum> for WordType {
             MdParseEnum::Caution => WordType::MetaInfo(MetaData::Caution),
 
             MdParseEnum::Heading
-            | MdParseEnum::Task
-            | MdParseEnum::UnorderedList
-            | MdParseEnum::ListContainer
-            | MdParseEnum::OrderedList
+            | MdParseEnum::BoldItalicStr
+            | MdParseEnum::BoldStr
             | MdParseEnum::CodeBlock
             | MdParseEnum::CodeStr
+            | MdParseEnum::Image
             | MdParseEnum::ItalicStr
-            | MdParseEnum::Quote
+            | MdParseEnum::ListContainer
+            | MdParseEnum::OrderedList
+            | MdParseEnum::StrikethroughStr
             | MdParseEnum::Table
             | MdParseEnum::TableCell
-            | MdParseEnum::BoldStr
-            | MdParseEnum::BoldItalicStr
-            | MdParseEnum::StrikethroughStr
-            | MdParseEnum::Image
+            | MdParseEnum::Task
+            | MdParseEnum::UnorderedList
             | MdParseEnum::TableSeperator => {
                 unreachable!("Edit this or pest file to fix for value: {:?}", value)
             }
