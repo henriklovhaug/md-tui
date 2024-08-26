@@ -1,6 +1,8 @@
 # Version 0.8.5
 
-- (#145) Allow `~~~` to be code blocks
+- (#145) Allow `~~~` to be code blocks.
+- Make `md-tui` also a library.
+- Make highlighting of code optional
 
 # Version 0.8.4
 

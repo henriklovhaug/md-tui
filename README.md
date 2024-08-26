@@ -14,6 +14,7 @@
   - [Links](#links)
   - [Neovim plugin](#neovim-plugin)
   - [Contributions](#contributions)
+  - [Use as library](#use-as-library)
 
 <!--toc:end-->
 
@@ -211,3 +212,9 @@ This application also exists as a plugin for Neovim called
 ## Contributions
 
 Both PRs and issues are appreciated!
+
+## Use as library
+
+It's possible to use this as a library. It's not well documented for that use,
+but the feature is there. There is one default feature attached, which is the
+whole highlighting of code blocks.
