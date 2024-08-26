@@ -8,17 +8,21 @@ use std::{
     time::{Duration, Instant},
 };
 
+use md_tui::event_handler::{handle_keyboard_input, KeyBoardAction};
+use md_tui::nodes::root::{Component, ComponentRoot};
+use md_tui::pages::file_explorer::{FileTree, MdFile};
+use md_tui::parser::parse_markdown;
+use md_tui::search::find_md_files_channel;
+use md_tui::util::{self, destruct_terminal, general::GENERAL_CONFIG, App, Boxes, Mode};
+
 use crossterm::{
     cursor,
     event::{self, DisableMouseCapture, EnableMouseCapture, Event},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use event_handler::{handle_keyboard_input, KeyBoardAction};
-use nodes::root::{Component, ComponentRoot};
+
 use notify::{Config, PollWatcher, Watcher};
-use pages::file_explorer::{FileTree, MdFile};
-use parser::parse_markdown;
 use ratatui::{
     backend::{Backend, CrosstermBackend},
     layout::Rect,
@@ -27,17 +31,6 @@ use ratatui::{
     Frame, Terminal,
 };
 use ratatui_image::{FilterType, Resize, StatefulImage};
-use search::find_md_files_channel;
-use util::{destruct_terminal, general::GENERAL_CONFIG, App, Boxes, Mode};
-
-mod boxes;
-mod event_handler;
-pub mod highlight;
-mod nodes;
-mod pages;
-pub mod parser;
-pub mod search;
-mod util;
 
 const EMPTY_FILE: &str = "";
 
