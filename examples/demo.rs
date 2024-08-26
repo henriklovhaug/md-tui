@@ -72,7 +72,7 @@ impl App {
     }
 
     fn draw(&mut self, frame: &mut Frame) {
-        self.area = frame.size();
+        self.area = frame.area();
 
         self.markdown = Some(md_tui::parser::parse_markdown(
             None,
