@@ -15,6 +15,10 @@ categories = ["command-line-interface", "command-line-utilities"]
 name = "mdt"
 path = "src/main.rs"
 
+[lib]
+name = "md_tui"
+path = "src/lib.rs"
+
 [profile.release]
 lto = true
 codegen-units = 1
