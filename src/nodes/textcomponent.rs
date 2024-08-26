@@ -329,8 +329,8 @@ fn transform_paragraph(component: &mut TextComponent, width: u16) {
 
 #[cfg(not(feature = "highlight"))]
 fn transform_codeblock(component: &mut TextComponent) {
-    let mut content = self
-        .component
+    let mut content = component
+        .content()
         .iter()
         .filter(|c| c.iter().any(|x| x.is_renderable()))
         .cloned()
@@ -338,8 +338,8 @@ fn transform_codeblock(component: &mut TextComponent) {
 
     content.insert(0, vec![Word::new("".to_string(), WordType::Code)]);
 
-    let height = self.content.len() as u16;
-    self.height = height;
+    let height = component.content.len() as u16;
+    component.height = height;
 }
 
 #[cfg(feature = "highlight")]
