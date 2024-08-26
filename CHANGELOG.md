@@ -1,9 +1,7 @@
-# Unreleased
-
 # Version 0.8.5
 
 - (#145) Allow `~~~` to be code blocks
-- Allow using md-tui as a library
+- Allow using `md-tui` as a library
 
 # Version 0.8.4
 
