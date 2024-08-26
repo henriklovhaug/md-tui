@@ -3,12 +3,13 @@ use std::cmp;
 use itertools::Itertools;
 
 use ratatui::style::Color;
+#[cfg(feature = "highlight")]
 use tree_sitter_highlight::HighlightEvent;
 
-use crate::{
-    highlight::{highlight_code, HighlightInfo, COLOR_MAP},
-    nodes::word::MetaData,
-};
+use crate::nodes::word::MetaData;
+
+#[cfg(feature = "highlight")]
+use crate::highlight::{highlight_code, HighlightInfo, COLOR_MAP};
 
 use super::word::{Word, WordType};
 
