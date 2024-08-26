@@ -6,6 +6,7 @@ use crossterm::terminal;
 use crossterm::terminal::{EnterAlternateScreen, LeaveAlternateScreen};
 
 use md_tui::nodes::root::{Component, ComponentRoot};
+use md_tui::parser;
 
 use ratatui::backend::{Backend, CrosstermBackend};
 use ratatui::layout::Rect;
@@ -74,7 +75,7 @@ impl App {
     fn draw(&mut self, frame: &mut Frame) {
         self.area = frame.area();
 
-        self.markdown = Some(md_tui::parser::parse_markdown(
+        self.markdown = Some(parser::parse_markdown(
             None,
             &CONTENT.to_string(),
             self.area.width,

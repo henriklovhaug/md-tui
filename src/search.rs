@@ -3,10 +3,11 @@ use std::{collections::VecDeque, sync::mpsc::Sender};
 use itertools::Itertools;
 use strsim::damerau_levenshtein;
 
-use md_tui::config::general::GENERAL_CONFIG;
-use md_tui::nodes::word::Word;
-
-use crate::pages::file_explorer::{FileTree, MdFile};
+use crate::{
+    nodes::word::{Word, WordType},
+    pages::file_explorer::{FileTree, MdFile},
+    util::general::GENERAL_CONFIG,
+};
 
 fn add_to_gitingore(path: &str, ignored_files: &mut Vec<String>) {
     let gitignore = std::fs::read_to_string(path);
@@ -90,7 +91,6 @@ pub fn find_md_files_channel(tx: Sender<Option<MdFile>>) {
     tx.send(None).unwrap();
 }
 
-#[allow(dead_code)]
 pub fn find_md_files() -> FileTree {
     let mut ignored_files = Vec::new();
 
@@ -168,7 +168,6 @@ pub fn find_files(files: &[MdFile], query: &str) -> Vec<MdFile> {
         .collect()
 }
 
-#[allow(dead_code)]
 pub fn find_with_backoff(query: &str, text: &str) -> Vec<usize> {
     let precision = 0;
     let mut result = find(query, text, precision);
@@ -202,7 +201,6 @@ pub fn find(query: &str, text: &str, precision: usize) -> Vec<usize> {
 }
 
 /// Returns line numbers that match the query with the given precision.
-#[allow(dead_code)]
 pub fn line_match(query: &str, text: Vec<&str>, precision: usize) -> Vec<usize> {
     text.iter()
         .enumerate()
@@ -216,7 +214,6 @@ pub fn line_match(query: &str, text: Vec<&str>, precision: usize) -> Vec<usize> 
         .collect()
 }
 
-#[allow(dead_code)]
 pub fn line_match_and_index(
     query: &str,
     lines: Vec<&str>,
@@ -233,7 +230,6 @@ pub fn line_match_and_index(
         .collect()
 }
 
-#[allow(dead_code)]
 pub fn find_with_ref<'a>(query: &str, text: Vec<&'a Word>) -> Vec<&'a Word> {
     let window_size = query
         .split_whitespace()
@@ -262,6 +258,44 @@ pub fn find_with_ref<'a>(query: &str, text: Vec<&'a Word>) -> Vec<&'a Word> {
         .collect::<Vec<_>>()
 }
 
+pub fn find_and_mark<'a>(query: &str, text: &'a mut Vec<&'a mut Word>) {
+    let window_size = query
+        .split_whitespace()
+        .fold(0usize, |acc, _| acc + 2)
+        .saturating_sub(1);
+
+    if window_size == 0 {
+        return;
+    }
+
+    windows_mut_for_each(text.as_mut_slice(), window_size, |window| {
+        let mut words = window.iter().map(|c| c.content()).join("");
+        let case_sensitive = query.chars().any(|c| c.is_uppercase());
+
+        words = if case_sensitive {
+            words.to_owned()
+        } else {
+            words.to_lowercase()
+        };
+
+        if damerau_levenshtein(query, &words) == 0 {
+            window
+                .iter_mut()
+                .for_each(|word| word.set_kind(WordType::Selected));
+        }
+    })
+}
+
+fn windows_mut_for_each<T>(v: &mut [T], n: usize, f: impl Fn(&mut [T])) {
+    let mut start = 0;
+    let mut end = n;
+    while end <= v.len() {
+        f(&mut v[start..end]);
+        start += 1;
+        end += 1;
+    }
+}
+
 fn char_windows(src: &str, win_size: usize) -> impl Iterator<Item = &'_ str> {
     src.char_indices().flat_map(move |(from, _)| {
         src[from..]
@@ -271,14 +305,29 @@ fn char_windows(src: &str, win_size: usize) -> impl Iterator<Item = &'_ str> {
     })
 }
 
+pub fn compare_heading(link_header: &str, header: &[Vec<Word>]) -> bool {
+    let header: String = header
+        .iter()
+        .flatten()
+        .map(|word| word.content().to_lowercase())
+        .join("-")
+        .trim_start_matches('-')
+        .chars()
+        .filter(|c| c.is_alphanumeric() || *c == '-')
+        .dedup_by(|a, b| *a == '-' && *b == '-')
+        .skip_while(|c| *c == '-')
+        .collect();
+
+    link_header == header
+}
+
 #[cfg(test)]
 mod tests {
 
-    use md_tui::{
+    use crate::{
         nodes::{
             root::{Component, ComponentRoot},
             textcomponent::{TextComponent, TextNode},
-            word::WordType,
         },
         parser::parse_markdown,
     };

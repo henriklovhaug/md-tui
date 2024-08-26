@@ -13,7 +13,7 @@ use ratatui::{
 };
 
 use crate::search::find_files;
-use md_tui::config::colors::COLOR_CONFIG;
+use crate::util::colors::COLOR_CONFIG;
 
 #[derive(Debug, Clone)]
 enum MdFileComponent {
@@ -100,7 +100,6 @@ impl FileTree {
         this
     }
 
-    #[allow(dead_code)]
     pub fn sort(&mut self) {
         let filtered: Vec<&MdFile> = self
             .files
@@ -288,7 +287,6 @@ impl FileTree {
         self.files.push(MdFileComponent::Spacer);
     }
 
-    #[allow(dead_code)]
     pub fn files(&self) -> Vec<&MdFile> {
         self.files
             .iter()
@@ -299,7 +297,6 @@ impl FileTree {
             .collect::<Vec<&MdFile>>()
     }
 
-    #[allow(dead_code)]
     pub fn all_files(&self) -> &Vec<MdFile> {
         &self.all_files
     }

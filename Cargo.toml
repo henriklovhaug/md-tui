@@ -11,10 +11,6 @@ homepage = "https://github.com/henriklovhaug/md-tui"
 keywords = ["markdown", "terminal", "viewer", "tui"]
 categories = ["command-line-interface", "command-line-utilities"]
 
-[[bin]]
-name = "mdt"
-path = "bin/main.rs"
-
 [profile.release]
 lto = true
 codegen-units = 1

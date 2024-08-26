@@ -1,6 +1,3 @@
-use itertools::Itertools;
-use strsim::damerau_levenshtein;
-
 use ratatui::style::Color;
 
 use crate::parser::MdParseEnum;
@@ -137,48 +134,4 @@ impl Word {
     pub fn is_renderable(&self) -> bool {
         !matches!(self.kind(), WordType::MetaInfo(_) | WordType::LinkData)
     }
-}
-
-pub fn compare_heading(link_header: &str, header: &[Vec<Word>]) -> bool {
-    let header: String = header
-        .iter()
-        .flatten()
-        .map(|word| word.content().to_lowercase())
-        .join("-")
-        .trim_start_matches('-')
-        .chars()
-        .filter(|c| c.is_alphanumeric() || *c == '-')
-        .dedup_by(|a, b| *a == '-' && *b == '-')
-        .skip_while(|c| *c == '-')
-        .collect();
-
-    link_header == header
-}
-
-pub fn find_and_mark<'a>(query: &str, text: &'a mut Vec<&'a mut Word>) {
-    let window_size = query
-        .split_whitespace()
-        .fold(0usize, |acc, _| acc + 2)
-        .saturating_sub(1);
-
-    if window_size == 0 {
-        return;
-    }
-
-    crate::windows_mut_for_each(text.as_mut_slice(), window_size, |window| {
-        let mut words = window.iter().map(|c| c.content()).join("");
-        let case_sensitive = query.chars().any(|c| c.is_uppercase());
-
-        words = if case_sensitive {
-            words.to_owned()
-        } else {
-            words.to_lowercase()
-        };
-
-        if damerau_levenshtein(query, &words) == 0 {
-            window
-                .iter_mut()
-                .for_each(|word| word.set_kind(WordType::Selected));
-        }
-    })
 }

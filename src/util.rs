@@ -6,10 +6,12 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, LeaveAlternateScreen},
 };
-use md_tui::config::general::GENERAL_CONFIG;
+use general::GENERAL_CONFIG;
 
 use crate::boxes::{errorbox::ErrorBox, help_box::HelpBox, linkbox::LinkBox, searchbox::SearchBox};
 
+pub mod colors;
+pub mod general;
 pub mod keybinds;
 pub mod keys;
 
