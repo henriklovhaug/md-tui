@@ -81,13 +81,18 @@ fn parse_component(parse_node: ParseNode) -> Component {
                 if node.kind() == MdParseEnum::AltText {
                     node.content().clone_into(&mut alt_text);
                 } else if is_url(node.content()) {
-                    let mut buf = Vec::new();
-
-                    image = ureq::get(node.content()).call().ok().and_then(|b| {
-                        let _ = b.into_reader().read_to_end(&mut buf);
-
-                        image::load_from_memory(&buf).ok()
-                    });
+                    #[cfg(feature = "network")]
+                    {
+                        let mut buf = Vec::new();
+                        image = ureq::get(node.content()).call().ok().and_then(|b| {
+                            let _ = b.into_reader().read_to_end(&mut buf);
+                            image::load_from_memory(&buf).ok()
+                        });
+                    }
+                    #[cfg(not(feature = "network"))]
+                    {
+                        image = None;
+                    }
                 } else {
                     image = ImageReader::open(node.content())
                         .ok()

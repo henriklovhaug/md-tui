@@ -1,46 +1,49 @@
-use c::highlight_c;
-use cpp::highlight_cpp;
-use css::highlight_css;
-use elixir::highlight_elixir;
-use go::highlight_go;
-use html::highlight_html;
-use java::highlight_java;
-use javascript::highlight_javascript;
-use json::highlight_json;
-use lua::highlight_lua;
-use luau::highlight_luau;
-use ocaml::highlight_ocaml;
-use php::highlight_php;
-use python::highlight_python;
-use ratatui::style::Color;
-use rust::highlight_rust;
-use scala::highlight_scala;
-use tree_sitter_highlight::HighlightEvent;
-use tsx::highlight_tsx;
-use typescript::highlight_typescript;
-use yaml::highlight_yaml;
-
+#[cfg(feature = "tree-sitter-bash")]
 mod bash;
+#[cfg(feature = "tree-sitter-c")]
 mod c;
+#[cfg(feature = "tree-sitter-cpp")]
 mod cpp;
+#[cfg(feature = "tree-sitter-css")]
 mod css;
+#[cfg(feature = "tree-sitter-elixir")]
 mod elixir;
+#[cfg(feature = "tree-sitter-go")]
 mod go;
+#[cfg(feature = "tree-sitter-html")]
 mod html;
+#[cfg(feature = "tree-sitter-java")]
 mod java;
+#[cfg(feature = "tree-sitter-javascript")]
 mod javascript;
+#[cfg(feature = "tree-sitter-json")]
 mod json;
+#[cfg(feature = "tree-sitter-lua")]
 mod lua;
+#[cfg(feature = "tree-sitter-luau-fork")]
 mod luau;
+#[cfg(feature = "tree-sitter-ocaml")]
 mod ocaml;
+#[cfg(feature = "tree-sitter-php")]
 mod php;
+#[cfg(feature = "tree-sitter-python")]
 mod python;
+#[cfg(feature = "tree-sitter-rust")]
 mod rust;
+#[cfg(feature = "tree-sitter-scala")]
 mod scala;
+#[cfg(feature = "tree-sitter-typescript")]
 mod tsx;
+#[cfg(feature = "tree-sitter-typescript")]
 mod typescript;
+#[cfg(feature = "tree-sitter-yaml")]
 mod yaml;
 
+use tree_sitter_highlight::HighlightEvent;
+
+use ratatui::style::Color;
+
+#[allow(dead_code)]
 static HIGHLIGHT_NAMES: [&str; 18] = [
     "attribute",
     "constant",
@@ -88,28 +91,73 @@ pub enum HighlightInfo {
     Unhighlighted,
 }
 
+#[allow(unused_variables)]
 pub fn highlight_code(language: &str, lines: &[u8]) -> HighlightInfo {
     match language {
+        #[cfg(feature = "tree-sitter-bash")]
         "bash" | "sh" => HighlightInfo::Highlighted(bash::highlight_bash(lines).unwrap()),
-        "c" => HighlightInfo::Highlighted(highlight_c(lines).unwrap()),
-        "cpp" => HighlightInfo::Highlighted(highlight_cpp(lines).unwrap()),
-        "css" => HighlightInfo::Highlighted(highlight_css(lines).unwrap()),
-        "elixir" => HighlightInfo::Highlighted(highlight_elixir(lines).unwrap()),
-        "go" => HighlightInfo::Highlighted(highlight_go(lines).unwrap()),
-        "html" => HighlightInfo::Highlighted(highlight_html(lines).unwrap()),
-        "java" => HighlightInfo::Highlighted(highlight_java(lines).unwrap()),
-        "javascript" | "js" => HighlightInfo::Highlighted(highlight_javascript(lines).unwrap()),
-        "json" => HighlightInfo::Highlighted(highlight_json(lines).unwrap()),
-        "lua" => HighlightInfo::Highlighted(highlight_lua(lines).unwrap()),
-        "luau" => HighlightInfo::Highlighted(highlight_luau(lines).unwrap()),
-        "ocaml" => HighlightInfo::Highlighted(highlight_ocaml(lines).unwrap()),
-        "php" => HighlightInfo::Highlighted(highlight_php(lines).unwrap()),
-        "python" => HighlightInfo::Highlighted(highlight_python(lines).unwrap()),
-        "rust" => HighlightInfo::Highlighted(highlight_rust(lines).unwrap()),
-        "scala" => HighlightInfo::Highlighted(highlight_scala(lines).unwrap()),
-        "tsx" => HighlightInfo::Highlighted(highlight_tsx(lines).unwrap()),
-        "typescript" | "ts" => HighlightInfo::Highlighted(highlight_typescript(lines).unwrap()),
-        "yaml" | "yml" => HighlightInfo::Highlighted(highlight_yaml(lines).unwrap()),
+
+        #[cfg(feature = "tree-sitter-c")]
+        "c" => HighlightInfo::Highlighted(c::highlight_c(lines).unwrap()),
+
+        #[cfg(feature = "tree-sitter-cpp")]
+        "cpp" => HighlightInfo::Highlighted(cpp::highlight_cpp(lines).unwrap()),
+
+        #[cfg(feature = "tree-sitter-css")]
+        "css" => HighlightInfo::Highlighted(css::highlight_css(lines).unwrap()),
+
+        #[cfg(feature = "tree-sitter-elixir")]
+        "elixir" => HighlightInfo::Highlighted(elixir::highlight_elixir(lines).unwrap()),
+
+        #[cfg(feature = "tree-sitter-go")]
+        "go" => HighlightInfo::Highlighted(go::highlight_go(lines).unwrap()),
+
+        #[cfg(feature = "tree-sitter-html")]
+        "html" => HighlightInfo::Highlighted(html::highlight_html(lines).unwrap()),
+
+        #[cfg(feature = "tree-sitter-java")]
+        "java" => HighlightInfo::Highlighted(java::highlight_java(lines).unwrap()),
+
+        #[cfg(feature = "tree-sitter-javascript")]
+        "javascript" | "js" => {
+            HighlightInfo::Highlighted(javascript::highlight_javascript(lines).unwrap())
+        }
+
+        #[cfg(feature = "tree-sitter-json")]
+        "json" => HighlightInfo::Highlighted(json::highlight_json(lines).unwrap()),
+
+        #[cfg(feature = "tree-sitter-lua")]
+        "lua" => HighlightInfo::Highlighted(lua::highlight_lua(lines).unwrap()),
+
+        #[cfg(feature = "tree-sitter-luau-fork")]
+        "luau" => HighlightInfo::Highlighted(luau::highlight_luau(lines).unwrap()),
+
+        #[cfg(feature = "tree-sitter-ocaml")]
+        "ocaml" => HighlightInfo::Highlighted(ocaml::highlight_ocaml(lines).unwrap()),
+
+        #[cfg(feature = "tree-sitter-php")]
+        "php" => HighlightInfo::Highlighted(php::highlight_php(lines).unwrap()),
+
+        #[cfg(feature = "tree-sitter-python")]
+        "python" => HighlightInfo::Highlighted(python::highlight_python(lines).unwrap()),
+
+        #[cfg(feature = "tree-sitter-rust")]
+        "rust" => HighlightInfo::Highlighted(rust::highlight_rust(lines).unwrap()),
+
+        #[cfg(feature = "tree-sitter-scala")]
+        "scala" => HighlightInfo::Highlighted(scala::highlight_scala(lines).unwrap()),
+
+        #[cfg(feature = "tree-sitter-typescript")]
+        "tsx" => HighlightInfo::Highlighted(tsx::highlight_tsx(lines).unwrap()),
+
+        #[cfg(feature = "tree-sitter-typescript")]
+        "typescript" | "ts" => {
+            HighlightInfo::Highlighted(typescript::highlight_typescript(lines).unwrap())
+        }
+
+        #[cfg(feature = "tree-sitter-yaml")]
+        "yaml" | "yml" => HighlightInfo::Highlighted(yaml::highlight_yaml(lines).unwrap()),
+
         _ => HighlightInfo::Unhighlighted,
     }
 }
