@@ -11,6 +11,10 @@ homepage = "https://github.com/henriklovhaug/md-tui"
 keywords = ["markdown", "terminal", "viewer", "tui"]
 categories = ["command-line-interface", "command-line-utilities"]
 
+[[bin]]
+name = "mdt"
+path = "src/main.rs"
+
 [features]
 default = ["tree-sitter", "network"]
 tree-sitter = [
