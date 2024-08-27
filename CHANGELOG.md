@@ -1,3 +1,7 @@
+# version 0.8.6
+
+- Make binary `mdt` again. Was wrongly removed in version 0.8.5.
+
 # Version 0.8.5
 
 - (#145) Allow `~~~` to be code blocks

@@ -17,8 +17,8 @@ use crate::nodes::{
 #[grammar = "md.pest"]
 pub struct MdParser;
 
-pub fn parse_markdown(name: Option<&str>, file: &str, width: u16) -> ComponentRoot {
-    let root: Pairs<'_, Rule> = if let Ok(file) = MdParser::parse(Rule::txt, file) {
+pub fn parse_markdown(name: Option<&str>, content: &str, width: u16) -> ComponentRoot {
+    let root: Pairs<'_, Rule> = if let Ok(file) = MdParser::parse(Rule::txt, content) {
         file
     } else {
         return ComponentRoot::new(name.map(str::to_string), Vec::new());
