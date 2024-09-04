@@ -493,6 +493,7 @@ pub enum MdParseEnum {
     ItalicStr,
     Link,
     LinkData,
+    InlineLink,
     ListContainer,
     Note,
     OrderedList,
@@ -532,7 +533,11 @@ impl From<Rule> for MdParseEnum {
             Rule::code_word => Self::Code,
             Rule::code => Self::CodeStr,
             Rule::programming_language => Self::PLanguage,
-            Rule::link_word | Rule::link_line | Rule::link | Rule::wiki_link_word => Self::Link,
+            Rule::link_word
+            | Rule::link_line
+            | Rule::link
+            | Rule::wiki_link_word
+            | Rule::inline_link => Self::Link,
             Rule::wiki_link_alone => Self::WikiLink,
             Rule::o_list_counter | Rule::digit => Self::Digit,
             Rule::task_open => Self::TaskOpen,
