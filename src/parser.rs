@@ -143,7 +143,7 @@ fn parse_component(parse_node: ParseNode) -> Component {
                     .dedup_by(|x, y| *x == ' ' && *y == ' ')
                     .collect();
 
-                if node.kind() == MdParseEnum::WikiLink {
+                if matches!(node.kind(), MdParseEnum::WikiLink | MdParseEnum::InlineLink) {
                     let comp = Word::new(content.clone(), WordType::LinkData);
                     words.push(comp);
                 }
@@ -165,7 +165,7 @@ fn parse_component(parse_node: ParseNode) -> Component {
                 let word_type = WordType::from(node.kind());
                 let mut content = node.content().to_owned();
 
-                if node.kind() == MdParseEnum::WikiLink {
+                if matches!(node.kind(), MdParseEnum::WikiLink | MdParseEnum::InlineLink) {
                     let comp = Word::new(content.clone(), WordType::LinkData);
                     words.push(comp);
                 }
@@ -207,7 +207,7 @@ fn parse_component(parse_node: ParseNode) -> Component {
                 let word_type = WordType::from(node.kind());
                 let mut content = node.content().to_owned();
 
-                if node.kind() == MdParseEnum::WikiLink {
+                if matches!(node.kind(), MdParseEnum::WikiLink | MdParseEnum::InlineLink) {
                     let comp = Word::new(content.clone(), WordType::LinkData);
                     words.push(comp);
                 }
@@ -232,7 +232,7 @@ fn parse_component(parse_node: ParseNode) -> Component {
                 let word_type = WordType::from(node.kind());
                 let mut content = node.content().to_owned();
 
-                if node.kind() == MdParseEnum::WikiLink {
+                if matches!(node.kind(), MdParseEnum::WikiLink | MdParseEnum::InlineLink) {
                     let comp = Word::new(content.clone(), WordType::LinkData);
                     words.push(comp);
                 }
@@ -279,7 +279,7 @@ fn parse_component(parse_node: ParseNode) -> Component {
                             .collect(),
                     };
 
-                    if node.kind() == MdParseEnum::WikiLink {
+                    if matches!(node.kind(), MdParseEnum::WikiLink | MdParseEnum::InlineLink) {
                         let comp = Word::new(content.clone(), WordType::LinkData);
                         inner_words.push(comp);
                     }
@@ -324,7 +324,7 @@ fn parse_component(parse_node: ParseNode) -> Component {
                     let word_type = WordType::from(word.kind());
                     let mut content = word.content().to_owned();
 
-                    if word.kind() == MdParseEnum::WikiLink {
+                    if matches!(word.kind(), MdParseEnum::WikiLink | MdParseEnum::InlineLink) {
                         let comp = Word::new(content.clone(), WordType::LinkData);
                         inner_words.push(comp);
                     }
@@ -491,6 +491,7 @@ pub enum MdParseEnum {
     Indent,
     Italic,
     ItalicStr,
+    InlineLink,
     Link,
     LinkData,
     ListContainer,
@@ -534,6 +535,7 @@ impl From<Rule> for MdParseEnum {
             Rule::programming_language => Self::PLanguage,
             Rule::link_word | Rule::link_line | Rule::link | Rule::wiki_link_word => Self::Link,
             Rule::wiki_link_alone => Self::WikiLink,
+            Rule::inline_link | Rule::inline_link_wrapper => Self::InlineLink,
             Rule::o_list_counter | Rule::digit => Self::Digit,
             Rule::task_open => Self::TaskOpen,
             Rule::task_complete => Self::TaskClosed,
@@ -591,6 +593,7 @@ impl From<Rule> for MdParseEnum {
             | Rule::i_char
             | Rule::latex_char
             | Rule::quote_marking
+            | Rule::inline_link_char
             | Rule::s_char
             | Rule::WHITESPACE_S
             | Rule::wiki_link => todo!(),
