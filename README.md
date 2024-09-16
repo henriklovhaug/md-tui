@@ -117,7 +117,7 @@ Some key actions are not configurable. Like the following:
 > not get reassigned.
 
 > Actions can only be assigned to single characters. Space, fn keys, ctrl+key,
-> backspace etc., will not take affect and the default will be in use.
+> backspace etc., will not take effect and the default will be in use.
 
 ```toml
 # Keyboard actions
