@@ -311,16 +311,22 @@ fn parse_component(parse_node: ParseNode) -> Component {
 
         MdParseEnum::Table => {
             let mut words = Vec::new();
-            for row in parse_node.children_owned() {
-                if row.kind() == MdParseEnum::TableSeperator {
+            for cell in parse_node.children_owned() {
+                if cell.kind() == MdParseEnum::TableSeperator {
                     words.push(vec![Word::new(
-                        row.content().to_owned(),
+                        cell.content().to_owned(),
                         WordType::MetaInfo(MetaData::ColumnsCount),
                     )]);
                     continue;
                 }
                 let mut inner_words = Vec::new();
-                for word in get_leaf_nodes(row) {
+
+                if cell.children().is_empty() {
+                    words.push(inner_words);
+                    continue;
+                }
+
+                for word in get_leaf_nodes(cell) {
                     let word_type = WordType::from(word.kind());
                     let mut content = word.content().to_owned();
 
@@ -339,7 +345,10 @@ fn parse_component(parse_node: ParseNode) -> Component {
                 }
                 words.push(inner_words);
             }
-            Component::TextComponent(TextComponent::new_formatted(TextNode::Table, words))
+            Component::TextComponent(TextComponent::new_formatted(
+                TextNode::Table(vec![], vec![]),
+                words,
+            ))
         }
 
         MdParseEnum::BlockSeperator => {
@@ -355,8 +364,14 @@ fn parse_component(parse_node: ParseNode) -> Component {
 
 fn get_leaf_nodes(node: ParseNode) -> Vec<ParseNode> {
     let mut leaf_nodes = Vec::new();
-    if node.kind() == MdParseEnum::Link && node.content().starts_with(' ') {
-        let comp = ParseNode::new(MdParseEnum::Word, " ".to_owned());
+
+    // Insert separator information between links
+    if node.kind() == MdParseEnum::Link {
+        let comp = if node.content().starts_with(' ') {
+            ParseNode::new(MdParseEnum::Word, " ".to_owned())
+        } else {
+            ParseNode::new(MdParseEnum::Word, "".to_owned())
+        };
         leaf_nodes.push(comp);
     }
 
@@ -505,7 +520,6 @@ pub enum MdParseEnum {
     StrikethroughStr,
     Table,
     TableCell,
-    TableRow,
     TableSeperator,
     Task,
     TaskClosed,
@@ -541,7 +555,7 @@ impl From<Rule> for MdParseEnum {
             Rule::task_complete => Self::TaskClosed,
             Rule::code_line => Self::CodeBlockStr,
             Rule::sentence | Rule::t_sentence => Self::Sentence,
-            Rule::table_cell => Self::TableRow,
+            Rule::table_cell => Self::TableCell,
             Rule::table_seperator => Self::TableSeperator,
             Rule::u_list => Self::UnorderedList,
             Rule::o_list => Self::OrderedList,

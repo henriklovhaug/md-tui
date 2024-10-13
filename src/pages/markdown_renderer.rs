@@ -2,7 +2,7 @@ use std::cmp;
 
 use ratatui::{
     buffer::Buffer,
-    layout::{Alignment, Constraint, Rect},
+    layout::{Alignment, Rect},
     style::{Color, Modifier, Style, Stylize},
     text::{Line, Span},
     widgets::{Block, Cell, List, ListItem, Paragraph, Row, Table, Widget},
@@ -77,8 +77,6 @@ impl Widget for TextComponent {
             .cloned()
             .unwrap_or_else(|| Word::new("".to_string(), WordType::Normal));
 
-        let table_meta = self.meta_info().to_owned();
-
         let area = Rect { height, y, ..area };
 
         match kind {
@@ -87,7 +85,9 @@ impl Widget for TextComponent {
             TextNode::Task => render_task(area, buf, self, clips, &meta_info),
             TextNode::List => render_list(area, buf, self, clips),
             TextNode::CodeBlock => render_code_block(area, buf, self, clips),
-            TextNode::Table => render_table(area, buf, self, clips, table_meta),
+            TextNode::Table(widths, heights) => {
+                render_table(area, buf, self, clips, widths, heights)
+            }
             TextNode::Quote => render_quote(area, buf, self, clips),
             TextNode::LineBreak => (),
             TextNode::HorizontalSeperator => render_horizontal_seperator(area, buf),
@@ -376,71 +376,135 @@ fn render_table(
     buf: &mut Buffer,
     component: TextComponent,
     clip: Clipping,
-    meta_info: Vec<Word>,
+    widths: Vec<u16>,
+    heights: Vec<u16>,
 ) {
-    let column_count = meta_info.len();
+    let scroll_offset = component.scroll_offset();
+    let y_offset = component.y_offset();
+    let height = component.height();
 
-    let content = component.content();
+    let column_count = widths.len();
 
+    let content = component.content_owned();
     let titles = content.chunks(column_count).next().unwrap().to_vec();
-
-    let mut widths = vec![0; column_count];
-
-    content.chunks(column_count).for_each(|c| {
-        c.iter().enumerate().for_each(|(i, c)| {
-            let len = c.iter().map(|c| c.content().len()).sum::<usize>() + 1;
-            if len > widths[i] as usize {
-                widths[i] = len as u16;
-            }
-        });
-    });
-
-    let widths = widths
-        .into_iter()
-        .map(Constraint::Length)
-        .collect::<Vec<_>>();
-
     let moved_content = content.chunks(column_count).skip(1).collect::<Vec<_>>();
 
     let header = Row::new(
         titles
             .iter()
-            .map(|c| Cell::from(Line::from(c.iter().map(style_word).collect::<Vec<_>>())))
-            .collect::<Vec<_>>(),
-    );
+            .enumerate()
+            .map(|(column_i, entry)| {
+                let mut line = vec![];
+                let mut lines = vec![];
+                let mut line_len = 0;
+                for word in entry.iter() {
+                    let word_len = word.content().len() as u16;
+                    line_len += word_len;
+                    if line_len <= widths[column_i] {
+                        line.push(word);
+                    } else {
+                        lines.push(Line::from(
+                            line.into_iter().map(style_word).collect::<Vec<_>>(),
+                        ));
+                        line = vec![word];
+                        line_len -= widths[column_i]
+                    }
+                }
 
-    let mut rows = moved_content
+                lines.push(Line::from(
+                    line.into_iter().map(style_word).collect::<Vec<_>>(),
+                ));
+
+                Cell::from(lines)
+            })
+            .collect::<Vec<_>>(),
+    )
+    .height(heights[0]);
+
+    let (start_i, stop_i) = match clip {
+        Clipping::Both => {
+            let top = scroll_offset - y_offset;
+            (top, top + area.height)
+        }
+        Clipping::Upper => {
+            let offset = height.saturating_sub(area.height);
+            (offset, height)
+        }
+        Clipping::Lower => (0, height.min(area.height)),
+        Clipping::None => (0, height),
+    };
+
+    let (start_i, stop_i) = (
+        start_i as usize,
+        (stop_i).saturating_sub(heights[0]) as usize,
+    );
+    let mut line_i = 0;
+    let rows = moved_content
         .iter()
-        .map(|c| {
-            Row::new(
-                c.iter()
-                    .map(|i| Cell::from(Line::from(i.iter().map(style_word).collect::<Vec<_>>())))
-                    .collect::<Vec<_>>(),
+        .enumerate()
+        .filter_map(|(row_i, c)| {
+            if (line_i + heights[row_i + 1] as usize) <= start_i {
+                line_i += heights[row_i + 1] as usize;
+                return None;
+            } else if stop_i <= line_i {
+                return None;
+            }
+
+            let start_cell_line_i = start_i.saturating_sub(line_i);
+            let stop_cell_line_i = stop_i.saturating_sub(line_i);
+            let n_cell_lines = (heights[row_i + 1] as usize)
+                .min(stop_cell_line_i)
+                .saturating_sub(start_cell_line_i);
+
+            line_i += heights[row_i + 1] as usize;
+
+            Some(
+                Row::new(
+                    c.iter()
+                        .enumerate()
+                        .map(|(column_i, entry)| {
+                            let mut acc = vec![];
+                            let mut lines = vec![];
+                            let mut line_len = 0;
+                            for word in entry.iter() {
+                                let word_len = word.content().len() as u16;
+                                line_len += word_len;
+                                if line_len <= widths[column_i] {
+                                    acc.push(word);
+                                } else {
+                                    lines.push(Line::from(
+                                        acc.into_iter().map(style_word).collect::<Vec<_>>(),
+                                    ));
+                                    line_len = word_len;
+                                    acc = vec![word];
+                                }
+                            }
+
+                            lines.push(Line::from(
+                                acc.into_iter().map(style_word).collect::<Vec<_>>(),
+                            ));
+
+                            lines.append(&mut vec![
+                                Line::from("");
+                                (start_cell_line_i + n_cell_lines)
+                                    .saturating_sub(lines.len())
+                            ]);
+
+                            Cell::from(
+                                lines
+                                    .splice(
+                                        start_cell_line_i..(start_cell_line_i + n_cell_lines),
+                                        vec![],
+                                    )
+                                    .collect::<Vec<_>>(),
+                            )
+                        })
+                        .collect::<Vec<_>>(),
+                )
+                .height(n_cell_lines as u16),
             )
         })
         .collect::<Vec<_>>();
-
-    match clip {
-        Clipping::Both => {
-            let top = component.scroll_offset() - component.y_offset();
-            rows.drain(0..top as usize);
-            rows.drain(area.height as usize..);
-        }
-        Clipping::Upper => {
-            let len = rows.len();
-            let height = area.height as usize;
-            let offset = len.saturating_sub(height) + 1;
-            // panic!("offset: {}, height: {}, len: {}", offset, height, len);
-            if offset < len {
-                rows.drain(0..offset);
-            }
-        }
-        Clipping::Lower => {
-            let drain_area = cmp::min(area.height, rows.len() as u16);
-            rows.drain(drain_area as usize..);
-        }
-        Clipping::None => (),
-    }
 
     let table = Table::new(rows, widths)
         .header(

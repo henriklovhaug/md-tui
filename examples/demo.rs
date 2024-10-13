@@ -1,6 +1,5 @@
 use std::time::{Duration, Instant};
 
-use crossterm;
 use crossterm::event::{Event, KeyCode, KeyModifiers};
 use crossterm::terminal;
 use crossterm::terminal::{EnterAlternateScreen, LeaveAlternateScreen};
@@ -54,7 +53,7 @@ impl App {
 
     fn scroll_down(&mut self) -> bool {
         if let Some(markdown) = &self.markdown {
-            let len = markdown.content().len() as u16;
+            let len = markdown.height();
             if self.area.height > len {
                 self.scroll = 0;
             } else {
@@ -75,11 +74,7 @@ impl App {
     fn draw(&mut self, frame: &mut Frame) {
         self.area = frame.area();
 
-        self.markdown = Some(parser::parse_markdown(
-            None,
-            &CONTENT.to_string(),
-            self.area.width,
-        ));
+        self.markdown = Some(parser::parse_markdown(None, CONTENT, self.area.width));
 
         if let Some(markdown) = &mut self.markdown {
             markdown.set_scroll(self.scroll);
@@ -92,19 +87,15 @@ impl App {
             };
 
             for child in markdown.children() {
-                match child {
-                    Component::TextComponent(comp) => {
-                        if comp.y_offset().saturating_sub(comp.scroll_offset()) >= area.height
-                            || (comp.y_offset() + comp.height())
-                                .saturating_sub(comp.scroll_offset())
-                                == 0
-                        {
-                            continue;
-                        }
-
-                        frame.render_widget(comp.clone(), area);
+                if let Component::TextComponent(comp) = child {
+                    if comp.y_offset().saturating_sub(comp.scroll_offset()) >= area.height
+                        || (comp.y_offset() + comp.height()).saturating_sub(comp.scroll_offset())
+                            == 0
+                    {
+                        continue;
                     }
-                    _ => {}
+
+                    frame.render_widget(comp.clone(), area);
                 }
             }
         }

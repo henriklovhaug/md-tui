@@ -105,7 +105,8 @@ impl ComponentRoot {
             Component::TextComponent(comp) => Some(comp),
             Component::Image(_) => None,
         }) {
-            if index - count < comp.num_links() {
+            let link_inside_comp = index - count < comp.num_links();
+            if link_inside_comp {
                 comp.visually_select(index - count)?;
                 return Ok(comp.y_offset());
             }
