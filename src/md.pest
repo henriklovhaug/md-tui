@@ -82,7 +82,7 @@ italic = {
 sentence   = _{ (latex | code | link | bold_italic | italic | bold | strikethrough | normal+)+ }
 t_sentence = _{ (!"|" ~ (latex | code | link | italic | bold | strikethrough | t_normal))+ }
 
-table_cell      = { "|" ~ WHITESPACE_S* ~ t_sentence+ ~ WHITESPACE_S* ~ ("|" ~ " "* ~ NEWLINE)? }
+table_cell      = { "|" ~ WHITESPACE_S* ~ t_sentence* ~ WHITESPACE_S* ~ ("|" ~ " "* ~ NEWLINE)? }
 table_seperator = { ("|"? ~ (WHITESPACE_S | ":")* ~ "-"+ ~ (WHITESPACE_S | ":")* ~ "|") }
 
 u_list = { indent ~ ("-" | "*") ~ WHITESPACE_S ~ sentence+ }

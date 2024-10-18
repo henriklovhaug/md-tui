@@ -12,7 +12,7 @@ use crate::{
 
 use super::word::{Word, WordType};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TextNode {
     Image,
     Paragraph,
@@ -20,7 +20,8 @@ pub enum TextNode {
     Heading,
     Task,
     List,
-    Table,
+    /// (widths_by_column, heights_by_row)
+    Table(Vec<u16>, Vec<u16>),
     CodeBlock,
     Quote,
     HorizontalSeperator,
@@ -86,7 +87,7 @@ impl TextComponent {
     }
 
     pub fn kind(&self) -> TextNode {
-        self.kind
+        self.kind.clone()
     }
 
     pub fn content(&self) -> &Vec<Vec<Word>> {
@@ -94,8 +95,8 @@ impl TextComponent {
     }
 
     pub fn content_as_lines(&self) -> Vec<String> {
-        if self.kind == TextNode::Table {
-            let column_count = self.meta_info.len();
+        if let TextNode::Table(widths, _) = self.kind() {
+            let column_count = widths.len();
 
             let moved_content = self.content.chunks(column_count).collect::<Vec<_>>();
 
@@ -234,8 +235,8 @@ impl TextComponent {
     pub fn selected_heights(&self) -> Vec<usize> {
         let mut heights = Vec::new();
 
-        if self.kind() == TextNode::Table {
-            let column_count = self.meta_info.len();
+        if let TextNode::Table(widths, _) = self.kind() {
+            let column_count = widths.len();
             let iter = self.content.chunks(column_count).enumerate();
 
             for (i, line) in iter {
@@ -276,15 +277,84 @@ impl TextComponent {
             TextNode::LineBreak => {
                 self.height = 1;
             }
-            TextNode::Table => {
-                self.content.retain(|c| !c.is_empty());
-                let height = (self.content.len() / cmp::max(self.meta_info().len(), 1)) as u16;
-                self.height = height;
+            TextNode::Table(_, _) => {
+                transform_table(self, width);
             }
             TextNode::HorizontalSeperator => self.height = 1,
             TextNode::Image => unreachable!("Image should not be transformed"),
         }
     }
+}
+
+fn word_wrapping<'a>(
+    words: impl IntoIterator<Item = &'a Word>,
+    width: usize,
+    allow_hyphen: bool,
+) -> Vec<Vec<Word>> {
+    let enable_hyphen = allow_hyphen && width > 4;
+
+    let mut lines = Vec::new();
+    let mut line = Vec::new();
+    let mut line_len = 0;
+    for word in words {
+        let word_len = word.content().len();
+        if line_len + word_len <= width {
+            line_len += word_len;
+            line.push(word.clone());
+        } else if word_len <= width {
+            lines.push(line);
+            let mut word = word.clone();
+            let content = word.content().trim_start().to_owned();
+            word.set_content(content);
+
+            line_len = word.content().len();
+            line = vec![word];
+        } else {
+            let mut content = word.content().to_owned();
+
+            if width - line_len < 4 {
+                line_len = 0;
+                lines.push(line);
+                line = Vec::new();
+            }
+
+            let mut newline_content = content.split_off(width - line_len - 1);
+            if enable_hyphen && !content.ends_with("-") {
+                newline_content.insert(0, content.pop().unwrap());
+                content.push('-');
+            }
+
+            line.push(Word::new(content, word.kind()));
+            lines.push(line);
+
+            while newline_content.len() > width {
+                let mut next_newline_content = newline_content.split_off(width - 1);
+                if enable_hyphen && !newline_content.ends_with("-") {
+                    next_newline_content.insert(0, newline_content.pop().unwrap());
+                    newline_content.push('-');
+                }
+
+                line = vec![Word::new(newline_content, word.kind())];
+                lines.push(line);
+
+                newline_content = next_newline_content
+            }
+
+            if !newline_content.is_empty() {
+                line_len = newline_content.len();
+                line = vec![Word::new(newline_content, word.kind())];
+            } else {
+                line_len = 0;
+                line = Vec::new();
+            }
+        }
+    }
+
+    if !line.is_empty() {
+        lines.push(line);
+    }
+
+    lines
 }
 
 fn transform_paragraph(component: &mut TextComponent, width: u16) {
@@ -294,35 +364,17 @@ fn transform_paragraph(component: &mut TextComponent, width: u16) {
         TextNode::Quote => width as usize - 2,
         _ => unreachable!(),
     };
-    let mut len = 0;
-    let mut lines = Vec::new();
-    let mut line = Vec::new();
-    if component.kind() == TextNode::Quote && component.meta_info().is_empty() {
-        let filler = Word::new(" ".to_string(), WordType::Normal);
-        line.push(filler);
-    }
-    let iter = component.content.iter().flatten();
-    for word in iter {
-        if word.content().len() + len < width {
-            len += word.content().len();
-            line.push(word.clone());
-        } else {
-            lines.push(line);
-            len = word.content().len() + 1;
-            let mut word = word.clone();
-            let content = word.content().trim_start().to_owned();
-            word.set_content(content);
-            if component.kind() == TextNode::Quote {
-                let filler = Word::new(" ".to_string(), WordType::Normal);
-                line = vec![filler, word];
-            } else {
-                line = vec![word];
-            }
+
+    let mut lines = word_wrapping(component.content.iter().flatten(), width, true);
+
+    if component.kind() == TextNode::Quote {
+        let is_special_quote = !component.meta_info.is_empty();
+
+        for line in lines.iter_mut().skip(if is_special_quote { 1 } else { 0 }) {
+            line.insert(0, Word::new(" ".to_string(), WordType::Normal));
         }
     }
-    if !line.is_empty() {
-        lines.push(line);
-    }
+
     component.height = lines.len() as u16;
     component.content = lines;
 }
@@ -559,4 +611,142 @@ fn transform_list(component: &mut TextComponent, width: u16) {
 
     component.height = lines.len() as u16;
     component.content = lines;
+}
+
+fn transform_table(component: &mut TextComponent, width: u16) {
+    let content = &mut component.content;
+
+    let column_count = component
+        .meta_info
+        .iter()
+        .filter(|w| w.kind() == WordType::MetaInfo(MetaData::ColumnsCount))
+        .count();
+
+    assert!(
+        content.len() % column_count == 0,
+        "Invalid table cell distribution: content.len() = {}, column_count = {}",
+        content.len(),
+        column_count
+    );
+
+    let row_count = content.len() / column_count;
+
+    ///////////////////////////
+    // Find unbalanced width //
+    ///////////////////////////
+    let widths = {
+        let mut widths = vec![0; column_count];
+        content.chunks(column_count).for_each(|row| {
+            row.iter().enumerate().for_each(|(col_i, entry)| {
+                let len = content_entry_len(entry);
+                if len > widths[col_i] as usize {
+                    widths[col_i] = len as u16;
+                }
+            });
+        });
+
+        widths
+    };
+
+    let styling_width = column_count as u16;
+    let unbalanced_cells_width = widths.iter().sum::<u16>();
+
+    /////////////////////////////////////
+    // Return if unbalanced width fits //
+    /////////////////////////////////////
+    if width >= unbalanced_cells_width + styling_width {
+        component.height = (content.len() / column_count) as u16;
+        component.kind = TextNode::Table(widths, vec![1; component.height as usize]);
+        return;
+    }
+
+    //////////////////////////////
+    // Find overflowing columns //
+    //////////////////////////////
+    let overflow_threshold = (width - styling_width) / column_count as u16;
+    let mut overflowing_columns = vec![];
+
+    let (overflowing_width, non_overflowing_width) = {
+        let mut overflowing_width = 0;
+        let mut non_overflowing_width = 0;
+
+        for (column_i, column_width) in widths.iter().enumerate() {
+            if *column_width > overflow_threshold {
+                overflowing_columns.push((column_i, column_width));
+
+                overflowing_width += column_width;
+            } else {
+                non_overflowing_width += column_width;
+            }
+        }
+
+        (overflowing_width, non_overflowing_width)
+    };
+
+    assert!(
+        !overflowing_columns.is_empty(),
+        "table overflow should not be handled when there are no overflowing columns"
+    );
+
+    /////////////////////////////////////////////
+    // Assign new width to overflowing columns //
+    /////////////////////////////////////////////
+    let mut available_balanced_width = width - non_overflowing_width - styling_width;
+    let mut available_overflowing_width = overflowing_width;
+
+    let overflowing_column_min_width =
+        (available_balanced_width / (2 * overflowing_columns.len() as u16)).max(1);
+
+    let mut widths_balanced: Vec<u16> = widths.clone();
+    for (column_i, old_column_width) in overflowing_columns
+        .iter()
+        // Sorting ensures the smallest overflowing cells receive minimum area without the
+        // need for recalculating the larger cells
+        .sorted_by(|a, b| Ord::cmp(a.1, b.1))
+    {
+        // Ensure the longest cell gets the most amount of area
+        let ratio = (**old_column_width as f32) / (available_overflowing_width as f32);
+        let mut balanced_column_width = (ratio * available_balanced_width as f32).floor() as u16;
+
+        if balanced_column_width < overflowing_column_min_width {
+            balanced_column_width = overflowing_column_min_width;
+            available_overflowing_width -= **old_column_width;
+            available_balanced_width -= balanced_column_width;
+        }
+
+        widths_balanced[*column_i] = balanced_column_width;
+    }
+
+    ////////////////////////////////////////
+    // Wrap words based on balanced width //
+    ////////////////////////////////////////
+    let mut heights = vec![1; row_count];
+    for (row_i, row) in content
+        .iter_mut()
+        .chunks(column_count)
+        .into_iter()
+        .enumerate()
+    {
+        for (column_i, entry) in row.into_iter().enumerate() {
+            let lines = word_wrapping(
+                entry.drain(..).as_ref(),
+                widths_balanced[column_i] as usize,
+                true,
+            );
+
+            if heights[row_i] < lines.len() as u16 {
+                heights[row_i] = lines.len() as u16;
+            }
+
+            let _drop = std::mem::replace(entry, lines.into_iter().flatten().collect());
+        }
+    }
+
+    component.height = heights.iter().cloned().sum::<u16>();
+
+    component.kind = TextNode::Table(widths_balanced, heights);
+}
+
+pub fn content_entry_len(words: &[Word]) -> usize {
+    words.iter().map(|word| word.content().len()).sum()
 }

@@ -57,7 +57,6 @@ impl From<MdParseEnum> for WordType {
             | MdParseEnum::AltText
             | MdParseEnum::Quote
             | MdParseEnum::Sentence
-            | MdParseEnum::TableRow
             | MdParseEnum::Word => WordType::Normal,
 
             MdParseEnum::LinkData => WordType::LinkData,
@@ -133,5 +132,13 @@ impl Word {
 
     pub fn is_renderable(&self) -> bool {
         !matches!(self.kind(), WordType::MetaInfo(_) | WordType::LinkData)
+    }
+
+    pub fn split_off(&mut self, at: usize) -> Word {
+        Word {
+            content: self.content.split_off(at),
+            word_type: self.word_type,
+            previous_type: self.previous_type,
+        }
     }
 }

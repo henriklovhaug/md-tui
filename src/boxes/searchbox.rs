@@ -27,7 +27,7 @@ impl SearchBox {
     }
 
     pub fn insert(&mut self, c: char) {
-        self.text.push_str(&c.to_string());
+        self.text.push(c);
         self.cursor += 1;
     }
 
