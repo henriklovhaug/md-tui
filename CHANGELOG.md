@@ -1,3 +1,7 @@
+# Version 0.8.7
+
+- Tables are finally balanced
+
 # version 0.8.6
 
 - Make binary `mdt` again. Was wrongly removed in version 0.8.5.
