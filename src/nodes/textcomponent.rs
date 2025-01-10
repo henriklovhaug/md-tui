@@ -359,7 +359,7 @@ fn word_wrapping<'a>(
 
 fn transform_paragraph(component: &mut TextComponent, width: u16) {
     let width = match component.kind {
-        TextNode::Paragraph => width as usize,
+        TextNode::Paragraph => width as usize - 1,
         TextNode::Task => width as usize - 4,
         TextNode::Quote => width as usize - 2,
         _ => unreachable!(),
