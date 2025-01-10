@@ -385,6 +385,11 @@ fn render_table(
 
     let column_count = widths.len();
 
+    if column_count == 0 {
+        Paragraph::new(Line::from("Malformed table").fg(Color::Red)).render(area, buf);
+        return;
+    }
+
     let content = component.content_owned();
     let titles = content.chunks(column_count).next().unwrap().to_vec();
     let moved_content = content.chunks(column_count).skip(1).collect::<Vec<_>>();

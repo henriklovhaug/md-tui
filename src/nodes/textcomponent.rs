@@ -622,6 +622,12 @@ fn transform_table(component: &mut TextComponent, width: u16) {
         .filter(|w| w.kind() == WordType::MetaInfo(MetaData::ColumnsCount))
         .count();
 
+    if content.len() % column_count != 0 || column_count == 0 {
+        component.height = 1;
+        component.kind = TextNode::Table(vec![], vec![]);
+        return;
+    }
+
     assert!(
         content.len() % column_count == 0,
         "Invalid table cell distribution: content.len() = {}, column_count = {}",
