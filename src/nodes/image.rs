@@ -1,7 +1,7 @@
 use std::cmp;
 
 use image::{DynamicImage, Rgb};
-use ratatui_image::{picker::Picker, protocol::StatefulProtocol};
+use ratatui_image::{picker::Picker, protocol::StatefulProtocol, StatefulImage};
 
 use super::{root::ComponentProps, textcomponent::TextNode};
 
@@ -10,18 +10,16 @@ pub struct ImageComponent {
     y_offset: u16,
     height: u16,
     scroll_offset: u16,
-    image: Box<dyn StatefulProtocol>,
+    image: StatefulProtocol,
 }
 
 impl ImageComponent {
     pub fn new<T: ToString>(image: DynamicImage, height: u32, alt_text: T) -> Option<Self> {
-        let mut picker = Picker::from_termios().ok()?;
-        picker.guess_protocol();
-        picker.background_color = Some(Rgb::<u8>([0, 0, 0]));
+        let picker = Picker::from_query_stdio().ok()?;
 
         let image = picker.new_resize_protocol(image);
 
-        let (_, f_height) = picker.font_size;
+        let (_, f_height) = picker.font_size();
 
         let height = cmp::min(height / f_height as u32, 20) as u16;
 
@@ -34,7 +32,7 @@ impl ImageComponent {
         })
     }
 
-    pub fn image_mut(&mut self) -> &mut Box<dyn StatefulProtocol> {
+    pub fn image_mut(&mut self) -> &mut StatefulProtocol {
         &mut self.image
     }
 
