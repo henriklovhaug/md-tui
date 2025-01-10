@@ -358,7 +358,7 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
                     continue;
                 }
 
-                let image = StatefulImage::new(None).resize(Resize::Fit(Some(FilterType::Nearest)));
+                let image = StatefulImage::default().resize(Resize::Fit(Some(FilterType::Nearest)));
 
                 // Resize height based on clipping top
                 let height = cmp::min(
