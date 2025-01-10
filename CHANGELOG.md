@@ -1,3 +1,8 @@
+# Version 0.8.8
+
+- (#163) Fix word wrapping in paragraphs.
+- (#164) Gracefully handle malformed tables.
+
 # Version 0.8.7
 
 - Tables are finally balanced
