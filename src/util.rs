@@ -102,7 +102,7 @@ impl<'a> From<&'a str> for LinkType<'a> {
         if s.ends_with("md") {
             return Self::MarkdownFile(s);
         }
-        return Self::External(s);
+        Self::External(s)
     }
 }
 

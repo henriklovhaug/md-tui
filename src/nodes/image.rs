@@ -1,7 +1,7 @@
 use std::cmp;
 
-use image::{DynamicImage, Rgb};
-use ratatui_image::{picker::Picker, protocol::StatefulProtocol, StatefulImage};
+use image::DynamicImage;
+use ratatui_image::{picker::Picker, protocol::StatefulProtocol};
 
 use super::{root::ComponentProps, textcomponent::TextNode};
 
