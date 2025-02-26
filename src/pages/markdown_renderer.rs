@@ -97,6 +97,7 @@ impl Widget for TextComponent {
 }
 
 fn style_word(word: &Word) -> Span<'_> {
+    unsafe {
     match word.kind() {
         WordType::MetaInfo(_) | WordType::LinkData => unreachable!(),
         WordType::Selected => Span::styled(
@@ -139,9 +140,13 @@ fn style_word(word: &Word) -> Span<'_> {
         ),
         WordType::CodeBlock(e) => Span::styled(word.content(), e),
     }
+
+    }
 }
 
+
 fn render_quote(area: Rect, buf: &mut Buffer, component: TextComponent, clip: Clipping) {
+    unsafe {
     let top = component
         .scroll_offset()
         .saturating_sub(component.y_offset());
@@ -210,50 +215,55 @@ fn render_quote(area: Rect, buf: &mut Buffer, component: TextComponent, clip: Cl
 
     paragraph.render(area, buf);
 }
+}
 
 fn style_heading(word: &Word, indent: u8) -> Span<'_> {
-    match indent {
-        1 => Span::styled(
-            word.content(),
-            Style::default().fg(COLOR_CONFIG.heading_fg_color),
-        ),
-        2 => Span::styled(word.content(), Style::default().fg(HEADER_COLOR.level_2)),
-        3 => Span::styled(word.content(), Style::default().fg(HEADER_COLOR.level_3)),
-        4 => Span::styled(word.content(), Style::default().fg(HEADER_COLOR.level_4)),
-        5 => Span::styled(word.content(), Style::default().fg(HEADER_COLOR.level_5)),
-        6 => Span::styled(word.content(), Style::default().fg(HEADER_COLOR.level_6)),
-        _ => Span::styled(
-            word.content(),
-            Style::default().fg(COLOR_CONFIG.heading_fg_color),
-        ),
+    unsafe {
+        match indent {
+            1 => Span::styled(
+                word.content(),
+                Style::default().fg(COLOR_CONFIG.heading_fg_color),
+            ),
+            2 => Span::styled(word.content(), Style::default().fg(HEADER_COLOR.level_2)),
+            3 => Span::styled(word.content(), Style::default().fg(HEADER_COLOR.level_3)),
+            4 => Span::styled(word.content(), Style::default().fg(HEADER_COLOR.level_4)),
+            5 => Span::styled(word.content(), Style::default().fg(HEADER_COLOR.level_5)),
+            6 => Span::styled(word.content(), Style::default().fg(HEADER_COLOR.level_6)),
+            _ => Span::styled(
+                word.content(),
+                Style::default().fg(COLOR_CONFIG.heading_fg_color),
+            ),
+        }
     }
 }
 
 fn render_heading(area: Rect, buf: &mut Buffer, component: TextComponent) {
-    let indent = if let Some(meta) = component.meta_info().first() {
-        match meta.kind() {
-            WordType::MetaInfo(MetaData::HeadingLevel(e)) => e,
-            _ => 1,
-        }
-    } else {
-        1
-    };
+    unsafe {
+        let indent = if let Some(meta) = component.meta_info().first() {
+            match meta.kind() {
+                WordType::MetaInfo(MetaData::HeadingLevel(e)) => e,
+                _ => 1,
+            }
+        } else {
+            1
+        };
 
-    let content: Vec<Span<'_>> = component
-        .content()
-        .iter()
-        .flatten()
-        .map(|c| style_heading(c, indent))
-        .collect();
+        let content: Vec<Span<'_>> = component
+            .content()
+            .iter()
+            .flatten()
+            .map(|c| style_heading(c, indent))
+            .collect();
 
-    let paragraph = match indent {
-        1 => Paragraph::new(Line::from(content))
-            .block(Block::default().style(Style::default().bg(COLOR_CONFIG.heading_bg_color)))
-            .alignment(Alignment::Center),
-        _ => Paragraph::new(Line::from(content)),
-    };
+        let paragraph = match indent {
+            1 => Paragraph::new(Line::from(content))
+                .block(Block::default().style(Style::default().bg(COLOR_CONFIG.heading_bg_color)))
+                .alignment(Alignment::Center),
+            _ => Paragraph::new(Line::from(content)),
+        };
 
-    paragraph.render(area, buf);
+        paragraph.render(area, buf);
+    }
 }
 
 fn render_paragraph(area: Rect, buf: &mut Buffer, component: TextComponent, clip: Clipping) {
@@ -331,44 +341,46 @@ fn render_list(area: Rect, buf: &mut Buffer, component: TextComponent, clip: Cli
 }
 
 fn render_code_block(area: Rect, buf: &mut Buffer, component: TextComponent, clip: Clipping) {
-    let mut content = component
-        .content()
-        .iter()
-        .map(|c| Line::from(c.iter().map(style_word).collect::<Vec<_>>()))
-        .collect::<Vec<_>>();
+    unsafe {
+        let mut content = component
+            .content()
+            .iter()
+            .map(|c| Line::from(c.iter().map(style_word).collect::<Vec<_>>()))
+            .collect::<Vec<_>>();
 
-    match clip {
-        Clipping::Both => {
-            let top = component.scroll_offset() - component.y_offset();
-            content.drain(0..top as usize);
-            content.drain(area.height as usize..);
+        match clip {
+            Clipping::Both => {
+                let top = component.scroll_offset() - component.y_offset();
+                content.drain(0..top as usize);
+                content.drain(area.height as usize..);
+            }
+            Clipping::Upper => {
+                let len = content.len();
+                let height = area.height;
+                let offset = len - height as usize;
+                // panic!("offset: {}, height: {}, len: {}", offset, height, len);
+                content.drain(0..offset);
+            }
+            Clipping::Lower => {
+                content.drain(area.height as usize..);
+            }
+            Clipping::None => (),
         }
-        Clipping::Upper => {
-            let len = content.len();
-            let height = area.height;
-            let offset = len - height as usize;
-            // panic!("offset: {}, height: {}, len: {}", offset, height, len);
-            content.drain(0..offset);
-        }
-        Clipping::Lower => {
-            content.drain(area.height as usize..);
-        }
-        Clipping::None => (),
+
+        let block = Block::default().style(Style::default().bg(COLOR_CONFIG.code_block_bg_color));
+
+        block.render(area, buf);
+
+        let area = Rect {
+            x: area.x + 1,
+            width: area.width - 1,
+            ..area
+        };
+
+        let paragraph = Paragraph::new(content);
+
+        paragraph.render(area, buf);
     }
-
-    let block = Block::default().style(Style::default().bg(COLOR_CONFIG.code_block_bg_color));
-
-    block.render(area, buf);
-
-    let area = Rect {
-        x: area.x + 1,
-        width: area.width - 1,
-        ..area
-    };
-
-    let paragraph = Paragraph::new(content);
-
-    paragraph.render(area, buf);
 }
 
 fn render_table(
@@ -510,19 +522,20 @@ fn render_table(
             )
         })
         .collect::<Vec<_>>();
+    unsafe {
+        let table = Table::new(rows, widths)
+            .header(
+                header.style(
+                    Style::default()
+                        .fg(COLOR_CONFIG.table_header_fg_color)
+                        .bg(COLOR_CONFIG.table_header_bg_color),
+                ),
+            )
+            .block(Block::default())
+            .column_spacing(1);
 
-    let table = Table::new(rows, widths)
-        .header(
-            header.style(
-                Style::default()
-                    .fg(COLOR_CONFIG.table_header_fg_color)
-                    .bg(COLOR_CONFIG.table_header_bg_color),
-            ),
-        )
-        .block(Block::default())
-        .column_spacing(1);
-
-    table.render(area, buf);
+        table.render(area, buf);
+    }
 }
 
 fn render_task(
