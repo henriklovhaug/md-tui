@@ -8,7 +8,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use md_tui::event_handler::{handle_keyboard_input, KeyBoardAction};
+use md_tui::{event_handler::{handle_keyboard_input, KeyBoardAction}, util::colors::{COLOR_CONFIG, HEADER_COLOR}};
 use md_tui::nodes::root::{Component, ComponentRoot};
 use md_tui::pages::file_explorer::{FileTree, MdFile};
 use md_tui::parser::parse_markdown;
@@ -41,6 +41,12 @@ fn main() -> Result<(), Box<dyn Error>> {
         destruct_terminal();
         better_panic::Settings::auto().create_panic_handler()(panic_info);
     }));
+
+    // load colors
+    unsafe {
+        COLOR_CONFIG = util::colors::load_color_config();
+        HEADER_COLOR = util::colors::load_header_colors();
+    }
 
     // setup terminal
     enable_raw_mode()?;

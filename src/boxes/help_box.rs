@@ -87,10 +87,11 @@ fn render_file_tree_help(expanded: bool, area: Rect, buf: &mut Buffer) {
     ];
 
     let widths = [12, 20];
-
-    let table =
-        Table::new(key_actions, widths).header(header.fg(COLOR_CONFIG.table_header_fg_color));
-    table.render(area, buf);
+    unsafe {
+        let table =
+            Table::new(key_actions, widths).header(header.fg(COLOR_CONFIG.table_header_fg_color));
+        table.render(area, buf);
+    }
 }
 
 fn render_markdown_help(expandend: bool, area: Rect, buf: &mut Buffer) {
@@ -161,8 +162,10 @@ fn render_markdown_help(expandend: bool, area: Rect, buf: &mut Buffer) {
 
     let widths = [12, 25];
 
-    let table =
-        Table::new(key_actions, widths).header(header.fg(COLOR_CONFIG.table_header_fg_color));
+    unsafe {
+        let table =
+            Table::new(key_actions, widths).header(header.fg(COLOR_CONFIG.table_header_fg_color));
 
-    table.render(area, buf);
+        table.render(area, buf);
+    }
 }

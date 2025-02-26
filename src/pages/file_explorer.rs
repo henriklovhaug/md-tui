@@ -47,15 +47,17 @@ impl MdFile {
 
 impl From<MdFile> for ListItem<'_> {
     fn from(val: MdFile) -> Self {
-        let mut text = Text::default();
-        text.extend([
-            val.name.to_owned().fg(COLOR_CONFIG.file_tree_name_color),
-            val.path
-                .to_owned()
-                .italic()
-                .fg(COLOR_CONFIG.file_tree_path_color),
-        ]);
-        ListItem::new(text)
+        unsafe {
+            let mut text = Text::default();
+            text.extend([
+                val.name.to_owned().fg(COLOR_CONFIG.file_tree_name_color),
+                val.path
+                    .to_owned()
+                    .italic()
+                    .fg(COLOR_CONFIG.file_tree_path_color),
+            ]);
+            ListItem::new(text)
+        }
     }
 }
 
@@ -333,56 +335,58 @@ impl FileTree {
 
 impl Widget for FileTree {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let mut state = self.state().to_owned();
-        let file_len = self.files.len();
-        let partition = self.partition(area.height);
+        unsafe {
+            let mut state = self.state().to_owned();
+            let file_len = self.files.len();
+            let partition = self.partition(area.height);
 
-        let items = if let Some(iter) = self
-            .files
-            .chunks(self.partition(area.height))
-            .nth(self.page as usize)
-        {
-            iter.to_owned()
-        } else {
-            self.files
-        };
+            let items = if let Some(iter) = self
+                .files
+                .chunks(self.partition(area.height))
+                .nth(self.page as usize)
+            {
+                iter.to_owned()
+            } else {
+                self.files
+            };
 
-        state.select(state.selected().map(|i| i % partition));
+            state.select(state.selected().map(|i| i % partition));
 
-        let y_height = items.len() / 2 * 3;
+            let y_height = items.len() / 2 * 3;
 
-        let total_pages = usize::div_ceil(file_len, partition);
+            let total_pages = usize::div_ceil(file_len, partition);
 
-        let page_count = format!("  {}/{}", self.page + 1, total_pages);
+            let page_count = format!("  {}/{}", self.page + 1, total_pages);
 
-        let paragraph = Text::styled(
-            page_count,
-            Style::default().fg(COLOR_CONFIG.file_tree_page_count_color),
-        );
+            let paragraph = Text::styled(
+                page_count,
+                Style::default().fg(COLOR_CONFIG.file_tree_page_count_color),
+            );
 
-        let items = List::new(items)
-            .block(
-                Block::default()
-                    .title("MD-TUI")
-                    .add_modifier(Modifier::BOLD)
-                    .title_alignment(Alignment::Center),
-            )
-            .highlight_style(
-                Style::default()
-                    .fg(COLOR_CONFIG.file_tree_selected_fg_color)
-                    .add_modifier(Modifier::BOLD),
-            )
-            .highlight_symbol("\u{02503} ")
-            .repeat_highlight_symbol(true)
-            .highlight_spacing(HighlightSpacing::Always);
+            let items = List::new(items)
+                .block(
+                    Block::default()
+                        .title("MD-TUI")
+                        .add_modifier(Modifier::BOLD)
+                        .title_alignment(Alignment::Center),
+                )
+                .highlight_style(
+                    Style::default()
+                        .fg(COLOR_CONFIG.file_tree_selected_fg_color)
+                        .add_modifier(Modifier::BOLD),
+                )
+                .highlight_symbol("\u{02503} ")
+                .repeat_highlight_symbol(true)
+                .highlight_spacing(HighlightSpacing::Always);
 
-        StatefulWidget::render(items, area, buf, &mut state);
+            StatefulWidget::render(items, area, buf, &mut state);
 
-        let area = Rect {
-            y: area.y + y_height as u16 + 2,
-            ..area
-        };
+            let area = Rect {
+                y: area.y + y_height as u16 + 2,
+                ..area
+            };
 
-        paragraph.render(area, buf);
+            paragraph.render(area, buf);
+        }
     }
 }
