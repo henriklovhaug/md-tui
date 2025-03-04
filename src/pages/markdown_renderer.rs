@@ -14,7 +14,7 @@ use crate::{
         word::{MetaData, Word, WordType},
     },
     util::{
-        colors::{COLOR_CONFIG, HEADER_COLOR},
+        colors::{color_config, heading_colors},
         general::GENERAL_CONFIG,
     },
 };
@@ -102,30 +102,31 @@ fn style_word(word: &Word) -> Span<'_> {
         WordType::Selected => Span::styled(
             word.content(),
             Style::default()
-                .fg(COLOR_CONFIG.link_selected_fg_color)
-                .bg(COLOR_CONFIG.link_selected_bg_color),
+                .fg(color_config().link_selected_fg_color)
+                .bg(color_config().link_selected_bg_color),
         ),
         WordType::Normal => Span::raw(word.content()),
         WordType::Code => Span::styled(
             word.content(),
-            Style::default().fg(COLOR_CONFIG.code_fg_color),
+            Style::default().fg(color_config().code_fg_color),
         )
-        .bg(COLOR_CONFIG.code_bg_color),
-        WordType::Link => {
-            Span::styled(word.content(), Style::default().fg(COLOR_CONFIG.link_color))
-        }
+        .bg(color_config().code_bg_color),
+        WordType::Link => Span::styled(
+            word.content(),
+            Style::default().fg(color_config().link_color),
+        ),
         WordType::Italic => Span::styled(
             word.content(),
-            Style::default().fg(COLOR_CONFIG.italic_color).italic(),
+            Style::default().fg(color_config().italic_color).italic(),
         ),
         WordType::Bold => Span::styled(
             word.content(),
-            Style::default().fg(COLOR_CONFIG.bold_color).bold(),
+            Style::default().fg(color_config().bold_color).bold(),
         ),
         WordType::Strikethrough => Span::styled(
             word.content(),
             Style::default()
-                .fg(COLOR_CONFIG.striketrough_color)
+                .fg(color_config().striketrough_color)
                 .add_modifier(Modifier::CROSSED_OUT),
         ),
         WordType::White => Span::styled(word.content(), Style::default().fg(Color::White)),
@@ -133,7 +134,7 @@ fn style_word(word: &Word) -> Span<'_> {
         WordType::BoldItalic => Span::styled(
             word.content(),
             Style::default()
-                .fg(COLOR_CONFIG.bold_italic_color)
+                .fg(color_config().bold_italic_color)
                 .add_modifier(Modifier::BOLD)
                 .add_modifier(Modifier::ITALIC),
         ),
@@ -182,25 +183,25 @@ fn render_quote(area: Rect, buf: &mut Buffer, component: TextComponent, clip: Cl
             .next()
             .map(|c| c.to_lowercase())
             .map(|c| match c.as_str() {
-                "[!tip]" => COLOR_CONFIG.quote_tip,
-                "[!warning]" => COLOR_CONFIG.quote_warning,
-                "[!caution]" => COLOR_CONFIG.quote_caution,
-                "[!important]" => COLOR_CONFIG.quote_important,
-                "[!note]" => COLOR_CONFIG.quote_note,
-                _ => COLOR_CONFIG.quote_default,
+                "[!tip]" => color_config().quote_tip,
+                "[!warning]" => color_config().quote_warning,
+                "[!caution]" => color_config().quote_caution,
+                "[!important]" => color_config().quote_important,
+                "[!note]" => color_config().quote_note,
+                _ => color_config().quote_default,
             })
-            .unwrap_or(COLOR_CONFIG.quote_bg_color)
+            .unwrap_or(color_config().quote_bg_color)
     } else {
         Color::White
     };
     let vertical_marker = Span::styled("\u{2588}", Style::default().fg(bar_color));
 
     let marker_paragraph = Paragraph::new(vec![Line::from(vertical_marker); content.len()])
-        .bg(COLOR_CONFIG.quote_bg_color);
+        .bg(color_config().quote_bg_color);
     marker_paragraph.render(area, buf);
 
     let paragraph = Paragraph::new(lines)
-        .block(Block::default().style(Style::default().bg(COLOR_CONFIG.quote_bg_color)));
+        .block(Block::default().style(Style::default().bg(color_config().quote_bg_color)));
 
     let area = Rect {
         x: area.x + 1,
@@ -215,16 +216,31 @@ fn style_heading(word: &Word, indent: u8) -> Span<'_> {
     match indent {
         1 => Span::styled(
             word.content(),
-            Style::default().fg(COLOR_CONFIG.heading_fg_color),
+            Style::default().fg(color_config().heading_fg_color),
         ),
-        2 => Span::styled(word.content(), Style::default().fg(HEADER_COLOR.level_2)),
-        3 => Span::styled(word.content(), Style::default().fg(HEADER_COLOR.level_3)),
-        4 => Span::styled(word.content(), Style::default().fg(HEADER_COLOR.level_4)),
-        5 => Span::styled(word.content(), Style::default().fg(HEADER_COLOR.level_5)),
-        6 => Span::styled(word.content(), Style::default().fg(HEADER_COLOR.level_6)),
+        2 => Span::styled(
+            word.content(),
+            Style::default().fg(heading_colors().level_2),
+        ),
+        3 => Span::styled(
+            word.content(),
+            Style::default().fg(heading_colors().level_3),
+        ),
+        4 => Span::styled(
+            word.content(),
+            Style::default().fg(heading_colors().level_4),
+        ),
+        5 => Span::styled(
+            word.content(),
+            Style::default().fg(heading_colors().level_5),
+        ),
+        6 => Span::styled(
+            word.content(),
+            Style::default().fg(heading_colors().level_6),
+        ),
         _ => Span::styled(
             word.content(),
-            Style::default().fg(COLOR_CONFIG.heading_fg_color),
+            Style::default().fg(color_config().heading_fg_color),
         ),
     }
 }
@@ -248,7 +264,7 @@ fn render_heading(area: Rect, buf: &mut Buffer, component: TextComponent) {
 
     let paragraph = match indent {
         1 => Paragraph::new(Line::from(content))
-            .block(Block::default().style(Style::default().bg(COLOR_CONFIG.heading_bg_color)))
+            .block(Block::default().style(Style::default().bg(color_config().heading_bg_color)))
             .alignment(Alignment::Center),
         _ => Paragraph::new(Line::from(content)),
     };
@@ -356,7 +372,7 @@ fn render_code_block(area: Rect, buf: &mut Buffer, component: TextComponent, cli
         Clipping::None => (),
     }
 
-    let block = Block::default().style(Style::default().bg(COLOR_CONFIG.code_block_bg_color));
+    let block = Block::default().style(Style::default().bg(color_config().code_block_bg_color));
 
     block.render(area, buf);
 
@@ -515,8 +531,8 @@ fn render_table(
         .header(
             header.style(
                 Style::default()
-                    .fg(COLOR_CONFIG.table_header_fg_color)
-                    .bg(COLOR_CONFIG.table_header_bg_color),
+                    .fg(color_config().table_header_fg_color)
+                    .bg(color_config().table_header_bg_color),
             ),
         )
         .block(Block::default())
