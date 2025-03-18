@@ -85,8 +85,11 @@ fn parse_component(parse_node: ParseNode) -> Component {
                     {
                         let mut buf = Vec::new();
                         image = ureq::get(node.content()).call().ok().and_then(|b| {
-                            let _ = b.into_reader().read_to_end(&mut buf);
-                            image::load_from_memory(&buf).ok()
+                            let noe = b.into_body().read_to_vec();
+                            noe.ok().and_then(|b| {
+                                buf = b;
+                                image::load_from_memory(&buf).ok()
+                            })
                         });
                     }
                     #[cfg(not(feature = "network"))]
