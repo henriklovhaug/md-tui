@@ -1,15 +1,19 @@
 use tree_sitter_highlight::{HighlightConfiguration, HighlightEvent, Highlighter};
-use tree_sitter_rust::language;
 
 use crate::highlight::HIGHLIGHT_NAMES;
 
 pub fn highlight_rust(lines: &[u8]) -> Result<Vec<HighlightEvent>, String> {
     let mut highlither = Highlighter::new();
-    let language = language();
+    let language = tree_sitter_rust::LANGUAGE;
 
-    let mut rust_config =
-        HighlightConfiguration::new(language, "rust", tree_sitter_rust::HIGHLIGHTS_QUERY, "", "")
-            .unwrap();
+    let mut rust_config = HighlightConfiguration::new(
+        language.into(),
+        "rust",
+        tree_sitter_rust::HIGHLIGHTS_QUERY,
+        "",
+        "",
+    )
+    .unwrap();
 
     rust_config.configure(&HIGHLIGHT_NAMES);
 

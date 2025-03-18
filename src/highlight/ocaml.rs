@@ -1,14 +1,14 @@
 use tree_sitter_highlight::{HighlightConfiguration, HighlightEvent, Highlighter};
-use tree_sitter_ocaml::language_ocaml;
+use tree_sitter_ocaml::LANGUAGE_OCAML_TYPE;
 
 use crate::highlight::HIGHLIGHT_NAMES;
 
 pub fn highlight_ocaml(lines: &[u8]) -> Result<Vec<HighlightEvent>, String> {
     let mut highlither = Highlighter::new();
-    let language = language_ocaml();
+    let language = LANGUAGE_OCAML_TYPE;
 
     let mut ocaml_config = HighlightConfiguration::new(
-        language,
+        language.into(),
         "ocaml",
         tree_sitter_ocaml::HIGHLIGHTS_QUERY,
         "",

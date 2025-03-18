@@ -1,15 +1,20 @@
 use tree_sitter_highlight::{HighlightConfiguration, HighlightEvent, Highlighter};
-use tree_sitter_php::language_php;
+use tree_sitter_php::LANGUAGE_PHP;
 
 use crate::highlight::HIGHLIGHT_NAMES;
 
 pub fn highlight_php(lines: &[u8]) -> Result<Vec<HighlightEvent>, String> {
     let mut highlither = Highlighter::new();
-    let language = language_php();
+    let language = LANGUAGE_PHP;
 
-    let mut php_config =
-        HighlightConfiguration::new(language, "php", tree_sitter_php::HIGHLIGHTS_QUERY, "", "")
-            .unwrap();
+    let mut php_config = HighlightConfiguration::new(
+        language.into(),
+        "php",
+        tree_sitter_php::HIGHLIGHTS_QUERY,
+        "",
+        "",
+    )
+    .unwrap();
 
     php_config.configure(&HIGHLIGHT_NAMES);
 

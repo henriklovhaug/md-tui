@@ -1,15 +1,19 @@
-use tree_sitter_cpp::language;
 use tree_sitter_highlight::{HighlightConfiguration, HighlightEvent, Highlighter};
 
 use crate::highlight::HIGHLIGHT_NAMES;
 
 pub fn highlight_cpp(lines: &[u8]) -> Result<Vec<HighlightEvent>, String> {
     let mut highlither = Highlighter::new();
-    let language = language();
+    let language = tree_sitter_cpp::LANGUAGE;
 
-    let mut cpp_config =
-        HighlightConfiguration::new(language, "cpp", tree_sitter_cpp::HIGHLIGHT_QUERY, "", "")
-            .unwrap();
+    let mut cpp_config = HighlightConfiguration::new(
+        language.into(),
+        "cpp",
+        tree_sitter_cpp::HIGHLIGHT_QUERY,
+        "",
+        "",
+    )
+    .unwrap();
 
     cpp_config.configure(&HIGHLIGHT_NAMES);
 

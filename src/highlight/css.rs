@@ -1,15 +1,19 @@
-use tree_sitter_css::language;
 use tree_sitter_highlight::{HighlightConfiguration, HighlightEvent, Highlighter};
 
 use crate::highlight::HIGHLIGHT_NAMES;
 
 pub fn highlight_css(lines: &[u8]) -> Result<Vec<HighlightEvent>, String> {
     let mut highlither = Highlighter::new();
-    let language = language();
+    let language = tree_sitter_css::LANGUAGE;
 
-    let mut css_config =
-        HighlightConfiguration::new(language, "css", tree_sitter_css::HIGHLIGHTS_QUERY, "", "")
-            .unwrap();
+    let mut css_config = HighlightConfiguration::new(
+        language.into(),
+        "css",
+        tree_sitter_css::HIGHLIGHTS_QUERY,
+        "",
+        "",
+    )
+    .unwrap();
 
     css_config.configure(&HIGHLIGHT_NAMES);
 

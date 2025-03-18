@@ -1,15 +1,19 @@
-use tree_sitter_bash::language;
 use tree_sitter_highlight::{HighlightConfiguration, HighlightEvent, Highlighter};
 
 use crate::highlight::HIGHLIGHT_NAMES;
 
 pub fn highlight_bash(lines: &[u8]) -> Result<Vec<HighlightEvent>, String> {
     let mut highlither = Highlighter::new();
-    let language = language();
+    let language = tree_sitter_bash::LANGUAGE;
 
-    let mut bash_config =
-        HighlightConfiguration::new(language, "bash", tree_sitter_bash::HIGHLIGHT_QUERY, "", "")
-            .unwrap();
+    let mut bash_config = HighlightConfiguration::new(
+        language.into(),
+        "bash",
+        tree_sitter_bash::HIGHLIGHT_QUERY,
+        "",
+        "",
+    )
+    .unwrap();
 
     bash_config.configure(&HIGHLIGHT_NAMES);
 

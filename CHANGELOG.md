@@ -2,6 +2,7 @@
 
 - (#163) Fix word wrapping in paragraphs.
 - (#164) Gracefully handle malformed tables.
+- BREAKING: remove luau highlighting
 
 # Version 0.8.7
 

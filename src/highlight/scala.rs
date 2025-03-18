@@ -1,14 +1,13 @@
 use tree_sitter_highlight::{HighlightConfiguration, HighlightEvent, Highlighter};
-use tree_sitter_scala::language;
 
 use crate::highlight::HIGHLIGHT_NAMES;
 
 pub fn highlight_scala(lines: &[u8]) -> Result<Vec<HighlightEvent>, String> {
     let mut highlither = Highlighter::new();
-    let language = language();
+    let language = tree_sitter_scala::LANGUAGE;
 
     let mut scala_config = HighlightConfiguration::new(
-        language,
+        language.into(),
         "scala",
         tree_sitter_scala::HIGHLIGHTS_QUERY,
         "",

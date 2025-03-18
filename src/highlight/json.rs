@@ -1,15 +1,19 @@
 use tree_sitter_highlight::{HighlightConfiguration, HighlightEvent, Highlighter};
-use tree_sitter_json::language;
 
 use crate::highlight::HIGHLIGHT_NAMES;
 
 pub fn highlight_json(lines: &[u8]) -> Result<Vec<HighlightEvent>, String> {
     let mut highlither = Highlighter::new();
-    let language = language();
+    let language = tree_sitter_json::LANGUAGE;
 
-    let mut json_config =
-        HighlightConfiguration::new(language, "json", tree_sitter_json::HIGHLIGHTS_QUERY, "", "")
-            .unwrap();
+    let mut json_config = HighlightConfiguration::new(
+        language.into(),
+        "json",
+        tree_sitter_json::HIGHLIGHTS_QUERY,
+        "",
+        "",
+    )
+    .unwrap();
 
     json_config.configure(&HIGHLIGHT_NAMES);
 

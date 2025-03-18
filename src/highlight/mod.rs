@@ -20,8 +20,6 @@ mod javascript;
 mod json;
 #[cfg(feature = "tree-sitter-lua")]
 mod lua;
-#[cfg(feature = "tree-sitter-luau-fork")]
-mod luau;
 #[cfg(feature = "tree-sitter-ocaml")]
 mod ocaml;
 #[cfg(feature = "tree-sitter-php")]
@@ -128,9 +126,6 @@ pub fn highlight_code(language: &str, lines: &[u8]) -> HighlightInfo {
 
         #[cfg(feature = "tree-sitter-lua")]
         "lua" => HighlightInfo::Highlighted(lua::highlight_lua(lines).unwrap()),
-
-        #[cfg(feature = "tree-sitter-luau-fork")]
-        "luau" => HighlightInfo::Highlighted(luau::highlight_luau(lines).unwrap()),
 
         #[cfg(feature = "tree-sitter-ocaml")]
         "ocaml" => HighlightInfo::Highlighted(ocaml::highlight_ocaml(lines).unwrap()),

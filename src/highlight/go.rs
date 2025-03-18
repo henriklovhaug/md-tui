@@ -1,15 +1,19 @@
-use tree_sitter_go::language;
 use tree_sitter_highlight::{HighlightConfiguration, HighlightEvent, Highlighter};
 
 use crate::highlight::HIGHLIGHT_NAMES;
 
 pub fn highlight_go(lines: &[u8]) -> Result<Vec<HighlightEvent>, String> {
     let mut highlither = Highlighter::new();
-    let language = language();
+    let language = tree_sitter_go::LANGUAGE;
 
-    let mut go_config =
-        HighlightConfiguration::new(language, "go", tree_sitter_go::HIGHLIGHTS_QUERY, "", "")
-            .unwrap();
+    let mut go_config = HighlightConfiguration::new(
+        language.into(),
+        "go",
+        tree_sitter_go::HIGHLIGHTS_QUERY,
+        "",
+        "",
+    )
+    .unwrap();
 
     go_config.configure(&HIGHLIGHT_NAMES);
 

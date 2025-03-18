@@ -1,15 +1,19 @@
 use tree_sitter_highlight::{HighlightConfiguration, HighlightEvent, Highlighter};
-use tree_sitter_java::language;
 
 use crate::highlight::HIGHLIGHT_NAMES;
 
 pub fn highlight_java(lines: &[u8]) -> Result<Vec<HighlightEvent>, String> {
     let mut highlither = Highlighter::new();
-    let language = language();
+    let language = tree_sitter_java::LANGUAGE;
 
-    let mut java_config =
-        HighlightConfiguration::new(language, "java", tree_sitter_java::HIGHLIGHTS_QUERY, "", "")
-            .unwrap();
+    let mut java_config = HighlightConfiguration::new(
+        language.into(),
+        "java",
+        tree_sitter_java::HIGHLIGHTS_QUERY,
+        "",
+        "",
+    )
+    .unwrap();
 
     java_config.configure(&HIGHLIGHT_NAMES);
 

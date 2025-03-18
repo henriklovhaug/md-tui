@@ -1,14 +1,14 @@
-use tree_sitter_c::language;
 use tree_sitter_highlight::{HighlightConfiguration, HighlightEvent, Highlighter};
 
 use crate::highlight::HIGHLIGHT_NAMES;
 
 pub fn highlight_c(lines: &[u8]) -> Result<Vec<HighlightEvent>, String> {
     let mut highlither = Highlighter::new();
-    let language = language();
+    let language = tree_sitter_c::LANGUAGE;
 
     let mut c_config =
-        HighlightConfiguration::new(language, "c", tree_sitter_c::HIGHLIGHT_QUERY, "", "").unwrap();
+        HighlightConfiguration::new(language.into(), "c", tree_sitter_c::HIGHLIGHT_QUERY, "", "")
+            .unwrap();
 
     c_config.configure(&HIGHLIGHT_NAMES);
 

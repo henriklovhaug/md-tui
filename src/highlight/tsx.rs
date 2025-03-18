@@ -1,14 +1,14 @@
 use tree_sitter_highlight::{HighlightConfiguration, HighlightEvent, Highlighter};
-use tree_sitter_typescript::language_tsx;
+use tree_sitter_typescript::LANGUAGE_TSX;
 
 use crate::highlight::HIGHLIGHT_NAMES;
 
 pub fn highlight_tsx(lines: &[u8]) -> Result<Vec<HighlightEvent>, String> {
     let mut highlither = Highlighter::new();
-    let language = language_tsx();
+    let language = LANGUAGE_TSX;
 
     let mut typescript_config = HighlightConfiguration::new(
-        language,
+        language.into(),
         "tsx",
         tree_sitter_typescript::HIGHLIGHTS_QUERY,
         "",

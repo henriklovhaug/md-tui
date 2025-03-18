@@ -1,14 +1,13 @@
 use tree_sitter_highlight::{HighlightConfiguration, HighlightEvent, Highlighter};
-use tree_sitter_javascript::language;
 
 use crate::highlight::HIGHLIGHT_NAMES;
 
 pub fn highlight_javascript(lines: &[u8]) -> Result<Vec<HighlightEvent>, String> {
     let mut highlither = Highlighter::new();
-    let language = language();
+    let language = tree_sitter_javascript::LANGUAGE;
 
     let mut javascript_config = HighlightConfiguration::new(
-        language,
+        language.into(),
         "javascript",
         tree_sitter_javascript::HIGHLIGHT_QUERY,
         "",

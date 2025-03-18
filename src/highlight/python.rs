@@ -1,14 +1,13 @@
 use tree_sitter_highlight::{HighlightConfiguration, HighlightEvent, Highlighter};
-use tree_sitter_python::language;
 
 use crate::highlight::HIGHLIGHT_NAMES;
 
 pub fn highlight_python(lines: &[u8]) -> Result<Vec<HighlightEvent>, String> {
     let mut highlither = Highlighter::new();
-    let language = language();
+    let language = tree_sitter_python::LANGUAGE;
 
     let mut python_config = HighlightConfiguration::new(
-        language,
+        language.into(),
         "python",
         tree_sitter_python::HIGHLIGHTS_QUERY,
         "",

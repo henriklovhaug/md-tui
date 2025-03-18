@@ -1,15 +1,19 @@
 use tree_sitter_highlight::{HighlightConfiguration, HighlightEvent, Highlighter};
-use tree_sitter_yaml::language;
 
 use crate::highlight::HIGHLIGHT_NAMES;
 
 pub fn highlight_yaml(lines: &[u8]) -> Result<Vec<HighlightEvent>, String> {
     let mut highlither = Highlighter::new();
-    let language = language();
+    let language = tree_sitter_yaml::LANGUAGE;
 
-    let mut yaml_config =
-        HighlightConfiguration::new(language, "yaml", tree_sitter_yaml::HIGHLIGHTS_QUERY, "", "")
-            .unwrap();
+    let mut yaml_config = HighlightConfiguration::new(
+        language.into(),
+        "yaml",
+        tree_sitter_yaml::HIGHLIGHTS_QUERY,
+        "",
+        "",
+    )
+    .unwrap();
 
     yaml_config.configure(&HIGHLIGHT_NAMES);
 

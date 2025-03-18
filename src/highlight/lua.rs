@@ -1,15 +1,19 @@
 use tree_sitter_highlight::{HighlightConfiguration, HighlightEvent, Highlighter};
-use tree_sitter_lua::language;
 
 use crate::highlight::HIGHLIGHT_NAMES;
 
 pub fn highlight_lua(lines: &[u8]) -> Result<Vec<HighlightEvent>, String> {
     let mut highlither = Highlighter::new();
-    let language = language();
+    let language = tree_sitter_lua::LANGUAGE;
 
-    let mut lua_config =
-        HighlightConfiguration::new(language, "lua", tree_sitter_lua::HIGHLIGHTS_QUERY, "", "")
-            .unwrap();
+    let mut lua_config = HighlightConfiguration::new(
+        language.into(),
+        "lua",
+        tree_sitter_lua::HIGHLIGHTS_QUERY,
+        "",
+        "",
+    )
+    .unwrap();
 
     lua_config.configure(&HIGHLIGHT_NAMES);
 

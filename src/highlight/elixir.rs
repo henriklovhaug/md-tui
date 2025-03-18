@@ -1,15 +1,19 @@
-use tree_sitter_elixir::language;
 use tree_sitter_highlight::{HighlightConfiguration, HighlightEvent, Highlighter};
 
 use crate::highlight::HIGHLIGHT_NAMES;
 
 pub fn highlight_elixir(lines: &[u8]) -> Result<Vec<HighlightEvent>, String> {
     let mut highlither = Highlighter::new();
-    let language = language();
+    let language = tree_sitter_elixir::LANGUAGE;
 
-    let mut elixir_config =
-        HighlightConfiguration::new(language, "elixir", tree_sitter_cpp::HIGHLIGHT_QUERY, "", "")
-            .unwrap();
+    let mut elixir_config = HighlightConfiguration::new(
+        language.into(),
+        "elixir",
+        tree_sitter_cpp::HIGHLIGHT_QUERY,
+        "",
+        "",
+    )
+    .unwrap();
 
     elixir_config.configure(&HIGHLIGHT_NAMES);
 
