@@ -13,7 +13,7 @@ use ratatui::{
 };
 
 use crate::search::find_files;
-use crate::util::colors::COLOR_CONFIG;
+use crate::util::colors::color_config;
 
 #[derive(Debug, Clone)]
 enum MdFileComponent {
@@ -49,11 +49,11 @@ impl From<MdFile> for ListItem<'_> {
     fn from(val: MdFile) -> Self {
         let mut text = Text::default();
         text.extend([
-            val.name.to_owned().fg(COLOR_CONFIG.file_tree_name_color),
+            val.name.to_owned().fg(color_config().file_tree_name_color),
             val.path
                 .to_owned()
                 .italic()
-                .fg(COLOR_CONFIG.file_tree_path_color),
+                .fg(color_config().file_tree_path_color),
         ]);
         ListItem::new(text)
     }
@@ -357,7 +357,7 @@ impl Widget for FileTree {
 
         let paragraph = Text::styled(
             page_count,
-            Style::default().fg(COLOR_CONFIG.file_tree_page_count_color),
+            Style::default().fg(color_config().file_tree_page_count_color),
         );
 
         let items = List::new(items)
@@ -369,7 +369,7 @@ impl Widget for FileTree {
             )
             .highlight_style(
                 Style::default()
-                    .fg(COLOR_CONFIG.file_tree_selected_fg_color)
+                    .fg(color_config().file_tree_selected_fg_color)
                     .add_modifier(Modifier::BOLD),
             )
             .highlight_symbol("\u{02503} ")
