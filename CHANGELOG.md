@@ -3,6 +3,7 @@
 - (#163) Fix word wrapping in paragraphs.
 - (#164) Gracefully handle malformed tables.
 - BREAKING: remove luau highlighting
+- (#167) Add read from stdin
 
 # Version 0.8.7
 
