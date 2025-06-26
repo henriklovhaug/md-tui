@@ -2,7 +2,8 @@ use std::{
     cmp, env,
     error::Error,
     fs::read_to_string,
-    io, panic,
+    io::{self, IsTerminal, Read},
+    panic,
     sync::mpsc,
     thread,
     time::{Duration, Instant},
@@ -24,11 +25,10 @@ use crossterm::{
 
 use notify::{Config, PollWatcher, Watcher};
 use ratatui::{
-    backend::{Backend, CrosstermBackend},
     layout::Rect,
     style::{Color, Stylize},
     widgets::{Block, Clear},
-    Frame, Terminal,
+    DefaultTerminal, Frame,
 };
 use ratatui_image::{FilterType, Resize, StatefulImage};
 
@@ -42,12 +42,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         better_panic::Settings::auto().create_panic_handler()(panic_info);
     }));
 
-    // setup terminal
-    enable_raw_mode()?;
-    let mut stdout = io::stdout();
-    execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
-    let backend = CrosstermBackend::new(stdout);
-    let mut terminal = Terminal::new(backend)?;
+    let mut terminal = ratatui::init();
 
     // create app and run it
     let tick_rate = Duration::from_millis(100);
@@ -55,13 +50,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let res = run_app(&mut terminal, app, tick_rate);
 
     // restore terminal
-    disable_raw_mode()?;
-    execute!(
-        terminal.backend_mut(),
-        LeaveAlternateScreen,
-        DisableMouseCapture
-    )?;
-    terminal.show_cursor()?;
+    ratatui::restore();
 
     if let Err(err) = res {
         println!("{err:?}");
@@ -70,11 +59,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn run_app<B: Backend>(
-    terminal: &mut Terminal<B>,
-    mut app: App,
-    tick_rate: Duration,
-) -> io::Result<()> {
+fn run_app(terminal: &mut DefaultTerminal, mut app: App, tick_rate: Duration) -> io::Result<()> {
     let (f_tx, f_rx) = mpsc::channel::<Option<MdFile>>();
 
     thread::spawn(move || find_md_files_channel(f_tx.clone()));
@@ -92,6 +77,9 @@ fn run_app<B: Backend>(
     app.set_width(terminal.size()?.width);
     let mut markdown = parse_markdown(None, EMPTY_FILE, app.width() - 2);
 
+    let potential_input = io::stdin();
+    let mut stdin_buf = String::new();
+
     let args: Vec<String> = std::env::args().collect();
     if let Some(arg) = args.get(1) {
         if let Ok(file) = read_to_string(arg) {
@@ -104,6 +92,10 @@ fn run_app<B: Backend>(
                 .set_message(format!("Could not open file {:?}", arg));
             app.boxes = Boxes::Error;
         }
+    } else if !potential_input.is_terminal() {
+        let _ = potential_input.lock().read_to_string(&mut stdin_buf);
+        markdown = parse_markdown(None, &stdin_buf, app.width() - 2);
+        app.mode = Mode::View;
     }
 
     let mut file_tree = FileTree::default();
