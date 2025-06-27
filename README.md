@@ -46,6 +46,8 @@ Start the program running `mdt <file.md>` or just `mdt`. The latter will search
 recursively from where it was invoked for any markdown file and show it in a
 _file tree_.
 
+You can also pipe the content into the program. Example: `cat README.md | mdt`.
+
 ## Key binds
 
 These are the default settings. See [keyboard configuration](#keyboard-actions)
