@@ -1,15 +1,16 @@
-# Version 0.8.8
+# Version 0.9.0
 
 - (#163) Fix word wrapping in paragraphs.
 - (#164) Gracefully handle malformed tables.
 - BREAKING: remove luau highlighting
-- (#167) Add read from stdin
+- (#167) Add read from standard input
+- (#164) Fix crash on improper table format
 
 # Version 0.8.7
 
 - Tables are finally balanced
 
-# version 0.8.6
+# Version 0.8.6
 
 - Make binary `mdt` again. Was wrongly removed in version 0.8.5.
 
