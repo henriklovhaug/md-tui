@@ -7,6 +7,7 @@
 - (#164) Fix crash on improper table format
 - (#174) Assume files without extensions are markdown files
 - (#174) Support file#heading directly from other markdown files
+- (#160) Support space indented code blocks
 
 # Version 0.8.7
 

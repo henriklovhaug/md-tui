@@ -63,6 +63,8 @@ bold_italic = {
 
 code                 =  { NEWLINE? ~ WHITESPACE_S* ~ ("`" ~ code_word+ ~ "`") | ("```" ~ code_word+ ~ "```") }
 code_line            =  { NEWLINE ~ (c_line_char | WHITESPACE_S)* }
+indented_code_line   =  { NEWLINE ~ ("    " | "\t") ~ " "* ~ (!(NEWLINE) ~ ANY)* }
+indented_code_newline = { NEWLINE }
 latex                =  { NEWLINE? ~ WHITESPACE_S* ~ !"\\" ~ "$"+ ~ WHITESPACE_S? ~ (latex_word | (NEWLINE ~ quote_prefix?))+ ~ "$"+ }
 link                 =  { NEWLINE? ~ WHITESPACE_S* ~ (link_line | wiki_link | inline_link_wrapper) }
 link_line            = _{ "[" ~ (link_word | NEWLINE)+ ~ "]" ~ "(" ~ link_data+ ~ ")" }
@@ -106,13 +108,16 @@ caution   = { ^"[!caution]" }
 quote_marking = _{ WHITESPACE_S* ~ (important | note | tip | warning | caution) }
 
 // Blocks
-heading        = { (h1 | h2 | h3 | h4 | h5 | h6) }
-list_container = { (NEWLINE? ~ !comment ~ (u_list | o_list))+ }
-paragraph      = { sentence+ }
-code_block     = {
-    NEWLINE? ~ " "* ~ (("```" ~ programming_language? ~ code_line+ ~ " "* ~ "```") | ("~~~" ~ programming_language? ~ code_line+ ~ " "* ~ "~~~"))
+heading             = { (h1 | h2 | h3 | h4 | h5 | h6) }
+list_container      = { (NEWLINE? ~ !comment ~ (u_list | o_list))+ }
+paragraph           = { sentence+ }
+indented_code_block = {
+   indented_code_line ~ (indented_code_line | (indented_code_newline ~ indented_code_line))+ ~ (!(NEWLINE ~ ("    " | "\t")) ~ NEWLINE)?
 }
-table          = {
+code_block          = {
+    NEWLINE? ~ " "* ~ (("```" ~ programming_language? ~ code_line+ ~ " "* ~ "```") | ("~~~" ~ programming_language? ~ code_line+ ~ " "* ~ "~~~") | indented_code_block)
+}
+table               = {
     NEWLINE? ~ table_cell+ ~ NEWLINE? ~ table_seperator+ ~ (NEWLINE? ~ table_cell)*
 }
 

@@ -83,7 +83,9 @@ impl From<MdParseEnum> for WordType {
             | MdParseEnum::TableSeperator => {
                 unreachable!("Edit this or pest file to fix for value: {:?}", value)
             }
-            MdParseEnum::CodeBlockStr => WordType::CodeBlock(Color::Reset),
+            MdParseEnum::CodeBlockStr | MdParseEnum::CodeBlockStrSpaceIndented => {
+                WordType::CodeBlock(Color::Reset)
+            }
         }
     }
 }

@@ -5,6 +5,7 @@ use pest::{
     Parser,
 };
 use pest_derive::Parser;
+use ratatui::style::Color;
 
 use crate::nodes::{
     image::ImageComponent,
@@ -256,11 +257,25 @@ fn parse_component(parse_node: ParseNode) -> Component {
         MdParseEnum::CodeBlock => {
             let leaf_nodes = get_leaf_nodes(parse_node);
             let mut words = Vec::new();
+
+            let mut space_indented = false;
+
             for node in leaf_nodes {
+                if node.kind() == MdParseEnum::CodeBlockStrSpaceIndented {
+                    space_indented = true;
+                }
                 let word_type = WordType::from(node.kind());
                 let content = node.content().to_owned();
                 words.push(vec![Word::new(content, word_type)]);
             }
+
+            if space_indented {
+                words.push(vec![Word::new(
+                    " ".to_owned(),
+                    WordType::CodeBlock(Color::Reset),
+                )]);
+            }
+
             Component::TextComponent(TextComponent::new_formatted(TextNode::CodeBlock, words))
         }
 
@@ -500,6 +515,7 @@ pub enum MdParseEnum {
     Code,
     CodeBlock,
     CodeBlockStr,
+    CodeBlockStrSpaceIndented,
     CodeStr,
     Digit,
     Heading,
@@ -557,6 +573,9 @@ impl From<Rule> for MdParseEnum {
             Rule::task_open => Self::TaskOpen,
             Rule::task_complete => Self::TaskClosed,
             Rule::code_line => Self::CodeBlockStr,
+            Rule::indented_code_line | Rule::indented_code_newline => {
+                Self::CodeBlockStrSpaceIndented
+            }
             Rule::sentence | Rule::t_sentence => Self::Sentence,
             Rule::table_cell => Self::TableCell,
             Rule::table_seperator => Self::TableSeperator,
@@ -567,7 +586,7 @@ impl From<Rule> for MdParseEnum {
             }
             Rule::list_container => Self::ListContainer,
             Rule::paragraph => Self::Paragraph,
-            Rule::code_block => Self::CodeBlock,
+            Rule::code_block | Rule::indented_code_block => Self::CodeBlock,
             Rule::table => Self::Table,
             Rule::quote => Self::Quote,
             Rule::task => Self::Task,
