@@ -5,6 +5,7 @@ use pest::{
     Parser,
 };
 use pest_derive::Parser;
+use ratatui::style::Color;
 
 use crate::nodes::{
     image::ImageComponent,
@@ -256,11 +257,24 @@ fn parse_component(parse_node: ParseNode) -> Component {
         MdParseEnum::CodeBlock => {
             let leaf_nodes = get_leaf_nodes(parse_node);
             let mut words = Vec::new();
+
+            let space_indented = leaf_nodes
+                .iter()
+                .any(|node| node.kind() == MdParseEnum::CodeBlockStrSpaceIndented);
+
             for node in leaf_nodes {
                 let word_type = WordType::from(node.kind());
                 let content = node.content().to_owned();
                 words.push(vec![Word::new(content, word_type)]);
             }
+
+            if space_indented {
+                words.push(vec![Word::new(
+                    " ".to_owned(),
+                    WordType::CodeBlock(Color::Reset),
+                )]);
+            }
+
             Component::TextComponent(TextComponent::new_formatted(TextNode::CodeBlock, words))
         }
 
@@ -500,6 +514,7 @@ pub enum MdParseEnum {
     Code,
     CodeBlock,
     CodeBlockStr,
+    CodeBlockStrSpaceIndented,
     CodeStr,
     Digit,
     Heading,
@@ -556,8 +571,9 @@ impl From<Rule> for MdParseEnum {
             Rule::o_list_counter | Rule::digit => Self::Digit,
             Rule::task_open => Self::TaskOpen,
             Rule::task_complete => Self::TaskClosed,
-            Rule::code_line | Rule::indented_code_line | Rule::indented_code_newline => {
-                Self::CodeBlockStr
+            Rule::code_line => Self::CodeBlockStr,
+            Rule::indented_code_line | Rule::indented_code_newline => {
+                Self::CodeBlockStrSpaceIndented
             }
             Rule::sentence | Rule::t_sentence => Self::Sentence,
             Rule::table_cell => Self::TableCell,

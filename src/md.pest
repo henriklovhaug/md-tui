@@ -112,7 +112,7 @@ heading             = { (h1 | h2 | h3 | h4 | h5 | h6) }
 list_container      = { (NEWLINE? ~ !comment ~ (u_list | o_list))+ }
 paragraph           = { sentence+ }
 indented_code_block = {
-   indented_code_line ~ (indented_code_line | indented_code_newline)+ ~ (!(NEWLINE ~ ("    " | "\t")) ~ NEWLINE)?
+   indented_code_line ~ (indented_code_line | (indented_code_newline ~ indented_code_line))+ ~ (!(NEWLINE ~ ("    " | "\t")) ~ NEWLINE)?
 }
 code_block          = {
     NEWLINE? ~ " "* ~ (("```" ~ programming_language? ~ code_line+ ~ " "* ~ "```") | ("~~~" ~ programming_language? ~ code_line+ ~ " "* ~ "~~~") | indented_code_block)
