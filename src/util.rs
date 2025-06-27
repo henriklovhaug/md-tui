@@ -99,7 +99,7 @@ impl<'a> From<&'a str> for LinkType<'a> {
         if s.starts_with('#') {
             return Self::Internal(s);
         }
-        if s.ends_with("md") {
+        if s.ends_with("md") || !s.contains('.') {
             return Self::MarkdownFile(s);
         }
         Self::External(s)
