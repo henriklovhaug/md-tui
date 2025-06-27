@@ -1,6 +1,6 @@
 [package]
 name = "md-tui"
-version = "0.8.7"
+version = "0.9.0"
 edition = "2021"
 authors = ["Henrik Tøn Løvhaug"]
 description = "A terminal markdown viewer"
