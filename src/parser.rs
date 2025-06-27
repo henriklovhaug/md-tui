@@ -258,11 +258,12 @@ fn parse_component(parse_node: ParseNode) -> Component {
             let leaf_nodes = get_leaf_nodes(parse_node);
             let mut words = Vec::new();
 
-            let space_indented = leaf_nodes
-                .iter()
-                .any(|node| node.kind() == MdParseEnum::CodeBlockStrSpaceIndented);
+            let mut space_indented = false;
 
             for node in leaf_nodes {
+                if node.kind() == MdParseEnum::CodeBlockStrSpaceIndented {
+                    space_indented = true;
+                }
                 let word_type = WordType::from(node.kind());
                 let content = node.content().to_owned();
                 words.push(vec![Word::new(content, word_type)]);
