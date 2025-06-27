@@ -5,6 +5,8 @@
 - BREAKING: remove luau highlighting
 - (#167) Add read from standard input
 - (#164) Fix crash on improper table format
+- (#174) Assume files without extensions are markdown files
+- (#174) Support file#heading directly from other markdown files
 
 # Version 0.8.7
 
