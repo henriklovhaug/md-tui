@@ -33,6 +33,8 @@ On Arch Linux: `pacman -S md-tui`
 
 For Nix users, there's also Nix flake.
 
+On conda-forge: `pixi global install md-tui` or `pixi exec -s md-tui -- mdt my-file.md`
+
 Prebuilt binaries with install script can be found on the release page.
 
 ### Requirements
