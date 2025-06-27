@@ -556,7 +556,9 @@ impl From<Rule> for MdParseEnum {
             Rule::o_list_counter | Rule::digit => Self::Digit,
             Rule::task_open => Self::TaskOpen,
             Rule::task_complete => Self::TaskClosed,
-            Rule::code_line => Self::CodeBlockStr,
+            Rule::code_line | Rule::indented_code_line | Rule::indented_code_newline => {
+                Self::CodeBlockStr
+            }
             Rule::sentence | Rule::t_sentence => Self::Sentence,
             Rule::table_cell => Self::TableCell,
             Rule::table_seperator => Self::TableSeperator,
@@ -567,7 +569,7 @@ impl From<Rule> for MdParseEnum {
             }
             Rule::list_container => Self::ListContainer,
             Rule::paragraph => Self::Paragraph,
-            Rule::code_block => Self::CodeBlock,
+            Rule::code_block | Rule::indented_code_block => Self::CodeBlock,
             Rule::table => Self::Table,
             Rule::quote => Self::Quote,
             Rule::task => Self::Task,
