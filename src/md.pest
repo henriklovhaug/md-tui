@@ -80,9 +80,9 @@ italic = {
 }
 
 sentence   = _{ (latex | code | link | bold_italic | italic | bold | strikethrough | normal+)+ }
-t_sentence = _{ (!"|" ~ (latex | code | link | italic | bold | strikethrough | t_normal))+ }
+t_sentence = _{ (!"|" ~ (latex | code | link | bold_italic | italic | bold | strikethrough | t_normal))+ }
 
-table_cell      = { "|" ~ WHITESPACE_S* ~ t_sentence* ~ WHITESPACE_S* ~ ("|" ~ " "* ~ NEWLINE)? }
+table_cell      = { !table_seperator ~ "|" ~ WHITESPACE_S* ~ t_sentence* ~ WHITESPACE_S* ~ ("|" ~ " "* ~ NEWLINE)? }
 table_seperator = { ("|"? ~ (WHITESPACE_S | ":")* ~ "-"+ ~ (WHITESPACE_S | ":")* ~ "|") }
 
 u_list = { indent ~ ("-" | "*") ~ WHITESPACE_S ~ sentence+ }
@@ -112,7 +112,10 @@ paragraph      = { sentence+ }
 code_block     = {
     NEWLINE? ~ " "* ~ (("```" ~ programming_language? ~ code_line+ ~ " "* ~ "```") | ("~~~" ~ programming_language? ~ code_line+ ~ " "* ~ "~~~"))
 }
-table          = { (NEWLINE? ~ (table_seperator | table_cell))+ }
+table          = {
+    NEWLINE? ~ table_cell+ ~ NEWLINE? ~ table_seperator+ ~ (NEWLINE? ~ table_cell)*
+}
+
 quote          = { (NEWLINE? ~ WHITESPACE_S* ~ ">" ~ ((quote_marking | sentence | " ")+ | NEWLINE))+ }
 task           = { NEWLINE? ~ task_prefix ~ sentence }
 block_sep      = { NEWLINE }
