@@ -8,6 +8,7 @@
 - (#174) Assume files without extensions are markdown files
 - (#174) Support file#heading directly from other markdown files
 - (#160) Support space indented code blocks
+- (#173) Allow images to not need a dedicated newline above it
 
 # Version 0.8.7
 

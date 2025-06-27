@@ -50,7 +50,7 @@ list_prefix       =  { (WHITESPACE_S* ~ "-") | (NUMBER+ ~ ". ") }
 heading_prefix    =  { "#" }
 
 forbidden_sentence_prefix = {
-    NEWLINE ~ WHITESPACE_S* ~ (task_prefix | quote_prefix | code_block_prefix | table_prefix | list_prefix | heading_prefix)
+    NEWLINE ~ WHITESPACE_S* ~ (image | task_prefix | quote_prefix | code_block_prefix | table_prefix | list_prefix | heading_prefix)
 }
 
 // Lines
