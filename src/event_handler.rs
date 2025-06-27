@@ -455,17 +455,25 @@ fn keyboard_mode_view(
                     }
                     LinkType::MarkdownFile(url) => {
                         // Remove the first character, which is a '/'
-
                         let url = if let Some(url) = url.strip_prefix('/') {
                             url
                         } else {
                             url
                         };
-                        if !url.ends_with("md") {
-                            let _ = open::that(url);
-                            return KeyBoardAction::Continue;
-                        }
-                        let text = if let Ok(file) = read_to_string(url) {
+
+                        let (url, heading) = if let Some((url, heading)) = url.split_once('#') {
+                            (url.to_string(), Some(heading.to_string().to_lowercase()))
+                        } else {
+                            (url.to_string(), None)
+                        };
+
+                        let url = if url.ends_with(".md") {
+                            url
+                        } else {
+                            format!("{url}.md")
+                        };
+
+                        let text = if let Ok(file) = read_to_string(&url) {
                             app.vertical_scroll = 0;
                             file
                         } else {
@@ -481,8 +489,22 @@ fn keyboard_mode_view(
 
                         let path = std::path::Path::new(&url);
                         let _ = watcher.watch(path, notify::RecursiveMode::NonRecursive);
-                        *markdown = parse_markdown(Some(url), &text, app.width() - 2);
+                        *markdown = parse_markdown(Some(&url), &text, app.width() - 2);
+                        let index = if let Some(heading) = heading {
+                            if let Ok(index) = markdown.heading_offset(&format!("#{heading}")) {
+                                cmp::min(index, markdown.height().saturating_sub(height / 2))
+                            } else {
+                                app.error_box
+                                    .set_message(format!("Could not find heading {}", heading));
+                                app.boxes = Boxes::Error;
+                                0
+                            }
+                        } else {
+                            0
+                        };
+
                         app.reset();
+                        app.vertical_scroll = index;
                     }
                 }
                 markdown.deselect();
