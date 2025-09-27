@@ -4,7 +4,7 @@ use crossterm::{
     cursor,
     event::DisableMouseCapture,
     execute,
-    terminal::{disable_raw_mode, LeaveAlternateScreen},
+    terminal::{LeaveAlternateScreen, disable_raw_mode},
 };
 use general::GENERAL_CONFIG;
 

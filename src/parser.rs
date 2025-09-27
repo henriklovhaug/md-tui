@@ -1,8 +1,8 @@
 use image::ImageReader;
 use itertools::Itertools;
 use pest::{
-    iterators::{Pair, Pairs},
     Parser,
+    iterators::{Pair, Pairs},
 };
 use pest_derive::Parser;
 use ratatui::style::Color;
