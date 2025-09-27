@@ -6,7 +6,7 @@ use ratatui::style::Color;
 use tree_sitter_highlight::HighlightEvent;
 
 use crate::{
-    highlight::{highlight_code, HighlightInfo, COLOR_MAP},
+    highlight::{COLOR_MAP, HighlightInfo, highlight_code},
     nodes::word::MetaData,
 };
 
@@ -318,7 +318,12 @@ fn word_wrapping<'a>(
                 line = Vec::new();
             }
 
-            let mut newline_content = content.split_off(width - line_len - 1);
+            let mut newline_content: String = content
+                .char_indices()
+                .skip(width - line_len - 1)
+                .map(|(_index, character)| character)
+                .collect();
+
             if enable_hyphen && !content.ends_with("-") {
                 newline_content.insert(0, content.pop().unwrap());
                 content.push('-');
@@ -328,7 +333,11 @@ fn word_wrapping<'a>(
             lines.push(line);
 
             while newline_content.len() > width {
-                let mut next_newline_content = newline_content.split_off(width - 1);
+                let mut next_newline_content: String = newline_content
+                    .char_indices()
+                    .skip(width - 1)
+                    .map(|(_index, character)| character)
+                    .collect();
                 if enable_hyphen && !newline_content.ends_with("-") {
                     next_newline_content.insert(0, newline_content.pop().unwrap());
                     newline_content.push('-');
@@ -622,14 +631,14 @@ fn transform_table(component: &mut TextComponent, width: u16) {
         .filter(|w| w.kind() == WordType::MetaInfo(MetaData::ColumnsCount))
         .count();
 
-    if content.len() % column_count != 0 || column_count == 0 {
+    if !content.len().is_multiple_of(column_count) || column_count == 0 {
         component.height = 1;
         component.kind = TextNode::Table(vec![], vec![]);
         return;
     }
 
     assert!(
-        content.len() % column_count == 0,
+        content.len().is_multiple_of(column_count),
         "Invalid table cell distribution: content.len() = {}, column_count = {}",
         content.len(),
         column_count
