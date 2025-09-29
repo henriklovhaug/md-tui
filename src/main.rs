@@ -9,26 +9,26 @@ use std::{
     time::{Duration, Instant},
 };
 
-use md_tui::event_handler::{handle_keyboard_input, KeyBoardAction};
+use md_tui::event_handler::{KeyBoardAction, handle_keyboard_input};
 use md_tui::nodes::root::{Component, ComponentRoot};
 use md_tui::pages::file_explorer::{FileTree, MdFile};
 use md_tui::parser::parse_markdown;
 use md_tui::search::find_md_files_channel;
-use md_tui::util::{self, destruct_terminal, general::GENERAL_CONFIG, App, Boxes, Mode};
+use md_tui::util::{self, App, Boxes, Mode, destruct_terminal, general::GENERAL_CONFIG};
 
 use crossterm::{
     cursor,
     event::{self, DisableMouseCapture, EnableMouseCapture, Event},
     execute,
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
 
 use notify::{Config, PollWatcher, Watcher};
 use ratatui::{
+    DefaultTerminal, Frame,
     layout::Rect,
     style::{Color, Stylize},
     widgets::{Block, Clear},
-    DefaultTerminal, Frame,
 };
 use ratatui_image::{FilterType, Resize, StatefulImage};
 
@@ -242,19 +242,11 @@ fn render_file_tree(f: &mut Frame, app: &App, file_tree: FileTree) {
         util::general::Centering::Center => {
             let x = (size.width / 2).saturating_sub(GENERAL_CONFIG.width / 2);
 
-            if x > 2 {
-                x
-            } else {
-                2
-            }
+            if x > 2 { x } else { 2 }
         }
         util::general::Centering::Right => {
             let x = size.width.saturating_sub(GENERAL_CONFIG.width + 2);
-            if x > 2 {
-                x
-            } else {
-                2
-            }
+            if x > 2 { x } else { 2 }
         }
     };
     let area = Rect {
@@ -309,19 +301,11 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
         util::general::Centering::Center => {
             let x = (size.width / 2).saturating_sub(GENERAL_CONFIG.width / 2);
 
-            if x > 2 {
-                x
-            } else {
-                2
-            }
+            if x > 2 { x } else { 2 }
         }
         util::general::Centering::Right => {
             let x = size.width.saturating_sub(GENERAL_CONFIG.width + 2);
-            if x > 2 {
-                x
-            } else {
-                2
-            }
+            if x > 2 { x } else { 2 }
         }
     };
 

@@ -1,3 +1,7 @@
+# Version 0.9.1
+
+- (#182) Fix wordsplitting on char boundaries when formatting text
+
 # Version 0.9.0
 
 - (#163) Fix word wrapping in paragraphs.

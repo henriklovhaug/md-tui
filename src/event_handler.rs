@@ -8,9 +8,9 @@ use crate::{
     pages::file_explorer::FileTree,
     parser::parse_markdown,
     util::{
-        general::GENERAL_CONFIG,
-        keys::{key_to_action, Action},
         App, Boxes, Jump, LinkType, Mode,
+        general::GENERAL_CONFIG,
+        keys::{Action, key_to_action},
     },
 };
 

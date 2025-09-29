@@ -140,7 +140,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> std::io::Res
             let update = match crossterm::event::read()? {
                 Event::Key(key) => match key.code {
                     KeyCode::Char('c') if key.modifiers.contains(KeyModifiers::CONTROL) => {
-                        return Ok(())
+                        return Ok(());
                     }
                     KeyCode::Char('q') => return Ok(()),
                     KeyCode::Up => app.scroll_up(),
