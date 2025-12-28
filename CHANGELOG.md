@@ -1,6 +1,7 @@
 # Version 0.9.2
 
 - (#162) Add support for footnote
+- (#172) Fix panic bug for stupid small terminals
 
 # Version 0.9.1
 
