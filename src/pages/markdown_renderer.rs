@@ -92,13 +92,14 @@ impl Widget for TextComponent {
             TextNode::LineBreak => (),
             TextNode::HorizontalSeperator => render_horizontal_seperator(area, buf),
             TextNode::Image => todo!(),
+            TextNode::Footnote => (),
         }
     }
 }
 
 fn style_word(word: &Word) -> Span<'_> {
     match word.kind() {
-        WordType::MetaInfo(_) | WordType::LinkData => unreachable!(),
+        WordType::MetaInfo(_) | WordType::LinkData | WordType::FootnoteData => unreachable!(),
         WordType::Selected => Span::styled(
             word.content(),
             Style::default()
@@ -111,7 +112,7 @@ fn style_word(word: &Word) -> Span<'_> {
             Style::default().fg(color_config().code_fg_color),
         )
         .bg(color_config().code_bg_color),
-        WordType::Link => Span::styled(
+        WordType::Link | WordType::FootnoteInline => Span::styled(
             word.content(),
             Style::default().fg(color_config().link_color),
         ),
@@ -123,7 +124,7 @@ fn style_word(word: &Word) -> Span<'_> {
             word.content(),
             Style::default().fg(color_config().bold_color).bold(),
         ),
-        WordType::Strikethrough => Span::styled(
+        WordType::Strikethrough | WordType::Footnote => Span::styled(
             word.content(),
             Style::default()
                 .fg(color_config().striketrough_color)

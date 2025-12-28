@@ -15,24 +15,20 @@ pub mod general;
 pub mod keybinds;
 pub mod keys;
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub enum Mode {
     View,
+    #[default]
     FileTree,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub enum Boxes {
     Error,
     Search,
     LinkPreview,
+    #[default]
     None,
-}
-
-impl Default for Mode {
-    fn default() -> Self {
-        Self::FileTree
-    }
 }
 
 impl From<JumpHistory> for Mode {
@@ -47,12 +43,6 @@ impl From<JumpHistory> for Mode {
     }
 }
 
-impl Default for Boxes {
-    fn default() -> Self {
-        Self::None
-    }
-}
-
 #[derive(Default, Clone)]
 pub struct App {
     pub vertical_scroll: u16,
@@ -63,7 +53,7 @@ pub struct App {
     pub boxes: Boxes,
     pub history: JumpHistory,
     pub search_box: SearchBox,
-    pub error_box: ErrorBox,
+    pub message_box: ErrorBox,
     pub help_box: HelpBox,
     pub link_box: LinkBox,
 }

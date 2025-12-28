@@ -88,8 +88,8 @@ fn run_app(terminal: &mut DefaultTerminal, mut app: App, tick_rate: Duration) ->
             markdown = parse_markdown(Some(arg), &file, app.width() - 2);
             app.mode = Mode::View;
         } else {
-            app.error_box
-                .set_message(format!("Could not open file {:?}", arg));
+            app.message_box
+                .set_message(format!("Could not open file {arg}"));
             app.boxes = Boxes::Error;
         }
     } else if !potential_input.is_terminal() {
@@ -134,7 +134,7 @@ fn run_app(terminal: &mut DefaultTerminal, mut app: App, tick_rate: Duration) ->
                 app.vertical_scroll = 0;
                 file
             } else {
-                app.error_box
+                app.message_box
                     .set_message(format!("Could not open file {:?}", markdown.file_name()));
                 app.boxes = Boxes::Error;
                 app.mode = Mode::FileTree;
@@ -177,7 +177,7 @@ fn run_app(terminal: &mut DefaultTerminal, mut app: App, tick_rate: Duration) ->
                 };
                 f.render_widget(app.search_box.clone(), search_area);
             } else if app.boxes == Boxes::Error {
-                let (error_height, error_width) = app.error_box.dimensions();
+                let (error_height, error_width) = app.message_box.dimensions();
                 let error_area = Rect {
                     x: app.width() / 2 - error_width / 2,
                     y: height / 2,
@@ -187,7 +187,7 @@ fn run_app(terminal: &mut DefaultTerminal, mut app: App, tick_rate: Duration) ->
 
                 if app.width() > error_width {
                     f.render_widget(Clear, error_area);
-                    f.render_widget(app.error_box.clone(), error_area);
+                    f.render_widget(app.message_box.clone(), error_area);
                 }
             } else if app.boxes == Boxes::LinkPreview {
                 let (link_height, link_width) = app.link_box.dimensions();
@@ -207,25 +207,25 @@ fn run_app(terminal: &mut DefaultTerminal, mut app: App, tick_rate: Duration) ->
             .checked_sub(last_tick.elapsed())
             .unwrap_or_else(|| Duration::from_secs(0));
 
-        if event::poll(timeout)? {
-            if let Event::Key(key) = event::read()? {
-                match handle_keyboard_input(
-                    key.code,
-                    &mut app,
-                    &mut markdown,
-                    &mut file_tree,
-                    height,
-                    &mut watcher,
-                ) {
-                    KeyBoardAction::Exit => {
-                        return Ok(());
-                    }
-                    KeyBoardAction::Continue => {}
-                    KeyBoardAction::Edit => {
-                        terminal.draw(|f| {
-                            open_editor(f, &mut app, markdown.file_name());
-                        })?;
-                    }
+        if event::poll(timeout)?
+            && let Event::Key(key) = event::read()?
+        {
+            match handle_keyboard_input(
+                key.code,
+                &mut app,
+                &mut markdown,
+                &mut file_tree,
+                height,
+                &mut watcher,
+            ) {
+                KeyBoardAction::Exit => {
+                    return Ok(());
+                }
+                KeyBoardAction::Continue => {}
+                KeyBoardAction::Edit => {
+                    terminal.draw(|f| {
+                        open_editor(f, &mut app, markdown.file_name());
+                    })?;
                 }
             }
         }
@@ -408,7 +408,7 @@ fn open_editor(f: &mut Frame, app: &mut App, file_name: Option<&str>) {
     let editor = if let Ok(editor) = env::var("EDITOR") {
         editor
     } else {
-        app.error_box
+        app.message_box
             .set_message("No editor found. Please set the EDITOR environment variable".to_owned());
         app.boxes = Boxes::Error;
         return;
@@ -417,7 +417,7 @@ fn open_editor(f: &mut Frame, app: &mut App, file_name: Option<&str>) {
     let file_name = if let Some(file_name) = file_name {
         file_name
     } else {
-        app.error_box
+        app.message_box
             .set_message("No file found to open in editor".to_owned());
         app.boxes = Boxes::Error;
         return;

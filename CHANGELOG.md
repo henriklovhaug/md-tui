@@ -1,3 +1,7 @@
+# Version 0.9.2
+
+- (#162) Add support for footnote
+
 # Version 0.9.1
 
 - (#182) Fix wordsplitting on char boundaries when formatting text

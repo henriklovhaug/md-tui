@@ -19,19 +19,22 @@ pub enum MetaData {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WordType {
-    MetaInfo(MetaData),
-    Selected,
-    LinkData,
-    Normal,
+    Bold,
+    BoldItalic,
     Code,
     CodeBlock(Color),
-    Link,
+    Footnote,
+    FootnoteData,
+    FootnoteInline,
     Italic,
-    Bold,
-    Strikethrough,
-    BoldItalic,
-    White,
+    Link,
+    LinkData,
     ListMarker,
+    MetaInfo(MetaData),
+    Normal,
+    Selected,
+    Strikethrough,
+    White,
 }
 
 impl From<MdParseEnum> for WordType {
@@ -43,29 +46,25 @@ impl From<MdParseEnum> for WordType {
             | MdParseEnum::TaskClosed
             | MdParseEnum::Indent
             | MdParseEnum::HorizontalSeperator => WordType::MetaInfo(MetaData::Other),
-
+            MdParseEnum::FootnoteRef => WordType::FootnoteInline,
             MdParseEnum::Code => WordType::Code,
             MdParseEnum::Bold => WordType::Bold,
             MdParseEnum::Italic => WordType::Italic,
             MdParseEnum::Strikethrough => WordType::Strikethrough,
             MdParseEnum::Link | MdParseEnum::WikiLink | MdParseEnum::InlineLink => WordType::Link,
             MdParseEnum::BoldItalic => WordType::BoldItalic,
-
             MdParseEnum::Digit => WordType::ListMarker,
-
             MdParseEnum::Paragraph
             | MdParseEnum::AltText
             | MdParseEnum::Quote
             | MdParseEnum::Sentence
             | MdParseEnum::Word => WordType::Normal,
-
             MdParseEnum::LinkData => WordType::LinkData,
             MdParseEnum::Imortant => WordType::MetaInfo(MetaData::Important),
             MdParseEnum::Note => WordType::MetaInfo(MetaData::Note),
             MdParseEnum::Tip => WordType::MetaInfo(MetaData::Tip),
             MdParseEnum::Warning => WordType::MetaInfo(MetaData::Warning),
             MdParseEnum::Caution => WordType::MetaInfo(MetaData::Caution),
-
             MdParseEnum::Heading
             | MdParseEnum::BoldItalicStr
             | MdParseEnum::BoldStr
@@ -76,6 +75,7 @@ impl From<MdParseEnum> for WordType {
             | MdParseEnum::ListContainer
             | MdParseEnum::OrderedList
             | MdParseEnum::StrikethroughStr
+            | MdParseEnum::Footnote
             | MdParseEnum::Table
             | MdParseEnum::TableCell
             | MdParseEnum::Task
@@ -85,7 +85,7 @@ impl From<MdParseEnum> for WordType {
             }
             MdParseEnum::CodeBlockStr | MdParseEnum::CodeBlockStrSpaceIndented => {
                 WordType::CodeBlock(Color::Reset)
-            }
+            } // MdParseEnum::FootnoteRef => todo!(),
         }
     }
 }
@@ -104,6 +104,10 @@ impl Word {
             previous_type: None,
             content,
         }
+    }
+
+    pub fn previous_type(&self) -> WordType {
+        self.previous_type.unwrap_or(self.word_type)
     }
 
     pub fn content(&self) -> &str {
@@ -133,7 +137,10 @@ impl Word {
     }
 
     pub fn is_renderable(&self) -> bool {
-        !matches!(self.kind(), WordType::MetaInfo(_) | WordType::LinkData)
+        !matches!(
+            self.kind(),
+            WordType::MetaInfo(_) | WordType::LinkData | WordType::FootnoteData
+        )
     }
 
     pub fn split_off(&mut self, at: usize) -> Word {

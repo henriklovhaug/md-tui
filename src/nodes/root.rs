@@ -125,6 +125,39 @@ impl ComponentRoot {
         }
     }
 
+    pub fn find_footnote(&self, search: &str) -> String {
+        let footnote = self
+            .components
+            .iter()
+            .filter_map(|f| match f {
+                Component::TextComponent(text_component) => {
+                    if text_component.kind() == TextNode::Footnote {
+                        Some(text_component)
+                    } else {
+                        None
+                    }
+                }
+                Component::Image(_) => None,
+            })
+            .filter(|f| {
+                if let Some(foot_ref) = f.meta_info().iter().next() {
+                    foot_ref.content() == search
+                } else {
+                    false
+                }
+            })
+            .flat_map(|f| f.content().iter().flatten())
+            .filter(|f| f.kind() == WordType::Footnote)
+            .map(|f| f.content())
+            .collect::<String>();
+
+        if footnote.is_empty() {
+            String::from("Footnote not found")
+        } else {
+            footnote
+        }
+    }
+
     pub fn link_index_and_height(&self) -> Vec<(usize, u16)> {
         let mut indexes = Vec::new();
         let mut count = 0;
@@ -138,7 +171,10 @@ impl ComponentRoot {
                 let height = comp.y_offset();
                 comp.content().iter().enumerate().for_each(|(index, row)| {
                     row.iter().for_each(|c| {
-                        if c.kind() == WordType::Link || c.kind() == WordType::Selected {
+                        if matches!(
+                            c.kind(),
+                            WordType::Link | WordType::Selected | WordType::FootnoteInline
+                        ) {
                             indexes.push((count, height + index as u16));
                             count += 1;
                         }
@@ -198,6 +234,25 @@ impl ComponentRoot {
         block.highlight_link().unwrap()
     }
 
+    pub fn selected_underlying_type(&self) -> WordType {
+        let selected = self
+            .components
+            .iter()
+            .filter_map(|f| match f {
+                Component::TextComponent(comp) => Some(comp),
+                Component::Image(_) => None,
+            })
+            .find(|c| c.is_focused())
+            .unwrap()
+            .content()
+            .iter()
+            .flatten()
+            .filter(|c| c.kind() == WordType::Selected)
+            .collect::<Vec<_>>();
+
+        selected.first().unwrap().previous_type()
+    }
+
     /// Transforms the content of the components to fit the given width
     pub fn transform(&mut self, width: u16) {
         for component in self.components_mut() {
@@ -212,13 +267,14 @@ impl ComponentRoot {
         while let Some(component) = iter.next() {
             let kind = component.kind();
             components.push(component);
-            if let Some(next) = iter.peek() {
-                if kind != TextNode::LineBreak && next.kind() != TextNode::LineBreak {
-                    components.push(Component::TextComponent(TextComponent::new(
-                        TextNode::LineBreak,
-                        Vec::new(),
-                    )));
-                }
+            if let Some(next) = iter.peek()
+                && kind != TextNode::LineBreak
+                && next.kind() != TextNode::LineBreak
+            {
+                components.push(Component::TextComponent(TextComponent::new(
+                    TextNode::LineBreak,
+                    Vec::new(),
+                )));
             }
         }
         Self {
