@@ -259,15 +259,15 @@ fn render_file_tree(f: &mut Frame, app: &App, file_tree: FileTree) {
     let area = if app.help_box.expanded() {
         Rect {
             x: x + 2,
-            y: size.height - 14,
-            height: 13,
-            width: app.width() - 5,
+            y: size.height.saturating_sub(14),
+            height: cmp::min(13, size.height),
+            width: app.width().saturating_sub(5),
         }
     } else {
         Rect {
             x: x + 2,
-            y: size.height - 4,
-            height: 3,
+            y: size.height.saturating_sub(4),
+            height: cmp::min(3, size.height),
             width: app.width() - 5,
         }
     };
@@ -277,15 +277,15 @@ fn render_file_tree(f: &mut Frame, app: &App, file_tree: FileTree) {
     let area = if app.help_box.expanded() {
         Rect {
             x: x + 2,
-            y: size.height - 13,
-            height: 10,
-            width: app.width() - 5,
+            y: size.height.saturating_sub(13),
+            height: cmp::min(10, size.height),
+            width: app.width().saturating_sub(5),
         }
     } else {
         Rect {
             x: x + 2,
-            y: size.height - 5,
-            height: 3,
+            y: size.height.saturating_sub(5),
+            height: cmp::min(3, size.height),
             width: app.width() - 5,
         }
     };
@@ -311,7 +311,7 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
 
     let area = Rect {
         width: app.width() - 3,
-        height: size.height - 5,
+        height: size.height.saturating_sub(5),
         x,
         ..size
     };
@@ -366,15 +366,15 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
     let block = Block::default().bg(Color::Black);
     let area = if !app.help_box.expanded() {
         Rect {
-            y: size.height - 4,
-            height: 3,
+            y: size.height.saturating_sub(4),
+            height: cmp::min(3, size.height),
             x,
             ..area
         }
     } else {
         Rect {
-            y: size.height - 19,
-            height: 18,
+            y: size.height.saturating_sub(19),
+            height: cmp::min(18, size.height),
             x,
             ..area
         }
@@ -386,15 +386,15 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
     let area = if app.help_box.expanded() {
         Rect {
             x: x + 2,
-            y: size.height - 18,
-            height: 16,
+            y: size.height.saturating_sub(18),
+            height: cmp::min(16, size.height),
             width: app.width() - 5,
         }
     } else {
         Rect {
             x: x + 2,
-            y: size.height - 3,
-            height: 3,
+            y: size.height.saturating_sub(3),
+            height: cmp::min(3, size.height),
             width: app.width() - 5,
         }
     };
