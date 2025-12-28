@@ -20,6 +20,7 @@ pub enum TextNode {
     Heading,
     Task,
     List,
+    Footnote,
     /// (widths_by_column, heights_by_row)
     Table(Vec<u16>, Vec<u16>),
     CodeBlock,
@@ -43,7 +44,7 @@ impl TextComponent {
     pub fn new(kind: TextNode, content: Vec<Word>) -> Self {
         let meta_info: Vec<Word> = content
             .iter()
-            .filter(|c| !c.is_renderable())
+            .filter(|c| !c.is_renderable() || c.kind() == WordType::FootnoteInline)
             .cloned()
             .collect();
 
@@ -202,10 +203,12 @@ impl TextComponent {
         let mut selection: Vec<Vec<&mut Word>> = Vec::new();
         let mut iter = self.content.iter_mut().flatten().peekable();
         while let Some(e) = iter.peek() {
-            if e.kind() == WordType::Link {
+            if matches!(e.kind(), WordType::Link | WordType::FootnoteInline) {
                 selection.push(
                     iter.by_ref()
-                        .take_while(|c| c.kind() == WordType::Link)
+                        .take_while(|c| {
+                            matches!(c.kind(), WordType::Link | WordType::FootnoteInline)
+                        })
                         .collect(),
                 );
             } else {
@@ -215,11 +218,21 @@ impl TextComponent {
         selection
     }
 
+    pub fn get_footnote(&self, search: &str) -> String {
+        self.content()
+            .iter()
+            .flatten()
+            .skip_while(|c| c.kind() != WordType::FootnoteData && c.content() != search)
+            .take_while(|c| c.kind() == WordType::Footnote)
+            .map(|c| c.content())
+            .collect()
+    }
+
     pub fn highlight_link(&self) -> Result<&str, String> {
         Ok(self
             .meta_info()
             .iter()
-            .filter(|c| c.kind() == WordType::LinkData)
+            .filter(|c| matches!(c.kind(), WordType::LinkData | WordType::FootnoteInline))
             .nth(self.focused_index)
             .ok_or("index out of bounds")?
             .content())
@@ -228,7 +241,7 @@ impl TextComponent {
     pub fn num_links(&self) -> usize {
         self.meta_info
             .iter()
-            .filter(|c| c.kind() == WordType::LinkData)
+            .filter(|c| matches!(c.kind(), WordType::LinkData | WordType::FootnoteInline))
             .count()
     }
 
@@ -242,7 +255,8 @@ impl TextComponent {
             for (i, line) in iter {
                 if line
                     .iter()
-                    .any(|c| c.iter().any(|x| x.kind() == WordType::Selected))
+                    .flatten()
+                    .any(|c| c.kind() == WordType::Selected)
                 {
                     heights.push(i);
                 }
@@ -281,6 +295,7 @@ impl TextComponent {
             }
             TextNode::HorizontalSeperator => self.height = 1,
             TextNode::Image => unreachable!("Image should not be transformed"),
+            TextNode::Footnote => self.height = 0,
         }
     }
 }

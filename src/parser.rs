@@ -27,8 +27,12 @@ pub fn parse_markdown(name: Option<&str>, content: &str, width: u16) -> Componen
 
     let root_pair = root.into_iter().next().unwrap();
 
-    let children = parse_text(root_pair).children_owned();
-    let children = children.iter().dedup().cloned().collect();
+    let children = parse_text(root_pair)
+        .children_owned()
+        .into_iter()
+        .dedup()
+        .collect();
+
     let parse_root = ParseRoot::new(name.map(str::to_string), children);
 
     let mut root = node_to_component(parse_root).add_missing_components();
@@ -376,6 +380,19 @@ fn parse_component(parse_node: ParseNode) -> Component {
             TextNode::HorizontalSeperator,
             Vec::new(),
         )),
+        MdParseEnum::Footnote => {
+            let mut words = Vec::new();
+            let foot_ref = parse_node.children().first().unwrap().to_owned();
+            words.push(Word::new(foot_ref.content, WordType::FootnoteData));
+            let _rest = parse_node
+                .children_owned()
+                .into_iter()
+                .skip(1)
+                .map(|e| e.content)
+                .collect::<String>();
+            words.push(Word::new(_rest, WordType::Footnote));
+            Component::TextComponent(TextComponent::new(TextNode::Footnote, words))
+        }
         _ => todo!("Not implemented for {:?}", parse_node.kind()),
     }
 }
@@ -518,14 +535,16 @@ pub enum MdParseEnum {
     CodeBlockStrSpaceIndented,
     CodeStr,
     Digit,
+    FootnoteRef,
+    Footnote,
     Heading,
     HorizontalSeperator,
     Image,
     Imortant,
     Indent,
+    InlineLink,
     Italic,
     ItalicStr,
-    InlineLink,
     Link,
     LinkData,
     ListContainer,
@@ -576,7 +595,7 @@ impl From<Rule> for MdParseEnum {
             Rule::indented_code_line | Rule::indented_code_newline => {
                 Self::CodeBlockStrSpaceIndented
             }
-            Rule::sentence | Rule::t_sentence => Self::Sentence,
+            Rule::sentence | Rule::t_sentence | Rule::footnote_sentence => Self::Sentence,
             Rule::table_cell => Self::TableCell,
             Rule::table_seperator => Self::TableSeperator,
             Rule::u_list => Self::UnorderedList,
@@ -593,13 +612,11 @@ impl From<Rule> for MdParseEnum {
             Rule::block_sep => Self::BlockSeperator,
             Rule::horizontal_sep => Self::HorizontalSeperator,
             Rule::link_data | Rule::wiki_link_data => Self::LinkData,
-
             Rule::warning => Self::Warning,
             Rule::note => Self::Note,
             Rule::tip => Self::Tip,
             Rule::important => Self::Imortant,
             Rule::caution => Self::Caution,
-
             Rule::p_char
             | Rule::t_char
             | Rule::link_char
@@ -615,11 +632,10 @@ impl From<Rule> for MdParseEnum {
             | Rule::table_prefix
             | Rule::list_prefix
             | Rule::forbidden_sentence_prefix => Self::Paragraph,
-
             Rule::image => Self::Image,
-
             Rule::alt_word | Rule::alt_text => Self::AltText,
-
+            Rule::footnote_ref => Self::FootnoteRef,
+            Rule::footnote => Self::Footnote,
             Rule::heading_prefix
             | Rule::alt_char
             | Rule::b_char
@@ -632,7 +648,8 @@ impl From<Rule> for MdParseEnum {
             | Rule::inline_link_char
             | Rule::s_char
             | Rule::WHITESPACE_S
-            | Rule::wiki_link => todo!(),
+            | Rule::wiki_link
+            | Rule::footnote_ref_container => todo!(),
         }
     }
 }

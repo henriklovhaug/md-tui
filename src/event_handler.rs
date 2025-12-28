@@ -4,7 +4,7 @@ use crossterm::event::KeyCode;
 use notify::{PollWatcher, Watcher};
 
 use crate::{
-    nodes::root::ComponentRoot,
+    nodes::{root::ComponentRoot, word::WordType},
     pages::file_explorer::FileTree,
     parser::parse_markdown,
     util::{
@@ -434,6 +434,15 @@ fn keyboard_mode_view(
                     return KeyBoardAction::Continue;
                 }
                 let link = markdown.selected();
+                let prev_type = markdown.selected_underlying_type();
+
+                if prev_type == WordType::FootnoteInline {
+                    app.error_box.set_message(markdown.find_footnote(link));
+                    app.boxes = Boxes::Error;
+                    markdown.deselect();
+                    return KeyBoardAction::Continue;
+                }
+
                 match LinkType::from(link) {
                     LinkType::Internal(heading) => {
                         app.vertical_scroll = if let Ok(index) = markdown.heading_offset(heading) {
