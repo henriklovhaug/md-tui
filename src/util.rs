@@ -53,7 +53,7 @@ pub struct App {
     pub boxes: Boxes,
     pub history: JumpHistory,
     pub search_box: SearchBox,
-    pub error_box: ErrorBox,
+    pub message_box: ErrorBox,
     pub help_box: HelpBox,
     pub link_box: LinkBox,
 }

@@ -111,7 +111,7 @@ pub fn keyboard_mode_file_tree(
                 let file = if let Some(file) = file_tree.selected() {
                     file
                 } else {
-                    app.error_box.set_message("No file selected".to_string());
+                    app.message_box.set_message("No file selected".to_string());
                     app.boxes = Boxes::Error;
                     return KeyBoardAction::Continue;
                 };
@@ -119,7 +119,7 @@ pub fn keyboard_mode_file_tree(
                     app.reset();
                     file
                 } else {
-                    app.error_box
+                    app.message_box
                         .set_message(format!("Could not open file {}", file.path_str()));
                     app.boxes = Boxes::Error;
                     return KeyBoardAction::Continue;
@@ -145,7 +145,7 @@ pub fn keyboard_mode_file_tree(
                         app.vertical_scroll = 0;
                         file
                     } else {
-                        app.error_box
+                        app.message_box
                             .set_message(format!("Could not open file {}", e));
                         app.boxes = Boxes::Error;
                         return KeyBoardAction::Continue;
@@ -216,7 +216,7 @@ fn keyboard_mode_view(
                 let heights = markdown.search_results_heights();
 
                 if heights.is_empty() {
-                    app.error_box
+                    app.message_box
                         .set_message(format!("No results found for\n {query}"));
                     app.boxes = Boxes::Error;
                     return KeyBoardAction::Continue;
@@ -306,6 +306,15 @@ fn keyboard_mode_view(
                 if app.selected {
                     let link = markdown.selected();
 
+                    let prev_type = markdown.selected_underlying_type();
+
+                    if prev_type == WordType::FootnoteInline {
+                        app.link_box
+                            .set_message(format!("Footnote: {}", markdown.find_footnote(link)));
+                        app.boxes = Boxes::LinkPreview;
+                        return KeyBoardAction::Continue;
+                    }
+
                     let message = match LinkType::from(link) {
                         LinkType::Internal(e) => format!("Internal link: {}", e),
                         LinkType::External(e) => format!("External link: {}", e),
@@ -315,7 +324,7 @@ fn keyboard_mode_view(
                     app.link_box.set_message(message);
                     app.boxes = Boxes::LinkPreview;
                 } else {
-                    app.error_box.set_message("No link selected".to_string());
+                    app.message_box.set_message("No link selected".to_string());
                     app.boxes = Boxes::Error;
                 }
             }
@@ -324,7 +333,7 @@ fn keyboard_mode_view(
             Action::SelectLinkAlt => {
                 let links = markdown.link_index_and_height();
                 if links.is_empty() {
-                    app.error_box.set_message("No links found".to_string());
+                    app.message_box.set_message("No links found".to_string());
                     app.boxes = Boxes::Error;
                     return KeyBoardAction::Continue;
                 }
@@ -351,7 +360,7 @@ fn keyboard_mode_view(
             Action::SelectLink => {
                 let mut links = markdown.link_index_and_height();
                 if links.is_empty() {
-                    app.error_box.set_message("No links found".to_string());
+                    app.message_box.set_message("No links found".to_string());
                     app.boxes = Boxes::Error;
                     return KeyBoardAction::Continue;
                 }
@@ -437,9 +446,10 @@ fn keyboard_mode_view(
                 let prev_type = markdown.selected_underlying_type();
 
                 if prev_type == WordType::FootnoteInline {
-                    app.error_box.set_message(markdown.find_footnote(link));
+                    app.message_box.set_message(markdown.find_footnote(link));
                     app.boxes = Boxes::Error;
                     markdown.deselect();
+                    app.selected = false;
                     return KeyBoardAction::Continue;
                 }
 
@@ -448,7 +458,7 @@ fn keyboard_mode_view(
                         app.vertical_scroll = if let Ok(index) = markdown.heading_offset(heading) {
                             cmp::min(index, markdown.height().saturating_sub(height / 2))
                         } else {
-                            app.error_box
+                            app.message_box
                                 .set_message(format!("Could not find heading {}", heading));
                             app.boxes = Boxes::Error;
                             markdown.deselect();
@@ -482,7 +492,7 @@ fn keyboard_mode_view(
                             app.vertical_scroll = 0;
                             file
                         } else {
-                            app.error_box
+                            app.message_box
                                 .set_message(format!("Could not open file {}", url));
                             app.boxes = Boxes::Error;
                             return KeyBoardAction::Continue;
@@ -499,7 +509,7 @@ fn keyboard_mode_view(
                             if let Ok(index) = markdown.heading_offset(&format!("#{heading}")) {
                                 cmp::min(index, markdown.height().saturating_sub(height / 2))
                             } else {
-                                app.error_box
+                                app.message_box
                                     .set_message(format!("Could not find heading {}", heading));
                                 app.boxes = Boxes::Error;
                                 0
@@ -522,7 +532,7 @@ fn keyboard_mode_view(
                         app.vertical_scroll = 0;
                         file
                     } else {
-                        app.error_box
+                        app.message_box
                             .set_message(format!("Could not open file {}", e));
                         app.boxes = Boxes::Error;
                         return KeyBoardAction::Continue;
