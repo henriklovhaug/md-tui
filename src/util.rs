@@ -15,24 +15,20 @@ pub mod general;
 pub mod keybinds;
 pub mod keys;
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub enum Mode {
     View,
+    #[default]
     FileTree,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub enum Boxes {
     Error,
     Search,
     LinkPreview,
+    #[default]
     None,
-}
-
-impl Default for Mode {
-    fn default() -> Self {
-        Self::FileTree
-    }
 }
 
 impl From<JumpHistory> for Mode {
@@ -44,12 +40,6 @@ impl From<JumpHistory> for Mode {
             },
             None => Mode::FileTree,
         }
-    }
-}
-
-impl Default for Boxes {
-    fn default() -> Self {
-        Self::None
     }
 }
 

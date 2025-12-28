@@ -304,7 +304,7 @@ impl FileTree {
     fn partition(&self, height: u16) -> usize {
         let partition_size = (height as usize + 2) / 2;
 
-        if partition_size % 2 == 0 {
+        if partition_size.is_multiple_of(2) {
             partition_size
         } else {
             partition_size + 1

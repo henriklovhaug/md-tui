@@ -103,11 +103,11 @@ impl TextComponent {
             let mut lines = Vec::new();
 
             moved_content.iter().for_each(|line| {
-                let noe = line
+                let temp = line
                     .iter()
                     .map(|c| c.iter().map(|word| word.content()).join(""))
                     .join(" ");
-                lines.push(noe);
+                lines.push(temp);
             });
 
             lines
@@ -264,7 +264,6 @@ impl TextComponent {
 
     pub fn transform(&mut self, width: u16) {
         match self.kind {
-            TextNode::Heading => self.height = 1,
             TextNode::List => {
                 transform_list(self, width);
             }
@@ -274,7 +273,7 @@ impl TextComponent {
             TextNode::Paragraph | TextNode::Task | TextNode::Quote => {
                 transform_paragraph(self, width);
             }
-            TextNode::LineBreak => {
+            TextNode::LineBreak | TextNode::Heading => {
                 self.height = 1;
             }
             TextNode::Table(_, _) => {

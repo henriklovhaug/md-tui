@@ -80,10 +80,11 @@ pub fn find_md_files_channel(tx: Sender<Option<MdFile>>) {
                     path_name.to_string(),
                 )))
                 .unwrap();
-            } else if let (Some(file_name), Some(path)) = (path.file_name(), path.to_str()) {
-                if GENERAL_CONFIG.gitignore && file_name == ".gitignore" {
-                    add_to_gitingore(path, &mut ignored_files);
-                }
+            } else if let (Some(file_name), Some(path)) = (path.file_name(), path.to_str())
+                && GENERAL_CONFIG.gitignore
+                && file_name == ".gitignore"
+            {
+                add_to_gitingore(path, &mut ignored_files);
             }
         }
     }
@@ -133,10 +134,11 @@ pub fn find_md_files() -> FileTree {
                 }
 
                 tree.add_file(MdFile::new(path_str.to_string(), path_name.to_string()));
-            } else if let (Some(file_name), Some(path)) = (path.file_name(), path.to_str()) {
-                if GENERAL_CONFIG.gitignore && file_name == ".gitignore" {
-                    add_to_gitingore(path, &mut ignored_files);
-                }
+            } else if let (Some(file_name), Some(path)) = (path.file_name(), path.to_str())
+                && GENERAL_CONFIG.gitignore
+                && file_name == ".gitignore"
+            {
+                add_to_gitingore(path, &mut ignored_files);
             }
         }
     }
@@ -160,9 +162,9 @@ pub fn find_files(files: &[MdFile], query: &str) -> Vec<MdFile> {
             } else {
                 file.path.to_lowercase()
             };
-            let res = char_windows(&file_path, query.len())
-                .any(|window| damerau_levenshtein(window, query) == 0);
-            res
+
+            char_windows(&file_path, query.len())
+                .any(|window| damerau_levenshtein(window, query) == 0)
         })
         .cloned()
         .collect()

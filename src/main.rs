@@ -89,7 +89,7 @@ fn run_app(terminal: &mut DefaultTerminal, mut app: App, tick_rate: Duration) ->
             app.mode = Mode::View;
         } else {
             app.error_box
-                .set_message(format!("Could not open file {:?}", arg));
+                .set_message(format!("Could not open file {arg}"));
             app.boxes = Boxes::Error;
         }
     } else if !potential_input.is_terminal() {
@@ -207,25 +207,25 @@ fn run_app(terminal: &mut DefaultTerminal, mut app: App, tick_rate: Duration) ->
             .checked_sub(last_tick.elapsed())
             .unwrap_or_else(|| Duration::from_secs(0));
 
-        if event::poll(timeout)? {
-            if let Event::Key(key) = event::read()? {
-                match handle_keyboard_input(
-                    key.code,
-                    &mut app,
-                    &mut markdown,
-                    &mut file_tree,
-                    height,
-                    &mut watcher,
-                ) {
-                    KeyBoardAction::Exit => {
-                        return Ok(());
-                    }
-                    KeyBoardAction::Continue => {}
-                    KeyBoardAction::Edit => {
-                        terminal.draw(|f| {
-                            open_editor(f, &mut app, markdown.file_name());
-                        })?;
-                    }
+        if event::poll(timeout)?
+            && let Event::Key(key) = event::read()?
+        {
+            match handle_keyboard_input(
+                key.code,
+                &mut app,
+                &mut markdown,
+                &mut file_tree,
+                height,
+                &mut watcher,
+            ) {
+                KeyBoardAction::Exit => {
+                    return Ok(());
+                }
+                KeyBoardAction::Continue => {}
+                KeyBoardAction::Edit => {
+                    terminal.draw(|f| {
+                        open_editor(f, &mut app, markdown.file_name());
+                    })?;
                 }
             }
         }
