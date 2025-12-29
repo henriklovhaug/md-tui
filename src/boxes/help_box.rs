@@ -27,6 +27,7 @@ impl HelpBox {
         self.mode = mode;
     }
 
+    #[must_use]
     pub fn expanded(&self) -> bool {
         self.expanded
     }

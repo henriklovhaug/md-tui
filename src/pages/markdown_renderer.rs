@@ -75,7 +75,7 @@ impl Widget for TextComponent {
             .to_owned()
             .first()
             .cloned()
-            .unwrap_or_else(|| Word::new("".to_string(), WordType::Normal));
+            .unwrap_or_else(|| Word::new(String::new(), WordType::Normal));
 
         let area = Rect { height, y, ..area };
 
@@ -86,7 +86,7 @@ impl Widget for TextComponent {
             TextNode::List => render_list(area, buf, self, clips),
             TextNode::CodeBlock => render_code_block(area, buf, self, clips),
             TextNode::Table(widths, heights) => {
-                render_table(area, buf, self, clips, widths, heights)
+                render_table(area, buf, self, clips, widths, heights);
             }
             TextNode::Quote => render_quote(area, buf, self, clips),
             TextNode::LineBreak => (),
@@ -182,8 +182,8 @@ fn render_quote(area: Rect, buf: &mut Buffer, component: TextComponent, clip: Cl
         meta.content()
             .split_whitespace()
             .next()
-            .map(|c| c.to_lowercase())
-            .map(|c| match c.as_str() {
+            .map(str::to_lowercase)
+            .map_or(color_config().quote_bg_color, |c| match c.as_str() {
                 "[!tip]" => color_config().quote_tip,
                 "[!warning]" => color_config().quote_warning,
                 "[!caution]" => color_config().quote_caution,
@@ -191,7 +191,6 @@ fn render_quote(area: Rect, buf: &mut Buffer, component: TextComponent, clip: Cl
                 "[!note]" => color_config().quote_note,
                 _ => color_config().quote_default,
             })
-            .unwrap_or(color_config().quote_bg_color)
     } else {
         Color::White
     };
@@ -419,7 +418,7 @@ fn render_table(
                 let mut line = vec![];
                 let mut lines = vec![];
                 let mut line_len = 0;
-                for word in entry.iter() {
+                for word in entry {
                     let word_len = word.content().len() as u16;
                     line_len += word_len;
                     if line_len <= widths[column_i] {
@@ -429,7 +428,7 @@ fn render_table(
                             line.into_iter().map(style_word).collect::<Vec<_>>(),
                         ));
                         line = vec![word];
-                        line_len -= widths[column_i]
+                        line_len -= widths[column_i];
                     }
                 }
 
@@ -488,7 +487,7 @@ fn render_table(
                             let mut acc = vec![];
                             let mut lines = vec![];
                             let mut line_len = 0;
-                            for word in entry.iter() {
+                            for word in entry {
                                 let word_len = word.content().len() as u16;
                                 line_len += word_len;
                                 if line_len <= widths[column_i] {

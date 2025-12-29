@@ -73,6 +73,7 @@ impl App {
         temp_width != self.width
     }
 
+    #[must_use]
     pub fn width(&self) -> u16 {
         self.width
     }
@@ -108,6 +109,7 @@ pub struct JumpHistory {
 }
 
 impl JumpHistory {
+    #[must_use]
     pub fn new() -> Self {
         Self {
             history: Vec::new(),

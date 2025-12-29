@@ -21,7 +21,7 @@ pub enum TextNode {
     Task,
     List,
     Footnote,
-    /// (widths_by_column, heights_by_row)
+    /// (`widths_by_column`, `heights_by_row`)
     Table(Vec<u16>, Vec<u16>),
     CodeBlock,
     Quote,
@@ -41,6 +41,7 @@ pub struct TextComponent {
 }
 
 impl TextComponent {
+    #[must_use]
     pub fn new(kind: TextNode, content: Vec<Word>) -> Self {
         let meta_info: Vec<Word> = content
             .iter()
@@ -48,7 +49,10 @@ impl TextComponent {
             .cloned()
             .collect();
 
-        let content = content.into_iter().filter(|c| c.is_renderable()).collect();
+        let content = content
+            .into_iter()
+            .filter(super::word::Word::is_renderable)
+            .collect();
 
         Self {
             kind,
@@ -62,6 +66,7 @@ impl TextComponent {
         }
     }
 
+    #[must_use]
     pub fn new_formatted(kind: TextNode, content: Vec<Vec<Word>>) -> Self {
         let meta_info: Vec<Word> = content
             .iter()
@@ -72,7 +77,11 @@ impl TextComponent {
 
         let content = content
             .into_iter()
-            .map(|c| c.into_iter().filter(|c| c.is_renderable()).collect())
+            .map(|c| {
+                c.into_iter()
+                    .filter(super::word::Word::is_renderable)
+                    .collect()
+            })
             .collect::<Vec<Vec<Word>>>();
 
         Self {
@@ -87,14 +96,17 @@ impl TextComponent {
         }
     }
 
+    #[must_use]
     pub fn kind(&self) -> TextNode {
         self.kind.clone()
     }
 
+    #[must_use]
     pub fn content(&self) -> &Vec<Vec<Word>> {
         &self.content
     }
 
+    #[must_use]
     pub fn content_as_lines(&self) -> Vec<String> {
         if let TextNode::Table(widths, _) = self.kind() {
             let column_count = widths.len();
@@ -106,7 +118,7 @@ impl TextComponent {
             moved_content.iter().for_each(|line| {
                 let temp = line
                     .iter()
-                    .map(|c| c.iter().map(|word| word.content()).join(""))
+                    .map(|c| c.iter().map(super::word::Word::content).join(""))
                     .join(" ");
                 lines.push(temp);
             });
@@ -115,39 +127,48 @@ impl TextComponent {
         } else {
             self.content
                 .iter()
-                .map(|c| c.iter().map(|c| c.content()).collect::<Vec<_>>().join(""))
+                .map(|c| {
+                    c.iter()
+                        .map(super::word::Word::content)
+                        .collect::<Vec<_>>()
+                        .join("")
+                })
                 .collect()
         }
     }
 
+    #[must_use]
     pub fn content_as_bytes(&self) -> Vec<u8> {
-        match self.kind() {
-            TextNode::CodeBlock => self.content_as_lines().join("").as_bytes().to_vec(),
-
-            _ => {
-                let strings = self.content_as_lines();
-                let string = strings.join("\n");
-                string.as_bytes().to_vec()
-            }
+        if self.kind() == TextNode::CodeBlock {
+            self.content_as_lines().join("").as_bytes().to_vec()
+        } else {
+            let strings = self.content_as_lines();
+            let string = strings.join("\n");
+            string.as_bytes().to_vec()
         }
     }
 
+    #[must_use]
     pub fn content_owned(self) -> Vec<Vec<Word>> {
         self.content
     }
 
+    #[must_use]
     pub fn meta_info(&self) -> &Vec<Word> {
         &self.meta_info
     }
 
+    #[must_use]
     pub fn height(&self) -> u16 {
         self.height
     }
 
+    #[must_use]
     pub fn y_offset(&self) -> u16 {
         self.offset
     }
 
+    #[must_use]
     pub fn scroll_offset(&self) -> u16 {
         self.scroll_offset
     }
@@ -160,6 +181,7 @@ impl TextComponent {
         self.scroll_offset = offset;
     }
 
+    #[must_use]
     pub fn is_focused(&self) -> bool {
         self.focused
     }
@@ -218,13 +240,14 @@ impl TextComponent {
         selection
     }
 
+    #[must_use]
     pub fn get_footnote(&self, search: &str) -> String {
         self.content()
             .iter()
             .flatten()
             .skip_while(|c| c.kind() != WordType::FootnoteData && c.content() != search)
             .take_while(|c| c.kind() == WordType::Footnote)
-            .map(|c| c.content())
+            .map(super::word::Word::content)
             .collect()
     }
 
@@ -238,6 +261,7 @@ impl TextComponent {
             .content())
     }
 
+    #[must_use]
     pub fn num_links(&self) -> usize {
         self.meta_info
             .iter()
@@ -245,6 +269,7 @@ impl TextComponent {
             .count()
     }
 
+    #[must_use]
     pub fn selected_heights(&self) -> Vec<usize> {
         let mut heights = Vec::new();
 
@@ -338,7 +363,7 @@ fn word_wrapping<'a>(
                 .map(|(_index, character)| character)
                 .collect();
 
-            if enable_hyphen && !content.ends_with("-") {
+            if enable_hyphen && !content.ends_with('-') {
                 newline_content.insert(0, content.pop().unwrap());
                 content.push('-');
             }
@@ -352,7 +377,7 @@ fn word_wrapping<'a>(
                     .skip(width - 1)
                     .map(|(_index, character)| character)
                     .collect();
-                if enable_hyphen && !newline_content.ends_with("-") {
+                if enable_hyphen && !newline_content.ends_with('-') {
                     next_newline_content.insert(0, newline_content.pop().unwrap());
                     newline_content.push('-');
                 }
@@ -360,15 +385,15 @@ fn word_wrapping<'a>(
                 line = vec![Word::new(newline_content, word.kind())];
                 lines.push(line);
 
-                newline_content = next_newline_content
+                newline_content = next_newline_content;
             }
 
-            if !newline_content.is_empty() {
-                line_len = newline_content.len();
-                line = vec![Word::new(newline_content, word.kind())];
-            } else {
+            if newline_content.is_empty() {
                 line_len = 0;
                 line = Vec::new();
+            } else {
+                line_len = newline_content.len();
+                line = vec![Word::new(newline_content, word.kind())];
             }
         }
     }
@@ -393,7 +418,7 @@ fn transform_paragraph(component: &mut TextComponent, width: u16) {
     if component.kind() == TextNode::Quote {
         let is_special_quote = !component.meta_info.is_empty();
 
-        for line in lines.iter_mut().skip(if is_special_quote { 1 } else { 0 }) {
+        for line in lines.iter_mut().skip(usize::from(is_special_quote)) {
             line.insert(0, Word::new(" ".to_string(), WordType::Normal));
         }
     }
@@ -418,7 +443,7 @@ fn transform_codeblock(component: &mut TextComponent) {
     if language.is_empty() {
         component.content.insert(
             0,
-            vec![Word::new("".to_string(), WordType::CodeBlock(Color::Reset))],
+            vec![Word::new(String::new(), WordType::CodeBlock(Color::Reset))],
         );
     }
     match highlight {
@@ -442,9 +467,7 @@ fn transform_codeblock(component: &mut TextComponent) {
             let mut final_content = Vec::new();
             let mut inner_content = Vec::new();
             for word in new_content {
-                if !word.content().contains('\n') {
-                    inner_content.push(word);
-                } else {
+                if word.content().contains('\n') {
                     let mut start = 0;
                     let mut end;
                     for (i, c) in word.content().char_indices() {
@@ -462,10 +485,12 @@ fn transform_codeblock(component: &mut TextComponent) {
                             inner_content.push(new_word);
                         }
                     }
+                } else {
+                    inner_content.push(word);
                 }
             }
 
-            final_content.push(vec![Word::new("".to_string(), WordType::CodeBlock(color))]);
+            final_content.push(vec![Word::new(String::new(), WordType::CodeBlock(color))]);
 
             component.content = final_content;
         }
@@ -487,7 +512,7 @@ fn transform_list(component: &mut TextComponent, width: u16) {
     let list_type_iter = component.meta_info.iter().filter(|c| {
         matches!(
             c.kind(),
-            WordType::MetaInfo(MetaData::OList) | WordType::MetaInfo(MetaData::UList)
+            WordType::MetaInfo(MetaData::OList | MetaData::UList)
         )
     });
 
@@ -558,7 +583,7 @@ fn transform_list(component: &mut TextComponent, width: u16) {
     let mut indent_index: u32 = 0;
     let mut indent_len = 0;
 
-    for line in lines.iter() {
+    for line in &lines {
         if !line[1]
             .content()
             .strip_prefix(['1', '2', '3', '4', '5', '6', '7', '8', '9'])
@@ -592,7 +617,7 @@ fn transform_list(component: &mut TextComponent, width: u16) {
     indent_len = 0;
     let mut unordered_list_skip = true; // Skip unordered list items. They are already aligned.
 
-    for line in lines.iter_mut() {
+    for line in &mut lines {
         if line[1]
             .content()
             .strip_prefix(['1', '2', '3', '4', '5', '6', '7', '8', '9'])
@@ -734,8 +759,9 @@ fn transform_table(component: &mut TextComponent, width: u16) {
         .sorted_by(|a, b| Ord::cmp(a.1, b.1))
     {
         // Ensure the longest cell gets the most amount of area
-        let ratio = (**old_column_width as f32) / (available_overflowing_width as f32);
-        let mut balanced_column_width = (ratio * available_balanced_width as f32).floor() as u16;
+        let ratio = f32::from(**old_column_width) / f32::from(available_overflowing_width);
+        let mut balanced_column_width =
+            (ratio * f32::from(available_balanced_width)).floor() as u16;
 
         if balanced_column_width < overflowing_column_min_width {
             balanced_column_width = overflowing_column_min_width;
@@ -771,11 +797,12 @@ fn transform_table(component: &mut TextComponent, width: u16) {
         }
     }
 
-    component.height = heights.iter().cloned().sum::<u16>();
+    component.height = heights.iter().copied().sum::<u16>();
 
     component.kind = TextNode::Table(widths_balanced, heights);
 }
 
+#[must_use]
 pub fn content_entry_len(words: &[Word]) -> usize {
     words.iter().map(|word| word.content().len()).sum()
 }
