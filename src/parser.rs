@@ -27,7 +27,7 @@ pub fn parse_markdown(name: Option<&str>, content: &str, width: u16) -> Componen
 
     let root_pair = root.into_iter().next().unwrap();
 
-    let children = parse_text(root_pair)
+    let children: Vec<ParseNode> = parse_text(root_pair)
         .children_owned()
         .into_iter()
         .dedup()
@@ -646,6 +646,8 @@ impl From<Rule> for MdParseEnum {
             Rule::footnote_ref => Self::FootnoteRef,
             Rule::footnote => Self::Footnote,
             Rule::heading_prefix
+            | Rule::horizontal_sep_prefix
+            | Rule::blank_line
             | Rule::alt_char
             | Rule::b_char
             | Rule::c_char

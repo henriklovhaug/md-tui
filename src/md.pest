@@ -9,7 +9,7 @@ comment_char     = _{ (!(NEWLINE | "-->") ~ ANY)+ }
 digit            = _{ '0'..'9' }
 i_char           = _{ (!(NEWLINE | comment | WHITESPACE_S | "_" | "*") ~ ANY)+ }
 indent           =  { WHITESPACE_S* }
-latex_char       = _{ (!(NEWLINE | WHITESPACE_S | "$") ~ ANY)+ }
+latex_char       = _{ (!(NEWLINE | WHITESPACE_S | "$" | "|") ~ ANY)+ }
 link_char        = _{ (!(NEWLINE | WHITESPACE_S | "[" | "]" | "(" | ")") ~ ANY)+ }
 p_char           = _{ (!(NEWLINE | comment | footnote_ref_container | code | bold_italic | italic | bold | strikethrough | latex | WHITESPACE_S | link) ~ ANY)+ }
 s_char           = _{ (!(NEWLINE | comment | WHITESPACE_S | "~~") ~ ANY)+ }
@@ -51,8 +51,12 @@ table_prefix      =  { "|" }
 list_prefix       =  { (WHITESPACE_S* ~ "-") | (NUMBER+ ~ ". ") }
 heading_prefix    =  { "#" }
 
+horizontal_sep_prefix = { "---" }
+blank_line = _{ NEWLINE ~ WHITESPACE_S* ~ NEWLINE }
+
 forbidden_sentence_prefix = {
-    NEWLINE ~ WHITESPACE_S* ~ (image | task_prefix | quote_prefix | code_block_prefix | table_prefix | list_prefix | heading_prefix)
+    blank_line
+  | NEWLINE ~ WHITESPACE_S* ~ (image | task_prefix | quote_prefix | code_block_prefix | table_prefix | list_prefix | heading_prefix | horizontal_sep_prefix)
 }
 
 // Lines
@@ -67,7 +71,7 @@ code                  =  { NEWLINE? ~ WHITESPACE_S* ~ ("`" ~ code_word+ ~ "`") |
 code_line             =  { NEWLINE ~ (c_line_char | WHITESPACE_S)* }
 indented_code_line    =  { NEWLINE ~ ("    " | "\t") ~ " "* ~ (!(NEWLINE) ~ ANY)* }
 indented_code_newline =  { NEWLINE }
-latex                 =  { NEWLINE? ~ WHITESPACE_S* ~ !"\\" ~ "$"+ ~ WHITESPACE_S? ~ (latex_word | (NEWLINE ~ quote_prefix?))+ ~ "$"+ }
+latex                 =  { NEWLINE? ~ WHITESPACE_S* ~ !"\\" ~ "$"+ ~ WHITESPACE_S? ~ (latex_word | (NEWLINE ~ quote_prefix? ~ !NEWLINE))+ ~ "$"+ }
 link                  =  { NEWLINE? ~ WHITESPACE_S* ~ (link_line | wiki_link | inline_link_wrapper) }
 link_line             = _{ "[" ~ (link_word | NEWLINE)+ ~ "]" ~ "(" ~ link_data+ ~ ")" }
 inline_link_wrapper   = _{ !comment ~ "<" ~ inline_link ~ ">" }
