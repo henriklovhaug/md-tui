@@ -155,7 +155,7 @@ impl ComponentRoot {
             })
             .flat_map(|f| f.content().iter().flatten())
             .filter(|f| f.kind() == WordType::Footnote)
-            .map(super::word::Word::content)
+            .map(Word::content)
             .collect::<String>();
 
         if footnote.is_empty() {
@@ -309,7 +309,7 @@ impl ComponentRoot {
                 Component::TextComponent(comp) => Some(comp),
                 Component::Image(_) => None,
             })
-            .map(super::textcomponent::TextComponent::num_links)
+            .map(TextComponent::num_links)
             .sum()
     }
 }

@@ -153,11 +153,14 @@ fn run_app(terminal: &mut DefaultTerminal, mut app: App, tick_rate: Duration) ->
                 Mode::FileTree => {
                     if !file_tree.loaded() {
                         while let Ok(e) = f_rx.try_recv() {
-                            if let Some(file) = e {
-                                file_tree.add_file(file);
-                            } else {
-                                file_tree = file_tree.clone().finish();
-                                break;
+                            match e {
+                                Some(file) => {
+                                    file_tree.add_file(file);
+                                }
+                                None => {
+                                    file_tree = file_tree.clone().finish();
+                                    break;
+                                }
                             }
                         }
                     }

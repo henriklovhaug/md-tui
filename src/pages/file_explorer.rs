@@ -1,3 +1,4 @@
+use std::borrow::ToOwned;
 use std::cmp;
 use std::path::Path;
 
@@ -169,7 +170,7 @@ impl FileTree {
     pub fn search(&mut self, query: Option<&str>) {
         self.state_mut().select(None);
         self.page = 0;
-        self.search = query.map(std::borrow::ToOwned::to_owned);
+        self.search = query.map(ToOwned::to_owned);
         match query {
             Some(query) => {
                 self.files = find_files(&self.all_files, query)
