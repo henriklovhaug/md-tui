@@ -1,3 +1,4 @@
+use std::borrow::ToOwned;
 use std::cmp;
 use std::path::Path;
 
@@ -28,18 +29,22 @@ pub struct MdFile {
 }
 
 impl MdFile {
+    #[must_use]
     pub fn new(path: String, name: String) -> Self {
         Self { path, name }
     }
 
+    #[must_use]
     pub fn path_str(&self) -> &str {
         &self.path
     }
 
+    #[must_use]
     pub fn path(&self) -> &Path {
         Path::new(&self.path)
     }
 
+    #[must_use]
     pub fn name(&self) -> &str {
         &self.name
     }
@@ -49,9 +54,9 @@ impl From<MdFile> for ListItem<'_> {
     fn from(val: MdFile) -> Self {
         let mut text = Text::default();
         text.extend([
-            val.name.to_owned().fg(color_config().file_tree_name_color),
+            val.name.clone().fg(color_config().file_tree_name_color),
             val.path
-                .to_owned()
+                .clone()
                 .italic()
                 .fg(color_config().file_tree_path_color),
         ]);
@@ -79,6 +84,7 @@ pub struct FileTree {
 }
 
 impl FileTree {
+    #[must_use]
     pub fn new() -> Self {
         Self {
             all_files: Vec::new(),
@@ -90,10 +96,12 @@ impl FileTree {
         }
     }
 
+    #[must_use]
     pub fn loaded(&self) -> bool {
         self.loaded
     }
 
+    #[must_use]
     pub fn finish(self) -> Self {
         let mut this = self;
         this.loaded = true;
@@ -162,7 +170,7 @@ impl FileTree {
     pub fn search(&mut self, query: Option<&str>) {
         self.state_mut().select(None);
         self.page = 0;
-        self.search = query.map(|s| s.to_owned());
+        self.search = query.map(ToOwned::to_owned);
         match query {
             Some(query) => {
                 self.files = find_files(&self.all_files, query)
@@ -271,6 +279,7 @@ impl FileTree {
         self.list_state.select(None);
     }
 
+    #[must_use]
     pub fn selected(&self) -> Option<&MdFile> {
         match self.list_state.selected() {
             Some(i) => self.files.get(i).and_then(|f| match f {
@@ -287,6 +296,7 @@ impl FileTree {
         self.files.push(MdFileComponent::Spacer);
     }
 
+    #[must_use]
     pub fn files(&self) -> Vec<&MdFile> {
         self.files
             .iter()
@@ -297,12 +307,13 @@ impl FileTree {
             .collect::<Vec<&MdFile>>()
     }
 
+    #[must_use]
     pub fn all_files(&self) -> &Vec<MdFile> {
         &self.all_files
     }
 
     fn partition(&self, height: u16) -> usize {
-        let partition_size = (height as usize + 2) / 2;
+        let partition_size = usize::midpoint(height as usize, 2);
 
         if partition_size.is_multiple_of(2) {
             partition_size
@@ -311,10 +322,12 @@ impl FileTree {
         }
     }
 
+    #[must_use]
     pub fn state(&self) -> &ListState {
         &self.list_state
     }
 
+    #[must_use]
     pub fn height(&self, height: u16) -> usize {
         cmp::min(
             self.partition(height) / 2 * 3,

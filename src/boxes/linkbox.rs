@@ -10,10 +10,12 @@ pub struct LinkBox {
 }
 
 impl LinkBox {
+    #[must_use]
     pub fn new(message: String) -> Self {
         Self { message }
     }
 
+    #[must_use]
     pub fn dimensions(&self) -> (u16, u16) {
         ((self.message.len() / 30) as u16 + 4, 50)
     }

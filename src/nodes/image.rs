@@ -21,7 +21,7 @@ impl ImageComponent {
 
         let (_, f_height) = picker.font_size();
 
-        let height = cmp::min(height / f_height as u32, 20) as u16;
+        let height = cmp::min(height / u32::from(f_height), 20) as u16;
 
         Some(Self {
             height,
@@ -40,14 +40,17 @@ impl ImageComponent {
         self.scroll_offset = offset;
     }
 
+    #[must_use]
     pub fn scroll_offset(&self) -> u16 {
         self.scroll_offset
     }
 
+    #[must_use]
     pub fn y_offset(&self) -> u16 {
         self.y_offset
     }
 
+    #[must_use]
     pub fn height(&self) -> u16 {
         self.height
     }

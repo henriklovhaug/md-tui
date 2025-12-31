@@ -42,10 +42,10 @@ pub fn parse_markdown(name: Option<&str>, content: &str, width: u16) -> Componen
 }
 
 fn parse_text(pair: Pair<'_, Rule>) -> ParseNode {
-    let content = if pair.as_rule() != Rule::code_line {
-        pair.as_str().replace('\n', " ")
-    } else {
+    let content = if pair.as_rule() == Rule::code_line {
         pair.as_str().replace('\t', "    ").replace('\r', "")
+    } else {
+        pair.as_str().replace('\n', " ")
     };
     let mut component = ParseNode::new(pair.as_rule().into(), content);
     let children = parse_node_children(pair.into_inner());
@@ -63,7 +63,7 @@ fn parse_node_children(pair: Pairs<'_, Rule>) -> Vec<ParseNode> {
 
 fn node_to_component(root: ParseRoot) -> ComponentRoot {
     let mut children = Vec::new();
-    let name = root.file_name().to_owned();
+    let name = root.file_name().clone();
     for component in root.children_owned() {
         let comp = parse_component(component);
         children.push(comp);
@@ -200,7 +200,7 @@ fn parse_component(parse_node: ParseNode) -> Component {
             let mut words = Vec::new();
 
             words.push(Word::new(
-                "".to_string(),
+                String::new(),
                 WordType::MetaInfo(MetaData::HeadingLevel(indent as u8)),
             ));
 
@@ -405,7 +405,7 @@ fn get_leaf_nodes(node: ParseNode) -> Vec<ParseNode> {
         let comp = if node.content().starts_with(' ') {
             ParseNode::new(MdParseEnum::Word, " ".to_owned())
         } else {
-            ParseNode::new(MdParseEnum::Word, "".to_owned())
+            ParseNode::new(MdParseEnum::Word, String::new())
         };
         leaf_nodes.push(comp);
     }
@@ -463,6 +463,7 @@ pub struct ParseRoot {
 }
 
 impl ParseRoot {
+    #[must_use]
     pub fn new(file_name: Option<String>, children: Vec<ParseNode>) -> Self {
         Self {
             file_name,
@@ -470,16 +471,19 @@ impl ParseRoot {
         }
     }
 
+    #[must_use]
     pub fn children(&self) -> &Vec<ParseNode> {
         &self.children
     }
 
+    #[must_use]
     pub fn children_owned(self) -> Vec<ParseNode> {
         self.children
     }
 
+    #[must_use]
     pub fn file_name(&self) -> Option<String> {
-        self.file_name.to_owned()
+        self.file_name.clone()
     }
 }
 
@@ -491,6 +495,7 @@ pub struct ParseNode {
 }
 
 impl ParseNode {
+    #[must_use]
     pub fn new(kind: MdParseEnum, content: String) -> Self {
         Self {
             kind,
@@ -499,10 +504,12 @@ impl ParseNode {
         }
     }
 
+    #[must_use]
     pub fn kind(&self) -> MdParseEnum {
         self.kind
     }
 
+    #[must_use]
     pub fn content(&self) -> &str {
         &self.content
     }
@@ -511,10 +518,12 @@ impl ParseNode {
         self.children.extend(children);
     }
 
+    #[must_use]
     pub fn children(&self) -> &Vec<ParseNode> {
         &self.children
     }
 
+    #[must_use]
     pub fn children_owned(self) -> Vec<ParseNode> {
         self.children
     }

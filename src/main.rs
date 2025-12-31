@@ -166,7 +166,7 @@ fn run_app(terminal: &mut DefaultTerminal, mut app: App, tick_rate: Duration) ->
                     }
                     render_file_tree(f, &app, file_tree.clone());
                 }
-            };
+            }
             if app.boxes == Boxes::Search {
                 let (search_height, search_width) = app.search_box.dimensions();
                 let search_area = Rect {
@@ -325,7 +325,7 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
                     continue;
                 }
 
-                f.render_widget(comp.clone(), area)
+                f.render_widget(comp.clone(), area);
             }
             Component::Image(img) => {
                 if img.y_offset().saturating_sub(img.scroll_offset()) >= area.height
@@ -357,24 +357,24 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
                     height,
                 );
 
-                f.render_stateful_widget(image, inner_area, img.image_mut())
+                f.render_stateful_widget(image, inner_area, img.image_mut());
             }
         }
     }
 
     // Render a block at the bottom to show the current mode
     let block = Block::default().bg(Color::Black);
-    let area = if !app.help_box.expanded() {
+    let area = if app.help_box.expanded() {
         Rect {
-            y: size.height.saturating_sub(4),
-            height: cmp::min(3, size.height),
+            y: size.height.saturating_sub(19),
+            height: cmp::min(18, size.height),
             x,
             ..area
         }
     } else {
         Rect {
-            y: size.height.saturating_sub(19),
-            height: cmp::min(18, size.height),
+            y: size.height.saturating_sub(4),
+            height: cmp::min(3, size.height),
             x,
             ..area
         }
@@ -400,7 +400,7 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
     };
 
     if app.boxes != Boxes::Search {
-        f.render_widget(app.help_box, area)
+        f.render_widget(app.help_box, area);
     }
 }
 

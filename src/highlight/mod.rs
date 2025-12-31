@@ -90,6 +90,7 @@ pub enum HighlightInfo {
 }
 
 #[allow(unused_variables)]
+#[must_use]
 pub fn highlight_code(language: &str, lines: &[u8]) -> HighlightInfo {
     match language {
         #[cfg(feature = "tree-sitter-bash")]
