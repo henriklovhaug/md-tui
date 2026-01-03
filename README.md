@@ -157,6 +157,7 @@ colors, set it to `reset`.
 width = 100 # Set to 0 for full terminal width
 gitignore = false
 alignment = "left" # "center" | "right"
+help_menu = true # false hides it
 
 # Inline styling
 bold_color = "reset"

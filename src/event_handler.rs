@@ -164,7 +164,9 @@ pub fn keyboard_mode_file_tree(
                 }
             },
             Action::Help => {
-                app.help_box.toggle();
+                if GENERAL_CONFIG.help_menu {
+                    app.help_box.toggle();
+                }
             }
 
             Action::Escape => {
@@ -552,7 +554,9 @@ fn keyboard_mode_view(
             },
 
             Action::Help => {
-                app.help_box.toggle();
+                if GENERAL_CONFIG.help_menu {
+                    app.help_box.toggle();
+                }
             }
             _ => {}
         },

@@ -12,7 +12,6 @@ use crate::boxes::{errorbox::ErrorBox, help_box::HelpBox, linkbox::LinkBox, sear
 
 pub mod colors;
 pub mod general;
-pub mod keybinds;
 pub mod keys;
 
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
