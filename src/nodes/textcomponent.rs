@@ -49,10 +49,7 @@ impl TextComponent {
             .cloned()
             .collect();
 
-        let content = content
-            .into_iter()
-            .filter(Word::is_renderable)
-            .collect();
+        let content = content.into_iter().filter(Word::is_renderable).collect();
 
         Self {
             kind,
@@ -77,11 +74,7 @@ impl TextComponent {
 
         let content = content
             .into_iter()
-            .map(|c| {
-                c.into_iter()
-                    .filter(Word::is_renderable)
-                    .collect()
-            })
+            .map(|c| c.into_iter().filter(Word::is_renderable).collect())
             .collect::<Vec<Vec<Word>>>();
 
         Self {
@@ -127,12 +120,7 @@ impl TextComponent {
         } else {
             self.content
                 .iter()
-                .map(|c| {
-                    c.iter()
-                        .map(Word::content)
-                        .collect::<Vec<_>>()
-                        .join("")
-                })
+                .map(|c| c.iter().map(Word::content).collect::<Vec<_>>().join(""))
                 .collect()
         }
     }
