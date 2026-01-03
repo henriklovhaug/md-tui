@@ -154,7 +154,7 @@ colors, set it to `reset`.
 
 ```toml
 # General settings
-width = 100
+width = 100 # Set to 0 for full terminal width
 gitignore = false
 alignment = "left" # "center" | "right"
 

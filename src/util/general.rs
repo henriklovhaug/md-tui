@@ -26,8 +26,10 @@ pub static GENERAL_CONFIG: LazyLock<GeneralConfig> = LazyLock::new(|| {
         .build()
         .unwrap();
 
+    let width = settings.get::<u16>("width").unwrap_or(100);
     GeneralConfig {
-        width: settings.get::<u16>("width").unwrap_or(100),
+        // width = 0 means "use full terminal width"
+        width: if width == 0 { u16::MAX } else { width },
         gitignore: settings.get::<bool>("gitignore").unwrap_or(false),
         centering: settings
             .get::<Centering>("alignment")
