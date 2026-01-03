@@ -2,6 +2,8 @@
 
 - (#162) Add support for footnote
 - (#172) Fix panic bug for stupid small terminals
+- Add option to remove help box
+- Allow usage of full terminal width
 
 # Version 0.9.1
 
