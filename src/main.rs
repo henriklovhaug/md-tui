@@ -74,7 +74,7 @@ fn run_app(terminal: &mut DefaultTerminal, mut app: App, tick_rate: Duration) ->
     )
     .unwrap();
 
-    app.set_width(terminal.size()?.width);
+    app.set_width(terminal.size()?.width - 1);
     let mut markdown = parse_markdown(None, EMPTY_FILE, app.width() - 2);
 
     let potential_input = io::stdin();
@@ -123,7 +123,7 @@ fn run_app(terminal: &mut DefaultTerminal, mut app: App, tick_rate: Duration) ->
                 break;
             }
         }
-        if app.set_width(terminal.size()?.width) {
+        if app.set_width(terminal.size()?.width - 1) {
             let url = if let Some(url) = markdown.file_name() {
                 url
             } else {
@@ -310,7 +310,7 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
     };
 
     let area = Rect {
-        width: app.width() - 3,
+        width: cmp::min(app.width() - 3, size.width - 1),
         height: size.height.saturating_sub(5),
         x,
         ..size
@@ -369,14 +369,14 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
             y: size.height.saturating_sub(19),
             height: cmp::min(18, size.height),
             x,
-            ..area
+            width: area.width - 1,
         }
     } else {
         Rect {
             y: size.height.saturating_sub(4),
             height: cmp::min(3, size.height),
             x,
-            ..area
+            width: area.width - 1,
         }
     };
     f.render_widget(Clear, area);
