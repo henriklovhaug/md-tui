@@ -290,7 +290,9 @@ fn render_file_tree(f: &mut Frame, app: &App, file_tree: FileTree) {
         }
     };
 
-    f.render_widget(app.help_box, area);
+    if GENERAL_CONFIG.help_menu {
+        f.render_widget(app.help_box, area);
+    }
 }
 
 fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
@@ -381,7 +383,9 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
     };
     f.render_widget(Clear, area);
 
-    f.render_widget(block, area);
+    if GENERAL_CONFIG.help_menu {
+        f.render_widget(block, area);
+    }
 
     let area = if app.help_box.expanded() {
         Rect {
@@ -399,7 +403,7 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
         }
     };
 
-    if app.boxes != Boxes::Search {
+    if app.boxes != Boxes::Search && GENERAL_CONFIG.help_menu {
         f.render_widget(app.help_box, area);
     }
 }
