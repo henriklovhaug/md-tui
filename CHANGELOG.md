@@ -4,6 +4,7 @@
 - (#172) Fix panic bug for stupid small terminals
 - Add option to remove help box
 - Allow usage of full terminal width
+- Fix LaTeX rule (now more strict)
 
 # Version 0.9.1
 
