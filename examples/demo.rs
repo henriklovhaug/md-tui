@@ -138,7 +138,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> std::io::Res
         let timeout = debounce.map_or(DEBOUNCE, |start| DEBOUNCE.saturating_sub(start.elapsed()));
         if crossterm::event::poll(timeout)? {
             let update = match crossterm::event::read()? {
-                Event::Key(key) => match key.code {
+                Event::Key(key) if key.kind == crossterm::event::KeyEventKind::Press => match key.code {
                     KeyCode::Char('c') if key.modifiers.contains(KeyModifiers::CONTROL) => {
                         return Ok(());
                     }
@@ -147,6 +147,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> std::io::Res
                     KeyCode::Down => app.scroll_down(),
                     _ => false,
                 },
+                Event::Key(_) => false,
                 Event::Resize(_, _) => true,
                 _ => false,
             };

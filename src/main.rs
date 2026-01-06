@@ -210,6 +210,9 @@ fn run_app(terminal: &mut DefaultTerminal, mut app: App, tick_rate: Duration) ->
         if event::poll(timeout)?
             && let Event::Key(key) = event::read()?
         {
+            if key.kind != event::KeyEventKind::Press {
+                continue;
+            }
             match handle_keyboard_input(
                 key.code,
                 &mut app,
