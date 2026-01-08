@@ -90,7 +90,7 @@ impl Widget for TextComponent {
             }
             TextNode::Quote => render_quote(area, buf, self, clips),
             TextNode::LineBreak => (),
-            TextNode::HorizontalSeperator => render_horizontal_seperator(area, buf),
+            TextNode::HorizontalSeparator => render_horizontal_separator(area, buf),
             TextNode::Image => todo!(),
             TextNode::Footnote => (),
         }
@@ -605,7 +605,7 @@ fn render_task(
     paragraph.render(area, buf);
 }
 
-fn render_horizontal_seperator(area: Rect, buf: &mut Buffer) {
+fn render_horizontal_separator(area: Rect, buf: &mut Buffer) {
     let paragraph = Paragraph::new(Line::from(vec![Span::raw(
         "\u{2014}".repeat(GENERAL_CONFIG.width.into()),
     )]));

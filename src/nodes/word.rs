@@ -41,11 +41,11 @@ impl From<MdParseEnum> for WordType {
     fn from(value: MdParseEnum) -> Self {
         match value {
             MdParseEnum::PLanguage
-            | MdParseEnum::BlockSeperator
+            | MdParseEnum::BlockSeparator
             | MdParseEnum::TaskOpen
             | MdParseEnum::TaskClosed
             | MdParseEnum::Indent
-            | MdParseEnum::HorizontalSeperator => WordType::MetaInfo(MetaData::Other),
+            | MdParseEnum::HorizontalSeparator => WordType::MetaInfo(MetaData::Other),
             MdParseEnum::FootnoteRef => WordType::FootnoteInline,
             MdParseEnum::Code => WordType::Code,
             MdParseEnum::Bold => WordType::Bold,
@@ -80,7 +80,7 @@ impl From<MdParseEnum> for WordType {
             | MdParseEnum::TableCell
             | MdParseEnum::Task
             | MdParseEnum::UnorderedList
-            | MdParseEnum::TableSeperator => {
+            | MdParseEnum::TableSeparator => {
                 unreachable!("Edit this or pest file to fix for value: {:?}", value)
             }
             MdParseEnum::CodeBlockStr | MdParseEnum::CodeBlockStrSpaceIndented => {

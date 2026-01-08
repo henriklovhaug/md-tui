@@ -25,7 +25,7 @@ pub enum TextNode {
     Table(Vec<u16>, Vec<u16>),
     CodeBlock,
     Quote,
-    HorizontalSeperator,
+    HorizontalSeparator,
 }
 
 #[derive(Debug, Clone)]
@@ -307,7 +307,7 @@ impl TextComponent {
             TextNode::Table(_, _) => {
                 transform_table(self, width);
             }
-            TextNode::HorizontalSeperator => self.height = 1,
+            TextNode::HorizontalSeparator => self.height = 1,
             TextNode::Image => unreachable!("Image should not be transformed"),
             TextNode::Footnote => self.height = 0,
         }

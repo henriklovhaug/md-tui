@@ -89,8 +89,8 @@ sentence          = _{ (latex | footnote_ref_container | code | link | bold_ital
 t_sentence        = _{ (!"|" ~ (latex | footnote_ref_container | code | link | bold_italic | italic | bold | strikethrough | t_normal))+ }
 footnote_sentence = _{ ((":" | (NEWLINE ~ "  ")) ~ WHITESPACE_S* ~ (latex | code | link | bold_italic | italic | bold | strikethrough | normal+))+ }
 
-table_cell      = { !table_seperator ~ "|" ~ WHITESPACE_S* ~ t_sentence* ~ WHITESPACE_S* ~ ("|" ~ " "* ~ NEWLINE)? }
-table_seperator = { ("|"? ~ (WHITESPACE_S | ":")* ~ "-"+ ~ (WHITESPACE_S | ":")* ~ "|") }
+table_cell      = { !table_separator ~ "|" ~ WHITESPACE_S* ~ t_sentence* ~ WHITESPACE_S* ~ ("|" ~ " "* ~ NEWLINE)? }
+table_separator = { ("|"? ~ (WHITESPACE_S | ":")* ~ "-"+ ~ (WHITESPACE_S | ":")* ~ "|") }
 
 u_list = { indent ~ ("-" | "*") ~ WHITESPACE_S ~ sentence+ }
 o_list = { indent ~ o_list_counter ~ sentence+ }
@@ -123,7 +123,7 @@ code_block          = {
     NEWLINE? ~ " "* ~ (("```" ~ programming_language? ~ code_line+ ~ " "* ~ "```") | ("~~~" ~ programming_language? ~ code_line+ ~ " "* ~ "~~~") | indented_code_block)
 }
 table               = {
-    NEWLINE? ~ table_cell+ ~ NEWLINE? ~ table_seperator+ ~ (NEWLINE? ~ table_cell)*
+    NEWLINE? ~ table_cell+ ~ NEWLINE? ~ table_separator+ ~ (NEWLINE? ~ table_cell)*
 }
 
 quote          = { (NEWLINE? ~ WHITESPACE_S* ~ ">" ~ ((quote_marking | sentence | " ")+ | NEWLINE))+ }
