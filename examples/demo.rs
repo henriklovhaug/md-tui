@@ -7,9 +7,9 @@ use crossterm::terminal::{EnterAlternateScreen, LeaveAlternateScreen};
 use md_tui::nodes::root::{Component, ComponentRoot};
 use md_tui::parser;
 
-use ratatui::backend::{Backend, CrosstermBackend};
+use ratatui::backend::CrosstermBackend;
 use ratatui::layout::Rect;
-use ratatui::{Frame, Terminal};
+use ratatui::{DefaultTerminal, Frame, Terminal};
 
 const CONTENT: &str = r#"
 # Mihi contigit dextra
@@ -127,7 +127,7 @@ fn main() -> std::io::Result<()> {
     Ok(())
 }
 
-fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> std::io::Result<()> {
+fn run_app(terminal: &mut DefaultTerminal, mut app: App) -> std::io::Result<()> {
     const DEBOUNCE: Duration = Duration::from_millis(20); // 50 FPS
 
     terminal.draw(|frame| app.draw(frame))?;

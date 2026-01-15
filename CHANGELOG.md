@@ -1,3 +1,7 @@
+# Version 0.9.3
+
+- (#200) Fix broken example
+
 # Version 0.9.2
 
 - (#162) Add support for footnote
