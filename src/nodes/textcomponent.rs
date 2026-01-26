@@ -1,6 +1,7 @@
 use std::cmp;
 
 use itertools::Itertools;
+use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 
 use ratatui::style::Color;
 use tree_sitter_highlight::HighlightEvent;
@@ -325,7 +326,7 @@ fn word_wrapping<'a>(
     let mut line = Vec::new();
     let mut line_len = 0;
     for word in words {
-        let word_len = word.content().len();
+        let word_len = display_width(word.content());
         if line_len + word_len <= width {
             line_len += word_len;
             line.push(word.clone());
@@ -335,10 +336,10 @@ fn word_wrapping<'a>(
             let content = word.content().trim_start().to_owned();
             word.set_content(content);
 
-            line_len = word.content().len();
+            line_len = display_width(word.content());
             line = vec![word];
         } else {
-            let mut content = word.content().to_owned();
+            let content = word.content().to_owned();
 
             if width - line_len < 4 {
                 line_len = 0;
@@ -346,34 +347,40 @@ fn word_wrapping<'a>(
                 line = Vec::new();
             }
 
-            let mut newline_content: String = content
-                .char_indices()
-                .skip(width - line_len - 1)
-                .map(|(_index, character)| character)
-                .collect();
+            let split_width = if enable_hyphen && !content.ends_with('-') {
+                width - line_len - 1
+            } else {
+                width - line_len
+            };
 
-            if enable_hyphen && !content.ends_with('-') {
-                newline_content.insert(0, content.pop().unwrap());
+            let (mut content, mut newline_content) = split_by_width(&content, split_width);
+            if enable_hyphen && !content.ends_with('-') && !content.is_empty() {
+                if let Some(last_char) = content.pop() {
+                    newline_content.insert(0, last_char);
+                }
                 content.push('-');
             }
 
             line.push(Word::new(content, word.kind()));
             lines.push(line);
 
-            while newline_content.len() > width {
-                let mut next_newline_content: String = newline_content
-                    .char_indices()
-                    .skip(width - 1)
-                    .map(|(_index, character)| character)
-                    .collect();
-                if enable_hyphen && !newline_content.ends_with('-') {
-                    next_newline_content.insert(0, newline_content.pop().unwrap());
-                    newline_content.push('-');
+            while display_width(&newline_content) > width {
+                let split_width = if enable_hyphen && !newline_content.ends_with('-') {
+                    width - 1
+                } else {
+                    width
+                };
+                let (mut content, mut next_newline_content) =
+                    split_by_width(&newline_content, split_width);
+                if enable_hyphen && !newline_content.ends_with('-') && !content.is_empty() {
+                    if let Some(last_char) = content.pop() {
+                        next_newline_content.insert(0, last_char);
+                    }
+                    content.push('-');
                 }
 
-                line = vec![Word::new(newline_content, word.kind())];
+                line = vec![Word::new(content, word.kind())];
                 lines.push(line);
-
                 newline_content = next_newline_content;
             }
 
@@ -381,7 +388,7 @@ fn word_wrapping<'a>(
                 line_len = 0;
                 line = Vec::new();
             } else {
-                line_len = newline_content.len();
+                line_len = display_width(&newline_content);
                 line = vec![Word::new(newline_content, word.kind())];
             }
         }
@@ -392,6 +399,37 @@ fn word_wrapping<'a>(
     }
 
     lines
+}
+
+fn display_width(text: &str) -> usize {
+    UnicodeWidthStr::width(text)
+}
+
+fn split_by_width(text: &str, max_width: usize) -> (String, String) {
+    if max_width == 0 {
+        return (String::new(), text.to_string());
+    }
+
+    let mut width = 0;
+    let mut split_idx = 0;
+    // Track the byte index where the visible width reaches (or just exceeds) max_width.
+    for (i, c) in text.char_indices() {
+        let char_width = UnicodeWidthChar::width(c).unwrap_or(0);
+        if width + char_width > max_width {
+            if split_idx == 0 {
+                split_idx = i + c.len_utf8();
+            }
+            break;
+        }
+        width += char_width;
+        split_idx = i + c.len_utf8();
+        if width == max_width {
+            break;
+        }
+    }
+
+    let (head, tail) = text.split_at(split_idx);
+    (head.to_string(), tail.to_string())
 }
 
 fn transform_paragraph(component: &mut TextComponent, width: u16) {
@@ -513,13 +551,14 @@ fn transform_list(component: &mut TextComponent, width: u16) {
     let mut extra_indent = 0;
     let mut tmp = indent;
     for word in component.content.iter_mut().flatten() {
-        if word.content().len() + len < width as usize && word.kind() != WordType::ListMarker {
-            len += word.content().len();
+        let word_len = display_width(word.content());
+        if word_len + len < width as usize && word.kind() != WordType::ListMarker {
+            len += word_len;
             line.push(word.clone());
         } else {
             let filler_content = if word.kind() == WordType::ListMarker {
                 indent = if let Some((meta, list_type)) = zip_iter.next() {
-                    match tmp.cmp(&meta.content().len()) {
+                    match tmp.cmp(&display_width(meta.content())) {
                         cmp::Ordering::Less => {
                             o_list_counter_stack.push(0);
                             max_stack_len += 1;
@@ -542,7 +581,7 @@ fn transform_list(component: &mut TextComponent, width: u16) {
                     } else {
                         extra_indent = 0;
                     }
-                    tmp = meta.content().len();
+                    tmp = display_width(meta.content());
                     tmp
                 } else {
                     0
@@ -558,7 +597,7 @@ fn transform_list(component: &mut TextComponent, width: u16) {
             lines.push(line);
             let content = word.content().trim_start().to_owned();
             word.set_content(content);
-            len = word.content().len() + filler.content().len();
+            len = display_width(word.content()) + display_width(filler.content());
             line = vec![filler, word.to_owned()];
         }
     }
@@ -581,21 +620,21 @@ fn transform_list(component: &mut TextComponent, width: u16) {
             continue;
         }
 
-        match indent_len.cmp(&line[0].content().len()) {
+        match indent_len.cmp(&display_width(line[0].content())) {
             cmp::Ordering::Less => {
                 indent_index += 1;
-                indent_len = line[0].content().len();
+                indent_len = display_width(line[0].content());
             }
             cmp::Ordering::Greater => {
                 indent_index = indent_index.saturating_sub(1);
-                indent_len = line[0].content().len();
+                indent_len = display_width(line[0].content());
             }
             cmp::Ordering::Equal => (),
         }
 
         indent_correction[indent_index as usize] = cmp::max(
             indent_correction[indent_index as usize],
-            line[1].content().len(),
+            display_width(line[1].content()),
         );
     }
 
@@ -625,22 +664,24 @@ fn transform_list(component: &mut TextComponent, width: u16) {
             .strip_prefix(['1', '2', '3', '4', '5', '6', '7', '8', '9'])
             .is_some_and(|c| c.ends_with(". "))
         {
-            match indent_len.cmp(&line[0].content().len()) {
+            match indent_len.cmp(&display_width(line[0].content())) {
                 cmp::Ordering::Less => {
                     indent_index += 1;
-                    indent_len = line[0].content().len();
+                    indent_len = display_width(line[0].content());
                 }
                 cmp::Ordering::Greater => {
                     indent_index = indent_index.saturating_sub(1);
-                    indent_len = line[0].content().len();
+                    indent_len = display_width(line[0].content());
                 }
                 cmp::Ordering::Equal => (),
             }
-            indent_correction[indent_index as usize].saturating_sub(line[1].content().len())
-                + line[0].content().len()
+            indent_correction[indent_index as usize]
+                .saturating_sub(display_width(line[1].content()))
+                + display_width(line[0].content())
         } else {
             // -3 because that is the length of the shortest ordered index (1. )
-            (indent_correction[indent_index as usize] + line[0].content().len()).saturating_sub(3)
+            (indent_correction[indent_index as usize] + display_width(line[0].content()))
+                .saturating_sub(3)
         };
 
         line[0].set_content(" ".repeat(amount));
@@ -793,5 +834,5 @@ fn transform_table(component: &mut TextComponent, width: u16) {
 
 #[must_use]
 pub fn content_entry_len(words: &[Word]) -> usize {
-    words.iter().map(|word| word.content().len()).sum()
+    words.iter().map(|word| display_width(word.content())).sum()
 }
