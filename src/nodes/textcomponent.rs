@@ -353,42 +353,43 @@ fn word_wrapping<'a>(
                 width - line_len
             };
 
-            let (mut head, mut tail) = split_by_width(&content, split_width);
-            if enable_hyphen && !content.ends_with('-') && !head.is_empty() {
-                if let Some(last_char) = head.pop() {
-                    tail.insert(0, last_char);
+            let (mut content, mut newline_content) = split_by_width(&content, split_width);
+            if enable_hyphen && !content.ends_with('-') && !content.is_empty() {
+                if let Some(last_char) = content.pop() {
+                    newline_content.insert(0, last_char);
                 }
-                head.push('-');
+                content.push('-');
             }
 
-            line.push(Word::new(head, word.kind()));
+            line.push(Word::new(content, word.kind()));
             lines.push(line);
 
-            while display_width(&tail) > width {
-                let split_width = if enable_hyphen && !tail.ends_with('-') {
+            while display_width(&newline_content) > width {
+                let split_width = if enable_hyphen && !newline_content.ends_with('-') {
                     width - 1
                 } else {
                     width
                 };
-                let (mut head, mut next_tail) = split_by_width(&tail, split_width);
-                if enable_hyphen && !tail.ends_with('-') && !head.is_empty() {
-                    if let Some(last_char) = head.pop() {
-                        next_tail.insert(0, last_char);
+                let (mut content, mut next_newline_content) =
+                    split_by_width(&newline_content, split_width);
+                if enable_hyphen && !newline_content.ends_with('-') && !content.is_empty() {
+                    if let Some(last_char) = content.pop() {
+                        next_newline_content.insert(0, last_char);
                     }
-                    head.push('-');
+                    content.push('-');
                 }
 
-                line = vec![Word::new(head, word.kind())];
+                line = vec![Word::new(content, word.kind())];
                 lines.push(line);
-                tail = next_tail;
+                newline_content = next_newline_content;
             }
 
-            if tail.is_empty() {
+            if newline_content.is_empty() {
                 line_len = 0;
                 line = Vec::new();
             } else {
-                line_len = display_width(&tail);
-                line = vec![Word::new(tail, word.kind())];
+                line_len = display_width(&newline_content);
+                line = vec![Word::new(newline_content, word.kind())];
             }
         }
     }
@@ -411,6 +412,7 @@ fn split_by_width(text: &str, max_width: usize) -> (String, String) {
 
     let mut width = 0;
     let mut split_idx = 0;
+    // Track the byte index where the visible width reaches (or just exceeds) max_width.
     for (i, c) in text.char_indices() {
         let char_width = UnicodeWidthChar::width(c).unwrap_or(0);
         if width + char_width > max_width {
