@@ -18,14 +18,20 @@
 
 <!--toc:end-->
 
-`MD-TUI` is a TUI application for viewing markdown files directly in your
-terminal. I created it because I wasn't happy with how alternatives handled
-links in their applications. While the full markdown specification is not yet
-supported, it will slowly get there. It's a good solution for quickly viewing
-your markdown notes, or opening external links from someones README. If your
-terminal support images, they will render.
+`MD-TUI` is a terminal-based application for viewing and navigating Markdown
+files. It focuses on keyboard navigation and functional link navigation.
+
+## Capabilities
+
+- Keyboard-driven navigation
+- Internal and external links
+- File tree for browsing Markdown files
+- Search and link selection modes
+- Optional image rendering, depending on terminal support
 
 ## Installation
+
+Prebuilt binaries with install script can be found on the release page.
 
 Using cargo: `cargo install md-tui --locked`
 
@@ -33,9 +39,8 @@ On Arch Linux: `pacman -S md-tui`
 
 For Nix users, there's also Nix flake.
 
-On conda-forge: `pixi global install md-tui` or `pixi exec -s md-tui -- mdt my-file.md`
-
-Prebuilt binaries with install script can be found on the release page.
+On conda-forge: `pixi global install md-tui` or
+`pixi exec -s md-tui -- mdt my-file.md`
 
 ### Requirements
 
@@ -45,8 +50,8 @@ Prebuilt binaries with install script can be found on the release page.
 ## Usage
 
 Start the program running `mdt <file.md>` or just `mdt`. The latter will search
-recursively from where it was invoked for any markdown file and show it in a
-_file tree_.
+recursively from where it was invoked for Markdown files and present them in a
+file tree.
 
 You can also pipe the content into the program. Example: `cat README.md | mdt`.
 
@@ -65,8 +70,8 @@ for configuration options.
 | `u` or `<Right>` | Scroll one page up                                                     |
 | `f` or `/`       | Search                                                                 |
 | `n` or `N`       | Jump to next or previous search result                                 |
-| `s` or `S`       | Enter select link mode. Different selection strategy.                  |
-| `K`              | Hover. Preview where a link is going without going there               |
+| `s` or `S`       | Enter select link mode. Different selection strategy                   |
+| `K`              | Hover. Preview link targets without following them                     |
 | `<Enter>`        | Select. Depending on which mode it can: open file, select link, search |
 | `Esc`            | Go back to _normal_ mode                                               |
 | `t`              | Go back to files                                                       |
@@ -108,7 +113,7 @@ following parameters and their defaults are written below.
 
 ### Keyboard actions
 
-Some key actions are not configurable. Like the following:
+Some key actions are not configurable, including:
 
 - Enter
 - Arrow keys
@@ -202,8 +207,11 @@ h6_fg_color = "lightred"
 
 ## Links
 
-MD-TUI currently supports `[text](url)`, `[[link]]`, and `[[link|Some title]]`
-type of links.
+MD-TUI supports the following link formats:
+
+- `[text](url)`
+- `[[link]]`
+- `[[link|Some title]]`
 
 ## Neovim plugin
 
