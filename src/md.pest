@@ -7,29 +7,31 @@ c_char           = _{ (!(NEWLINE | WHITESPACE_S | "`") ~ ANY)+ }
 c_line_char      = _{ (!(NEWLINE | "```" | "~~~") ~ ANY)+ }
 comment_char     = _{ (!(NEWLINE | "-->") ~ ANY)+ }
 digit            = _{ '0'..'9' }
-i_char           = _{ (!(NEWLINE | comment | WHITESPACE_S | "_" | "*") ~ ANY)+ }
+i_char_var_1     = _{ (!(NEWLINE | comment | WHITESPACE_S | "_") ~ ANY)+ }
+i_char_var_2     = _{ (!(NEWLINE | comment | WHITESPACE_S | "*") ~ ANY)+ }
 indent           =  { WHITESPACE_S* }
 latex_char       = _{ (!(NEWLINE | WHITESPACE_S | "$") ~ ANY)+ }
 link_char        = _{ (!(NEWLINE | WHITESPACE_S | "[" | "]" | "(" | ")") ~ ANY)+ }
-p_char           = _{ (!(NEWLINE | comment | footnote_ref_container | code | bold_italic | italic | bold | strikethrough | latex | WHITESPACE_S | link) ~ ANY)+ }
+p_char           = _{ (!(NEWLINE | comment | footnote_ref_container | code | bold_italic | italic_var_1 | italic_var_2 | bold | strikethrough | latex | WHITESPACE_S | link) ~ ANY)+ }
 s_char           = _{ (!(NEWLINE | comment | WHITESPACE_S | "~~") ~ ANY)+ }
-t_char           = _{ (!(NEWLINE | comment | code | bold_italic | italic | bold | strikethrough | latex | WHITESPACE_S | "|") ~ ANY)+ }
+t_char           = _{ (!(NEWLINE | comment | code | bold_italic | italic_var_1 | bold | strikethrough | latex | WHITESPACE_S | "|") ~ ANY)+ }
 wiki_link_char   = _{ (!(NEWLINE | WHITESPACE_S | "|" | "[[" | "]]") ~ ANY)+ }
 inline_link_char = _{ (!(NEWLINE | WHITESPACE_S | "<" | ">") ~ ANY)+ }
 
 // Words
 word                   =  {
-    !(forbidden_sentence_prefix | footnote_ref_container | latex | bold_italic | bold | italic | strikethrough | code | link) ~ NEWLINE? ~ WHITESPACE_S* ~ p_char+
+    !(forbidden_sentence_prefix | footnote_ref_container | latex | bold_italic | bold | italic_var_1 | strikethrough | code | link) ~ NEWLINE? ~ WHITESPACE_S* ~ p_char+
 }
 t_word                 =  {
-    !(forbidden_sentence_prefix | latex | bold_italic | bold | italic | strikethrough | code | link) ~ NEWLINE? ~ WHITESPACE_S* ~ t_char+
+    !(forbidden_sentence_prefix | latex | bold_italic | bold | italic_var_1 | italic_word_var_2 | strikethrough | code | link) ~ NEWLINE? ~ WHITESPACE_S* ~ t_char+
 }
 alt_word               = _{ WHITESPACE_S* ~ alt_char+ }
 bold_italic_word       =  { WHITESPACE_S* ~ b_char+ }
 bold_word              =  { WHITESPACE_S* ~ b_char+ }
 code_word              =  { WHITESPACE_S* ~ c_char+ }
 h_word                 =  { p_char+ ~ WHITESPACE_S? }
-italic_word            =  { WHITESPACE_S* ~ i_char+ }
+italic_word_var_1      =  { WHITESPACE_S* ~ i_char_var_1+ }
+italic_word_var_2      =  { WHITESPACE_S* ~ i_char_var_2+ }
 latex_word             =  { WHITESPACE_S* ~ latex_char+ }
 link_data              =  { link_char+ }
 link_word              =  { (link_char | WHITESPACE_S | "(" | ")")+ }
@@ -80,14 +82,19 @@ programming_language  =  { (!NEWLINE ~ ANY)+ }
 strikethrough         =  { NEWLINE? ~ WHITESPACE_S* ~ !"\\" ~ "~~" ~ !"~" ~ (strikethrough_word | (NEWLINE ~ quote_prefix?))+ ~ "~~" }
 t_normal              = _{ t_word+ }
 
-italic = {
-    (NEWLINE? ~ WHITESPACE_S* ~ !"\\" ~ "*" ~ (italic_word | (NEWLINE ~ quote_prefix?))+ ~ "*")
-  | ((NEWLINE | WHITESPACE_S) ~ WHITESPACE_S* ~ !"\\" ~ "_" ~ (italic_word | (NEWLINE ~ quote_prefix?))+ ~ "_")
+italic_var_1 = {
+    (NEWLINE? ~ WHITESPACE_S* ~ !"\\" ~ "*" ~ (italic_word_var_1 | (NEWLINE ~ quote_prefix?))+ ~ "*")
+  | ((NEWLINE | WHITESPACE_S) ~ WHITESPACE_S* ~ !"\\" ~ "_" ~ (italic_word_var_1 | (NEWLINE ~ quote_prefix?))+ ~ "_")
 }
 
-sentence          = _{ (latex | footnote_ref_container | code | link | bold_italic | italic | bold | strikethrough | normal+)+ }
-t_sentence        = _{ (!"|" ~ (latex | footnote_ref_container | code | link | bold_italic | italic | bold | strikethrough | t_normal))+ }
-footnote_sentence = _{ ((":" | (NEWLINE ~ "  ")) ~ WHITESPACE_S* ~ (latex | code | link | bold_italic | italic | bold | strikethrough | normal+))+ }
+italic_var_2 = {
+    (NEWLINE? ~ WHITESPACE_S* ~ !"\\" ~ "*" ~ (italic_word_var_2 | (NEWLINE ~ quote_prefix?))+ ~ "*")
+  | ((NEWLINE | WHITESPACE_S) ~ WHITESPACE_S* ~ !"\\" ~ "*" ~ (italic_word_var_2 | (NEWLINE ~ quote_prefix?))+ ~ "*")
+}
+
+sentence          = _{ (latex | footnote_ref_container | code | link | bold_italic | italic_var_1 | italic_var_2 | bold | strikethrough | normal+)+ }
+t_sentence        = _{ (!"|" ~ (latex | footnote_ref_container | code | link | bold_italic | italic_var_1 | italic_var_2 | bold | strikethrough | t_normal))+ }
+footnote_sentence = _{ ((":" | (NEWLINE ~ "  ")) ~ WHITESPACE_S* ~ (latex | code | link | bold_italic | italic_var_1 | italic_var_2 | bold | strikethrough | normal+))+ }
 
 table_cell      = { !table_separator ~ "|" ~ WHITESPACE_S* ~ t_sentence* ~ WHITESPACE_S* ~ ("|" ~ " "* ~ NEWLINE)? }
 table_separator = { ("|"? ~ (WHITESPACE_S | ":")* ~ "-"+ ~ (WHITESPACE_S | ":")* ~ "|") }

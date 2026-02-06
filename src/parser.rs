@@ -583,8 +583,8 @@ impl From<Rule> for MdParseEnum {
         match value {
             Rule::word | Rule::h_word | Rule::latex_word | Rule::t_word => Self::Word,
             Rule::indent => Self::Indent,
-            Rule::italic_word => Self::Italic,
-            Rule::italic => Self::ItalicStr,
+            Rule::italic_word_var_1 | Rule::italic_word_var_2 => Self::Italic,
+            Rule::italic_var_1 | Rule::italic_var_2 => Self::ItalicStr,
             Rule::bold_word => Self::Bold,
             Rule::bold => Self::BoldStr,
             Rule::bold_italic_word => Self::BoldItalic,
@@ -651,7 +651,8 @@ impl From<Rule> for MdParseEnum {
             | Rule::c_char
             | Rule::c_line_char
             | Rule::comment_char
-            | Rule::i_char
+            | Rule::i_char_var_1
+            | Rule::i_char_var_2
             | Rule::latex_char
             | Rule::quote_marking
             | Rule::inline_link_char
