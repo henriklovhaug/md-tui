@@ -1,3 +1,8 @@
+# Version 0.9.4
+
+- Add Unicode width crate to properly calculate character width
+- Allow `_` inside italic using `*` symbol as wrapper
+
 # Version 0.9.3
 
 - (#200) Fix broken example
