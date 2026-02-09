@@ -9,7 +9,7 @@ pub fn highlight_elixir(lines: &[u8]) -> Result<Vec<HighlightEvent>, String> {
     let mut elixir_config = HighlightConfiguration::new(
         language.into(),
         "elixir",
-        tree_sitter_cpp::HIGHLIGHT_QUERY,
+        tree_sitter_elixir::HIGHLIGHTS_QUERY,
         "",
         "",
     )
