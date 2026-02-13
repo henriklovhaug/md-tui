@@ -22,6 +22,7 @@ tree-sitter = [
   "tree-sitter-c",
   "tree-sitter-cpp",
   "tree-sitter-css",
+  "tree-sitter-diff",
   "tree-sitter-elixir",
   "tree-sitter-go",
   "tree-sitter-html",
@@ -30,11 +31,14 @@ tree-sitter = [
   "tree-sitter-json",
   "tree-sitter-lua",
   "tree-sitter-luau-fork",
+  "tree-sitter-nu",
   "tree-sitter-ocaml",
   "tree-sitter-php",
+  "tree-sitter-proto",
   "tree-sitter-python",
   "tree-sitter-rust",
   "tree-sitter-scala",
+  "tree-sitter-toml-ng",
   "tree-sitter-typescript",
   "tree-sitter-yaml"
 ]
@@ -77,6 +81,10 @@ tree-sitter-rust = { version = "0.24.0", optional = true }
 tree-sitter-scala = { version = "0.24.0", optional = true }
 tree-sitter-typescript = { version = "0.23.2", optional = true }
 tree-sitter-yaml = { version = "0.7.2", optional = true }
+tree-sitter-diff = { version = "0.1.0", optional = true }
+tree-sitter-nu = { git = "https://github.com/nushell/tree-sitter-nu", optional = true }
+tree-sitter-proto = { git = "https://github.com/coder3101/tree-sitter-proto", optional = true }
+tree-sitter-toml-ng = { version = "0.7.0", optional = true }
 
 [build-dependencies]
 cc="1"
