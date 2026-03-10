@@ -243,13 +243,10 @@ fn render_file_tree(f: &mut Frame, app: &App, file_tree: FileTree) {
     let x = match GENERAL_CONFIG.centering {
         util::general::Centering::Left => 2,
         util::general::Centering::Center => {
-            let x = (size.width / 2).saturating_sub(GENERAL_CONFIG.width / 2);
-
-            if x > 2 { x } else { 2 }
+            cmp::max((size.width / 2).saturating_sub(GENERAL_CONFIG.width / 2), 2)
         }
         util::general::Centering::Right => {
-            let x = size.width.saturating_sub(GENERAL_CONFIG.width + 2);
-            if x > 2 { x } else { 2 }
+            cmp::max(size.width.saturating_sub(GENERAL_CONFIG.width + 2), 2)
         }
     };
     let area = Rect {
@@ -259,41 +256,14 @@ fn render_file_tree(f: &mut Frame, app: &App, file_tree: FileTree) {
     };
     f.render_widget(file_tree, area);
 
-    let area = if app.help_box.expanded() {
-        Rect {
-            x: x + 2,
-            y: size.height.saturating_sub(14),
-            height: cmp::min(13, size.height),
-            width: app.width().saturating_sub(5),
-        }
-    } else {
-        Rect {
-            x: x + 2,
-            y: size.height.saturating_sub(4),
-            height: cmp::min(3, size.height),
-            width: app.width() - 5,
-        }
-    };
-
-    f.render_widget(Clear, area);
-
-    let area = if app.help_box.expanded() {
-        Rect {
+    if GENERAL_CONFIG.help_menu {
+        let area = Rect {
             x: x + 2,
             y: size.height.saturating_sub(13),
             height: cmp::min(10, size.height),
             width: app.width().saturating_sub(5),
-        }
-    } else {
-        Rect {
-            x: x + 2,
-            y: size.height.saturating_sub(5),
-            height: cmp::min(3, size.height),
-            width: app.width() - 5,
-        }
-    };
-
-    if GENERAL_CONFIG.help_menu {
+        };
+        f.render_widget(Clear, area);
         f.render_widget(app.help_box, area);
     }
 }
@@ -316,7 +286,11 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
 
     let area = Rect {
         width: cmp::min(app.width() - 3, size.width - 1),
-        height: size.height.saturating_sub(5),
+        height: if GENERAL_CONFIG.help_menu {
+            size.height.saturating_sub(5)
+        } else {
+            size.height
+        },
         x,
         ..size
     };
@@ -384,9 +358,9 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
             width: area.width - 1,
         }
     };
-    f.render_widget(Clear, area);
 
     if GENERAL_CONFIG.help_menu {
+        f.render_widget(Clear, area);
         f.render_widget(block, area);
     }
 

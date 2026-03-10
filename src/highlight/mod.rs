@@ -6,6 +6,8 @@ mod c;
 mod cpp;
 #[cfg(feature = "tree-sitter-css")]
 mod css;
+#[cfg(feature = "tree-sitter-diff")]
+mod diff;
 #[cfg(feature = "tree-sitter-elixir")]
 mod elixir;
 #[cfg(feature = "tree-sitter-go")]
@@ -36,8 +38,6 @@ mod tsx;
 mod typescript;
 #[cfg(feature = "tree-sitter-yaml")]
 mod yaml;
-#[cfg(feature = "tree-sitter-diff")]
-mod diff;
 
 use tree_sitter_highlight::HighlightEvent;
 
