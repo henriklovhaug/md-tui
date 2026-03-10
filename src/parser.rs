@@ -333,12 +333,13 @@ fn parse_component(parse_node: ParseNode) -> Component {
 
         MdParseEnum::Table => {
             let mut words = Vec::new();
+            let mut meta_info = Vec::new();
             for cell in parse_node.children_owned() {
                 if cell.kind() == MdParseEnum::TableSeparator {
-                    words.push(vec![Word::new(
+                    meta_info.push(Word::new(
                         cell.content().to_owned(),
                         WordType::MetaInfo(MetaData::ColumnsCount),
-                    )]);
+                    ));
                     continue;
                 }
                 let mut inner_words = Vec::new();
@@ -367,9 +368,10 @@ fn parse_component(parse_node: ParseNode) -> Component {
                 }
                 words.push(inner_words);
             }
-            Component::TextComponent(TextComponent::new_formatted(
+            Component::TextComponent(TextComponent::new_formatted_with_meta(
                 TextNode::Table(vec![], vec![]),
                 words,
+                meta_info,
             ))
         }
 
