@@ -364,15 +364,6 @@ impl Widget for FileTree {
 
         let y_height = items.len() / 2 * 3;
 
-        let total_pages = usize::div_ceil(file_len, partition);
-
-        let page_count = format!("  {}/{}", self.page + 1, total_pages);
-
-        let paragraph = Text::styled(
-            page_count,
-            Style::default().fg(color_config().file_tree_page_count_color),
-        );
-
         let items = List::new(items)
             .block(
                 Block::default()
@@ -396,6 +387,15 @@ impl Widget for FileTree {
             ..area
         };
 
-        paragraph.render(area, buf);
+        let total_pages = usize::div_ceil(file_len, partition);
+
+        let page_count_str = format!("  {}/{}", self.page + 1, total_pages);
+
+        let page_count = Text::styled(
+            page_count_str,
+            Style::default().fg(color_config().file_tree_page_count_color),
+        );
+
+        page_count.render(area, buf);
     }
 }
