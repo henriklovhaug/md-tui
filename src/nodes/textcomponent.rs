@@ -77,7 +77,13 @@ impl TextComponent {
         content: Vec<Vec<Word>>,
         mut meta_info: Vec<Word>,
     ) -> Self {
-        meta_info.extend(content.iter().flatten().filter(|c| !c.is_renderable()).cloned());
+        meta_info.extend(
+            content
+                .iter()
+                .flatten()
+                .filter(|c| !c.is_renderable())
+                .cloned(),
+        );
 
         let content: Vec<Vec<Word>> = content
             .into_iter()

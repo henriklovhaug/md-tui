@@ -1,3 +1,10 @@
+# Version 0.9.5
+
+- Fix elixir tree sitter query
+- Add syntax highlighting for diff/patch
+- Use full terminal height for Markdown when help box is disabled
+- Prettier tables with borders
+
 # Version 0.9.4
 
 - Add Unicode width crate to properly calculate character width
