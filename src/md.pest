@@ -23,7 +23,7 @@ word                   =  {
     !(forbidden_sentence_prefix | footnote_ref_container | latex | bold_italic | bold | italic_var_1 | strikethrough | code | link) ~ NEWLINE? ~ WHITESPACE_S* ~ p_char+
 }
 t_word                 =  {
-    !(forbidden_sentence_prefix | latex | bold_italic | bold | italic_var_1 | italic_word_var_2 | strikethrough | code | link) ~ NEWLINE? ~ WHITESPACE_S* ~ t_char+
+    !(forbidden_sentence_prefix | latex | bold_italic | bold | italic_var_1 | italic_var_2 | strikethrough | code | link) ~ NEWLINE? ~ WHITESPACE_S* ~ t_char+
 }
 alt_word               = _{ WHITESPACE_S* ~ alt_char+ }
 bold_italic_word       =  { WHITESPACE_S* ~ b_char+ }

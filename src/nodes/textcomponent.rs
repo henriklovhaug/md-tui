@@ -29,6 +29,8 @@ pub enum TextNode {
     HorizontalSeparator,
 }
 
+pub(crate) const TABLE_CELL_PADDING: u16 = 1;
+
 #[derive(Debug, Clone)]
 pub struct TextComponent {
     kind: TextNode,
@@ -66,17 +68,21 @@ impl TextComponent {
 
     #[must_use]
     pub fn new_formatted(kind: TextNode, content: Vec<Vec<Word>>) -> Self {
-        let meta_info: Vec<Word> = content
-            .iter()
-            .flatten()
-            .filter(|c| !c.is_renderable())
-            .cloned()
-            .collect();
+        Self::new_formatted_with_meta(kind, content, Vec::new())
+    }
 
-        let content = content
+    #[must_use]
+    pub fn new_formatted_with_meta(
+        kind: TextNode,
+        content: Vec<Vec<Word>>,
+        mut meta_info: Vec<Word>,
+    ) -> Self {
+        meta_info.extend(content.iter().flatten().filter(|c| !c.is_renderable()).cloned());
+
+        let content: Vec<Vec<Word>> = content
             .into_iter()
             .map(|c| c.into_iter().filter(Word::is_renderable).collect())
-            .collect::<Vec<Vec<Word>>>();
+            .collect();
 
         Self {
             kind,
@@ -263,7 +269,7 @@ impl TextComponent {
     pub fn selected_heights(&self) -> Vec<usize> {
         let mut heights = Vec::new();
 
-        if let TextNode::Table(widths, _) = self.kind() {
+        if let TextNode::Table(widths, row_heights) = self.kind() {
             let column_count = widths.len();
             let iter = self.content.chunks(column_count).enumerate();
 
@@ -273,7 +279,10 @@ impl TextComponent {
                     .flatten()
                     .any(|c| c.kind() == WordType::Selected)
                 {
-                    heights.push(i);
+                    let offset = 1
+                        + row_heights.iter().take(i).copied().sum::<u16>() as usize
+                        + usize::from(i > 0);
+                    heights.push(offset);
                 }
             }
             return heights;
@@ -315,7 +324,7 @@ impl TextComponent {
     }
 }
 
-fn word_wrapping<'a>(
+pub(crate) fn word_wrapping<'a>(
     words: impl IntoIterator<Item = &'a Word>,
     width: usize,
     allow_hyphen: bool,
@@ -691,7 +700,13 @@ fn transform_list(component: &mut TextComponent, width: u16) {
     component.content = lines;
 }
 
+fn table_styling_width(column_count: usize) -> u16 {
+    1 + column_count as u16 * (TABLE_CELL_PADDING * 2 + 1)
+}
+
 fn transform_table(component: &mut TextComponent, width: u16) {
+    // Subtract 1 to match the actual render area width (consistent with transform_paragraph)
+    let width = width.saturating_sub(1);
     let content = &mut component.content;
 
     let column_count = component
@@ -732,22 +747,22 @@ fn transform_table(component: &mut TextComponent, width: u16) {
         widths
     };
 
-    let styling_width = column_count as u16;
+    let styling_width = table_styling_width(column_count);
     let unbalanced_cells_width = widths.iter().sum::<u16>();
 
     /////////////////////////////////////
     // Return if unbalanced width fits //
     /////////////////////////////////////
     if width >= unbalanced_cells_width + styling_width {
-        component.height = (content.len() / column_count) as u16;
-        component.kind = TextNode::Table(widths, vec![1; component.height as usize]);
+        component.height = row_count as u16 + 3;
+        component.kind = TextNode::Table(widths, vec![1; row_count]);
         return;
     }
 
     //////////////////////////////
     // Find overflowing columns //
     //////////////////////////////
-    let overflow_threshold = (width - styling_width) / column_count as u16;
+    let overflow_threshold = width.saturating_sub(styling_width) / column_count as u16;
     let mut overflowing_columns = vec![];
 
     let (overflowing_width, non_overflowing_width) = {
@@ -767,15 +782,16 @@ fn transform_table(component: &mut TextComponent, width: u16) {
         (overflowing_width, non_overflowing_width)
     };
 
-    assert!(
-        !overflowing_columns.is_empty(),
-        "table overflow should not be handled when there are no overflowing columns"
-    );
+    if overflowing_columns.is_empty() {
+        component.height = row_count as u16 + 3;
+        component.kind = TextNode::Table(widths, vec![1; row_count]);
+        return;
+    }
 
     /////////////////////////////////////////////
     // Assign new width to overflowing columns //
     /////////////////////////////////////////////
-    let mut available_balanced_width = width - non_overflowing_width - styling_width;
+    let mut available_balanced_width = width.saturating_sub(non_overflowing_width + styling_width);
     let mut available_overflowing_width = overflowing_width;
 
     let overflowing_column_min_width =
@@ -796,7 +812,8 @@ fn transform_table(component: &mut TextComponent, width: u16) {
         if balanced_column_width < overflowing_column_min_width {
             balanced_column_width = overflowing_column_min_width;
             available_overflowing_width -= **old_column_width;
-            available_balanced_width -= balanced_column_width;
+            available_balanced_width =
+                available_balanced_width.saturating_sub(balanced_column_width);
         }
 
         widths_balanced[*column_i] = balanced_column_width;
@@ -827,7 +844,7 @@ fn transform_table(component: &mut TextComponent, width: u16) {
         }
     }
 
-    component.height = heights.iter().copied().sum::<u16>();
+    component.height = heights.iter().copied().sum::<u16>() + 3;
 
     component.kind = TextNode::Table(widths_balanced, heights);
 }
