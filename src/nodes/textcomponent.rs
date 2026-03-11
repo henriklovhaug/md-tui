@@ -705,6 +705,8 @@ fn table_styling_width(column_count: usize) -> u16 {
 }
 
 fn transform_table(component: &mut TextComponent, width: u16) {
+    // Subtract 1 to match the actual render area width (consistent with transform_paragraph)
+    let width = width.saturating_sub(1);
     let content = &mut component.content;
 
     let column_count = component
