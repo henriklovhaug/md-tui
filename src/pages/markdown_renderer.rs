@@ -460,6 +460,16 @@ fn render_code_block(area: Rect, buf: &mut Buffer, component: TextComponent, cli
         .map(|c| Line::from(c.iter().map(style_word).collect::<Vec<_>>()))
         .collect::<Vec<_>>();
 
+    let max_width = component
+        .meta_info()
+        .iter()
+        .find_map(|f| match f.kind() {
+            WordType::MetaInfo(MetaData::LineLength(len)) => Some(len),
+            _ => None,
+        })
+        .unwrap_or(area.width)
+        + 2;
+
     match clip {
         Clipping::Both => {
             let top = component.scroll_offset() - component.y_offset();
@@ -481,12 +491,27 @@ fn render_code_block(area: Rect, buf: &mut Buffer, component: TextComponent, cli
 
     let block = Block::default().style(Style::default().bg(color_config().code_block_bg_color));
 
+    let area = Rect {
+        width: max_width,
+        ..area
+    };
+
     block.render(area, buf);
 
-    let area = Rect {
-        x: area.x + 1,
-        width: area.width - 1,
-        ..area
+    let area = if let Some(word) = component.meta_info().first()
+        && matches!(word.content(), "mermaid")
+    {
+        Rect {
+            x: area.x + 1,
+            width: buf.area().width,
+            ..area
+        }
+    } else {
+        Rect {
+            x: area.x + 1,
+            width: area.width - 1,
+            ..area
+        }
     };
 
     let paragraph = Paragraph::new(content);

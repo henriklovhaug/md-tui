@@ -88,6 +88,7 @@ pub static COLOR_MAP: [Color; 18] = [
 
 pub enum HighlightInfo {
     Highlighted(Vec<HighlightEvent>),
+    Mermaid,
     Unhighlighted,
 }
 
@@ -158,6 +159,8 @@ pub fn highlight_code(language: &str, lines: &[u8]) -> HighlightInfo {
 
         #[cfg(feature = "tree-sitter-diff")]
         "diff" | "patch" => HighlightInfo::Highlighted(diff::highlight_diff(lines).unwrap()),
+
+        "mermaid" => HighlightInfo::Mermaid,
 
         _ => HighlightInfo::Unhighlighted,
     }

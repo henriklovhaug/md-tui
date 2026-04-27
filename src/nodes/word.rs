@@ -14,6 +14,7 @@ pub enum MetaData {
     Tip,
     Warning,
     Caution,
+    LineLength(u16),
     HeadingLevel(u8),
 }
 

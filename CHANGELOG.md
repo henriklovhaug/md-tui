@@ -1,3 +1,7 @@
+# Version 0.10.0
+
+- (#76) Add mermaid support for code blocks
+
 # Version 0.9.5
 
 - Fix elixir tree sitter query
