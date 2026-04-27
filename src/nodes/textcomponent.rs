@@ -1,6 +1,7 @@
 use std::cmp;
 
 use itertools::Itertools;
+use mermaid_text::render_with_width;
 use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 
 use ratatui::style::Color;
@@ -9,6 +10,7 @@ use tree_sitter_highlight::HighlightEvent;
 use crate::{
     highlight::{COLOR_MAP, HighlightInfo, highlight_code},
     nodes::word::MetaData,
+    util::general::GENERAL_CONFIG,
 };
 
 use super::word::{Word, WordType};
@@ -537,10 +539,41 @@ fn transform_codeblock(component: &mut TextComponent) {
             component.content = final_content;
         }
         HighlightInfo::Unhighlighted => (),
+        HighlightInfo::Mermaid => {
+            let Ok(output) = render_with_width(&content, Some(GENERAL_CONFIG.width as usize - 5))
+            else {
+                return;
+            };
+
+            let mut final_content = Vec::new();
+
+            final_content.push(vec![Word::new(String::new(), WordType::Normal)]);
+
+            for line in output.lines() {
+                final_content.push(vec![Word::new(line.to_owned(), WordType::Normal)]);
+            }
+
+            final_content.push(vec![Word::new(String::new(), WordType::Normal)]);
+
+            component.content = final_content;
+        }
     }
+
+    // FInd the longest line
+
+    let max_line_len = component
+        .content()
+        .iter()
+        .map(|inner| inner.iter().fold(0, |acc, x| acc + x.content().width()))
+        .max()
+        .unwrap_or(0);
 
     let height = component.content.len() as u16;
     component.height = height;
+    component.meta_info.push(Word::new(
+        String::new(),
+        WordType::MetaInfo(MetaData::LineLength(max_line_len as u16)),
+    ));
 }
 
 fn transform_list(component: &mut TextComponent, width: u16) {
