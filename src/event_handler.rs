@@ -163,11 +163,10 @@ pub fn keyboard_mode_file_tree(
                     app.help_box.set_mode(Mode::FileTree);
                 }
             },
-            Action::Help => {
-                if GENERAL_CONFIG.help_menu {
-                    app.help_box.toggle();
-                }
+            Action::Help if GENERAL_CONFIG.help_menu => {
+                app.help_box.toggle();
             }
+            Action::Help => {}
 
             Action::Escape => {
                 file_tree.unselect();
@@ -553,10 +552,8 @@ fn keyboard_mode_view(
                 }
             },
 
-            Action::Help => {
-                if GENERAL_CONFIG.help_menu {
-                    app.help_box.toggle();
-                }
+            Action::Help if GENERAL_CONFIG.help_menu => {
+                app.help_box.toggle();
             }
             _ => {}
         },
