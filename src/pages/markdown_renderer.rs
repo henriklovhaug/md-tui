@@ -492,7 +492,7 @@ fn render_code_block(area: Rect, buf: &mut Buffer, component: TextComponent, cli
     let block = Block::default().style(Style::default().bg(color_config().code_block_bg_color));
 
     let area = Rect {
-        width: max_width,
+        width: cmp::max(max_width, GENERAL_CONFIG.width - 3),
         ..area
     };
 
