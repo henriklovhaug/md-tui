@@ -460,15 +460,18 @@ fn render_code_block(area: Rect, buf: &mut Buffer, component: TextComponent, cli
         .map(|c| Line::from(c.iter().map(style_word).collect::<Vec<_>>()))
         .collect::<Vec<_>>();
 
-    let max_width = component
-        .meta_info()
-        .iter()
-        .find_map(|f| match f.kind() {
-            WordType::MetaInfo(MetaData::LineLength(len)) => Some(len),
-            _ => None,
-        })
-        .unwrap_or(area.width)
-        + 2;
+    let max_width = cmp::max(
+        component
+            .meta_info()
+            .iter()
+            .find_map(|f| match f.kind() {
+                WordType::MetaInfo(MetaData::LineLength(len)) => Some(len),
+                _ => None,
+            })
+            .unwrap_or(area.width)
+            + 2,
+        area.width,
+    );
 
     match clip {
         Clipping::Both => {
@@ -492,7 +495,7 @@ fn render_code_block(area: Rect, buf: &mut Buffer, component: TextComponent, cli
     let block = Block::default().style(Style::default().bg(color_config().code_block_bg_color));
 
     let area = Rect {
-        width: cmp::max(max_width, GENERAL_CONFIG.width - 3),
+        width: max_width,
         ..area
     };
 
