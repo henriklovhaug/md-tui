@@ -29,6 +29,7 @@ pub enum TextNode {
     CodeBlock,
     Quote,
     HorizontalSeparator,
+    DetailsSummary,
 }
 
 pub(crate) const TABLE_CELL_PADDING: u16 = 1;
@@ -319,7 +320,7 @@ impl TextComponent {
             TextNode::Paragraph | TextNode::Task | TextNode::Quote => {
                 transform_paragraph(self, width);
             }
-            TextNode::LineBreak | TextNode::Heading => {
+            TextNode::LineBreak | TextNode::Heading | TextNode::DetailsSummary => {
                 self.height = 1;
             }
             TextNode::Table(_, _) => {

@@ -71,6 +71,9 @@ impl From<MdParseEnum> for WordType {
             | MdParseEnum::BoldStr
             | MdParseEnum::CodeBlock
             | MdParseEnum::CodeStr
+            | MdParseEnum::Details
+            | MdParseEnum::DetailsBody
+            | MdParseEnum::DetailsSummary
             | MdParseEnum::Image
             | MdParseEnum::ItalicStr
             | MdParseEnum::ListContainer

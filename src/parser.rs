@@ -65,11 +65,54 @@ fn node_to_component(root: ParseRoot) -> ComponentRoot {
     let mut children = Vec::new();
     let name = root.file_name().clone();
     for component in root.children_owned() {
-        let comp = parse_component(component);
-        children.push(comp);
+        children.extend(parse_components(component));
     }
 
     ComponentRoot::new(name, children)
+}
+
+fn parse_components(parse_node: ParseNode) -> Vec<Component> {
+    if parse_node.kind() == MdParseEnum::Details {
+        return parse_details(parse_node);
+    }
+    vec![parse_component(parse_node)]
+}
+
+fn parse_details(parse_node: ParseNode) -> Vec<Component> {
+    let mut header_text = String::from("Details");
+    let mut body_components: Vec<Component> = Vec::new();
+
+    for child in parse_node.children_owned() {
+        match child.kind() {
+            MdParseEnum::DetailsSummary => {
+                let text: String = get_leaf_nodes(child)
+                    .into_iter()
+                    .map(|n| n.content().to_string())
+                    .collect::<Vec<_>>()
+                    .join("");
+                let trimmed = text.trim().to_string();
+                if !trimmed.is_empty() {
+                    header_text = trimmed;
+                }
+            }
+            MdParseEnum::DetailsBody => {
+                for body_child in child.children_owned() {
+                    body_components.extend(parse_components(body_child));
+                }
+            }
+            _ => {
+                body_components.extend(parse_components(child));
+            }
+        }
+    }
+
+    let mut out = Vec::with_capacity(1 + body_components.len());
+    out.push(Component::TextComponent(TextComponent::new(
+        TextNode::DetailsSummary,
+        vec![Word::new(header_text, WordType::Normal)],
+    )));
+    out.extend(body_components);
+    out
 }
 
 fn is_url(url: &str) -> bool {
@@ -545,6 +588,9 @@ pub enum MdParseEnum {
     CodeBlockStr,
     CodeBlockStrSpaceIndented,
     CodeStr,
+    Details,
+    DetailsBody,
+    DetailsSummary,
     Digit,
     FootnoteRef,
     Footnote,
@@ -623,6 +669,9 @@ impl From<Rule> for MdParseEnum {
             Rule::block_sep => Self::BlockSeparator,
             Rule::horizontal_sep => Self::HorizontalSeparator,
             Rule::link_data | Rule::wiki_link_data => Self::LinkData,
+            Rule::details => Self::Details,
+            Rule::details_body => Self::DetailsBody,
+            Rule::summary | Rule::summary_text => Self::DetailsSummary,
             Rule::warning => Self::Warning,
             Rule::note => Self::Note,
             Rule::tip => Self::Tip,
@@ -661,7 +710,121 @@ impl From<Rule> for MdParseEnum {
             | Rule::s_char
             | Rule::WHITESPACE_S
             | Rule::wiki_link
-            | Rule::footnote_ref_container => todo!(),
+            | Rule::footnote_ref_container
+            | Rule::details_open_tag
+            | Rule::details_close_tag
+            | Rule::summary_open_tag
+            | Rule::summary_close_tag => todo!(),
         }
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::nodes::textcomponent::TextNode;
+
+    fn component_kinds(md: &str) -> Vec<TextNode> {
+        parse_markdown(None, md, 80)
+            .components()
+            .iter()
+            .map(|c| c.kind())
+            .collect()
+    }
+
+    #[test]
+    fn parses_details_with_summary() {
+        let md = "<details>\n<summary>Title</summary>\n\nBody paragraph.\n\n</details>\n";
+        let kinds = component_kinds(md);
+        assert!(
+            kinds.contains(&TextNode::DetailsSummary),
+            "expected DetailsSummary header, got {kinds:?}"
+        );
+        assert!(
+            kinds.iter().any(|k| matches!(k, TextNode::Paragraph)),
+            "expected body paragraph, got {kinds:?}"
+        );
+    }
+
+    #[test]
+    fn parses_details_open_attribute() {
+        let md = "<details open>\n<summary>S</summary>\n\nbody\n\n</details>\n";
+        let kinds = component_kinds(md);
+        assert!(kinds.contains(&TextNode::DetailsSummary));
+    }
+
+    #[test]
+    fn parses_details_without_summary() {
+        let md = "<details>\n\nplain body\n\n</details>\n";
+        let kinds = component_kinds(md);
+        assert!(kinds.contains(&TextNode::DetailsSummary));
+    }
+
+    #[test]
+    fn parses_uppercase_details() {
+        let md = "<DETAILS>\n<SUMMARY>Caps</SUMMARY>\n\nbody\n\n</DETAILS>\n";
+        let kinds = component_kinds(md);
+        assert!(
+            kinds.contains(&TextNode::DetailsSummary),
+            "case-insensitive matching failed, got {kinds:?}"
+        );
+    }
+
+    #[test]
+    fn malformed_details_does_not_panic() {
+        let md = "<details>\n<summary>S</summary>\n\nbody never closes\n";
+        let _ = parse_markdown(None, md, 80);
+    }
+
+    #[test]
+    fn nested_details_produces_two_summary_headers() {
+        let md = "<details>\n<summary>Outer</summary>\n\n<details>\n<summary>Inner</summary>\n\ninner body\n\n</details>\n\n</details>\n";
+        let kinds = component_kinds(md);
+        let summary_count = kinds
+            .iter()
+            .filter(|k| matches!(k, TextNode::DetailsSummary))
+            .count();
+        assert_eq!(summary_count, 2, "expected 2 DetailsSummary, got {kinds:?}");
+    }
+
+    #[test]
+    fn html_close_tag_not_autolink() {
+        let md = "</details>";
+        let kinds = component_kinds(md);
+        assert!(
+            kinds.iter().all(|k| !matches!(k, TextNode::DetailsSummary)),
+            "stray close tag shouldn't produce DetailsSummary"
+        );
+    }
+
+    #[test]
+    fn issue_169_example_parses() {
+        // The exact example from issue #169 — two <details> blocks with tables.
+        let md = "# Dependencies\n\n\
+            <details>\n<summary>Explicit dependencies</summary>\n\n\
+            |Dependency|Before|After|\n|-|-|-|\n|bpy|0.10.1|2.10.1|\n\n\
+            </details>\n\n\
+            <details open>\n<summary>Implicit dependencies</summary>\n\n\
+            |Dependency|Before|After|\n|-|-|-|\n|python|0.10.0|0.10.1|\n\n\
+            </details>\n";
+        let kinds = component_kinds(md);
+        let summary_count = kinds
+            .iter()
+            .filter(|k| matches!(k, TextNode::DetailsSummary))
+            .count();
+        assert_eq!(summary_count, 2, "expected 2 summary headers, got {kinds:?}");
+        let table_count = kinds
+            .iter()
+            .filter(|k| matches!(k, TextNode::Table(_, _)))
+            .count();
+        assert_eq!(table_count, 2, "expected 2 tables inside details, got {kinds:?}");
+    }
+
+    #[test]
+    fn plain_paragraph_unaffected() {
+        let md = "Just a paragraph.\n";
+        let kinds = component_kinds(md);
+        assert!(!kinds.contains(&TextNode::DetailsSummary));
+    }
+
 }

@@ -1,3 +1,8 @@
+# Unreleased
+
+- (#169) Add support for HTML `<details>`/`<summary>` blocks
+- Fix autolink rule matching HTML closing tags like `</span>`
+
 # Version 0.10.0
 
 - (#76) Add mermaid support for code blocks

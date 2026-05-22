@@ -96,6 +96,7 @@ impl Widget for TextComponent {
             TextNode::HorizontalSeparator => render_horizontal_separator(area, buf),
             TextNode::Image => todo!(),
             TextNode::Footnote => (),
+            TextNode::DetailsSummary => render_details_summary(area, buf, self),
         }
     }
 }
@@ -414,6 +415,15 @@ fn render_paragraph(area: Rect, buf: &mut Buffer, component: TextComponent, clip
     let paragraph = Paragraph::new(lines);
 
     paragraph.render(area, buf);
+}
+
+fn render_details_summary(area: Rect, buf: &mut Buffer, component: TextComponent) {
+    let bold = Style::default().add_modifier(Modifier::BOLD);
+    let mut spans: Vec<Span> = vec![Span::styled("▼ ", bold)];
+    for word in component.content_owned().into_iter().flatten() {
+        spans.push(Span::styled(word.content().to_string(), bold));
+    }
+    Paragraph::new(Line::from(spans)).render(area, buf);
 }
 
 fn render_list(area: Rect, buf: &mut Buffer, component: TextComponent, clip: Clipping) {
