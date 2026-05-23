@@ -71,8 +71,9 @@ for configuration options.
 | `f` or `/`       | Search                                                                 |
 | `n` or `N`       | Jump to next or previous search result                                 |
 | `s` or `S`       | Enter select link mode. Different selection strategy                   |
+| `D`              | Enter select details mode. Cycle through `<details>` blocks            |
 | `K`              | Hover. Preview link targets without following them                     |
-| `<Enter>`        | Select. Depending on which mode it can: open file, select link, search |
+| `<Enter>`        | Select. Open link, search, or toggle fold on selected `<details>`      |
 | `Esc`            | Go back to _normal_ mode                                               |
 | `t`              | Go back to files                                                       |
 | `b`              | Go back to previous file (file tree if no previous file)               |
@@ -145,6 +146,8 @@ search_previous = 'N'
 select_link = 's'
 # Finds the link 2/3 up the page. It will search then for closest in both direction.
 select_link_alt = 'S'
+# Enter select-details mode. Press <Enter> on a selected <details> to fold/unfold it.
+select_details = 'D'
 edit = 'e'
 hover = 'K'
 back = 'b'

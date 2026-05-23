@@ -298,6 +298,9 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
     for child in markdown.children_mut() {
         match child {
             Component::TextComponent(comp) => {
+                if comp.is_hidden() {
+                    continue;
+                }
                 if comp.y_offset().saturating_sub(comp.scroll_offset()) >= area.height
                     || (comp.y_offset() + comp.height()).saturating_sub(comp.scroll_offset()) == 0
                 {

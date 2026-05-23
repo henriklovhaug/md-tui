@@ -54,7 +54,7 @@ list_prefix       =  { (WHITESPACE_S* ~ "-") | (NUMBER+ ~ ". ") }
 heading_prefix    =  { "#" }
 
 forbidden_sentence_prefix = {
-    NEWLINE ~ WHITESPACE_S* ~ (image | task_prefix | quote_prefix | code_block_prefix | table_prefix | list_prefix | heading_prefix)
+    NEWLINE ~ WHITESPACE_S* ~ (image | task_prefix | quote_prefix | code_block_prefix | table_prefix | list_prefix | heading_prefix | details_open_tag | details_close_tag)
 }
 
 // Lines
@@ -74,7 +74,7 @@ latex                 =  {
 }
 link                  =  { NEWLINE? ~ WHITESPACE_S* ~ (link_line | wiki_link | inline_link_wrapper) }
 link_line             = _{ "[" ~ (link_word | NEWLINE)+ ~ "]" ~ "(" ~ link_data+ ~ ")" }
-inline_link_wrapper   = _{ !comment ~ "<" ~ inline_link ~ ">" }
+inline_link_wrapper   = _{ !comment ~ "<" ~ !"/" ~ inline_link ~ ">" }
 wiki_link             = _{ ("[[" ~ wiki_link_alone+ ~ "]]") | ("[[" ~ wiki_link_data+ ~ "|" ~ wiki_link_word+ ~ "]]") }
 normal                = _{ word+ }
 o_list_counter        =  { digit+ ~ ". " }
@@ -142,6 +142,20 @@ image          = { NEWLINE? ~ "![" ~ alt_text ~ "](" ~ link_data+ ~ ")" }
 
 comment = _{ "<!--" ~ (NEWLINE | comment_char)+ ~ "-->" }
 
+details_open_attr =  { ^"open" }
+details_open_tag  = _{ ^"<details" ~ (WHITESPACE_S+ ~ details_open_attr)? ~ WHITESPACE_S* ~ ">" }
+details_close_tag = _{ ^"</details>" }
+summary_open_tag  = _{ ^"<summary>" }
+summary_close_tag = _{ ^"</summary>" }
+summary_text      =  { (!summary_close_tag ~ (NEWLINE | ANY))+ }
+summary           =  { summary_open_tag ~ summary_text ~ summary_close_tag }
+details_body      =  {
+    (!details_close_tag ~ (horizontal_sep | image | footnote | task | comment | table | quote | list_container | code_block | heading | details | paragraph | block_sep | WHITESPACE_S))*
+}
+details           =  {
+    NEWLINE? ~ details_open_tag ~ (NEWLINE | WHITESPACE_S)* ~ summary? ~ (NEWLINE | WHITESPACE_S)* ~ details_body ~ details_close_tag
+}
+
 txt = {
-    (horizontal_sep | image | footnote | task | comment | table | quote | list_container | code_block | heading | paragraph | block_sep | WHITESPACE_S)+
+    (horizontal_sep | image | footnote | task | comment | table | quote | list_container | code_block | heading | details | paragraph | block_sep | WHITESPACE_S)+
 }

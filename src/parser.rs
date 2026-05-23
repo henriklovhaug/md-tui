@@ -1,3 +1,5 @@
+use std::sync::atomic::{AtomicU32, Ordering};
+
 use image::ImageReader;
 use itertools::Itertools;
 use pest::{
@@ -13,6 +15,28 @@ use crate::nodes::{
     textcomponent::{TextComponent, TextNode},
     word::{MetaData, Word, WordType},
 };
+
+/// Process-wide monotonic counter for assigning unique IDs to `<details>`
+/// blocks. Each parsed details summary gets a fresh ID so it can be addressed
+/// by the runtime fold-toggle and selector independently of its position in
+/// the document.
+static DETAILS_ID_COUNTER: AtomicU32 = AtomicU32::new(0);
+
+fn next_details_id() -> u32 {
+    DETAILS_ID_COUNTER.fetch_add(1, Ordering::Relaxed)
+}
+
+/// Prepend `id` to the owning-details chain of every text component in
+/// `components`. Used after parsing a `<details>` body so that nested
+/// children (which may already carry inner IDs) correctly record the
+/// outer-to-inner containment order.
+fn tag_owning_details(components: &mut [Component], id: u32) {
+    for c in components.iter_mut() {
+        if let Component::TextComponent(tc) = c {
+            tc.prepend_owning_details_id(id);
+        }
+    }
+}
 
 #[derive(Parser)]
 #[grammar = "md.pest"]
@@ -38,6 +62,7 @@ pub fn parse_markdown(name: Option<&str>, content: &str, width: u16) -> Componen
     let mut root = node_to_component(parse_root).add_missing_components();
 
     root.transform(width);
+    root.recompute_visibility();
     root
 }
 
@@ -65,11 +90,68 @@ fn node_to_component(root: ParseRoot) -> ComponentRoot {
     let mut children = Vec::new();
     let name = root.file_name().clone();
     for component in root.children_owned() {
-        let comp = parse_component(component);
-        children.push(comp);
+        children.extend(parse_components(component));
     }
 
     ComponentRoot::new(name, children)
+}
+
+fn parse_components(parse_node: ParseNode) -> Vec<Component> {
+    if parse_node.kind() == MdParseEnum::Details {
+        return parse_details(parse_node);
+    }
+    vec![parse_component(parse_node)]
+}
+
+fn parse_details(parse_node: ParseNode) -> Vec<Component> {
+    let mut header_text = String::from("Details");
+    let mut body_components: Vec<Component> = Vec::new();
+    let mut open_attr_present = false;
+
+    for child in parse_node.children_owned() {
+        match child.kind() {
+            MdParseEnum::DetailsOpenAttr => {
+                open_attr_present = true;
+            }
+            MdParseEnum::DetailsSummary => {
+                let text: String = get_leaf_nodes(child)
+                    .into_iter()
+                    .map(|n| n.content().to_string())
+                    .collect::<Vec<_>>()
+                    .join("");
+                let trimmed = text.trim().to_string();
+                if !trimmed.is_empty() {
+                    header_text = trimmed;
+                }
+            }
+            MdParseEnum::DetailsBody => {
+                for body_child in child.children_owned() {
+                    body_components.extend(parse_components(body_child));
+                }
+            }
+            _ => {
+                body_components.extend(parse_components(child));
+            }
+        }
+    }
+
+    let id = next_details_id();
+    tag_owning_details(&mut body_components, id);
+
+    let body_len = body_components.len();
+    let folded = !open_attr_present;
+
+    let mut out = Vec::with_capacity(1 + body_len);
+    out.push(Component::TextComponent(TextComponent::new(
+        TextNode::DetailsSummary {
+            id,
+            folded,
+            body_len,
+        },
+        vec![Word::new(header_text, WordType::Normal)],
+    )));
+    out.extend(body_components);
+    out
 }
 
 fn is_url(url: &str) -> bool {
@@ -545,6 +627,10 @@ pub enum MdParseEnum {
     CodeBlockStr,
     CodeBlockStrSpaceIndented,
     CodeStr,
+    Details,
+    DetailsBody,
+    DetailsOpenAttr,
+    DetailsSummary,
     Digit,
     FootnoteRef,
     Footnote,
@@ -623,6 +709,10 @@ impl From<Rule> for MdParseEnum {
             Rule::block_sep => Self::BlockSeparator,
             Rule::horizontal_sep => Self::HorizontalSeparator,
             Rule::link_data | Rule::wiki_link_data => Self::LinkData,
+            Rule::details => Self::Details,
+            Rule::details_body => Self::DetailsBody,
+            Rule::details_open_attr => Self::DetailsOpenAttr,
+            Rule::summary | Rule::summary_text => Self::DetailsSummary,
             Rule::warning => Self::Warning,
             Rule::note => Self::Note,
             Rule::tip => Self::Tip,
@@ -661,7 +751,314 @@ impl From<Rule> for MdParseEnum {
             | Rule::s_char
             | Rule::WHITESPACE_S
             | Rule::wiki_link
-            | Rule::footnote_ref_container => todo!(),
+            | Rule::footnote_ref_container
+            | Rule::details_open_tag
+            | Rule::details_close_tag
+            | Rule::summary_open_tag
+            | Rule::summary_close_tag => todo!(),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::nodes::textcomponent::TextNode;
+
+    fn component_kinds(md: &str) -> Vec<TextNode> {
+        parse_markdown(None, md, 80)
+            .components()
+            .iter()
+            .map(|c| c.kind())
+            .collect()
+    }
+
+    fn has_details_summary(kinds: &[TextNode]) -> bool {
+        kinds
+            .iter()
+            .any(|k| matches!(k, TextNode::DetailsSummary { .. }))
+    }
+
+    #[test]
+    fn parses_details_with_summary() {
+        let md = "<details>\n<summary>Title</summary>\n\nBody paragraph.\n\n</details>\n";
+        let kinds = component_kinds(md);
+        assert!(
+            has_details_summary(&kinds),
+            "expected DetailsSummary header, got {kinds:?}"
+        );
+        assert!(
+            kinds.iter().any(|k| matches!(k, TextNode::Paragraph)),
+            "expected body paragraph, got {kinds:?}"
+        );
+    }
+
+    #[test]
+    fn parses_details_open_attribute_starts_unfolded() {
+        // `<details open>` honors HTML semantics: initial state expanded.
+        let md = "<details open>\n<summary>S</summary>\n\nbody\n\n</details>\n";
+        let kinds = component_kinds(md);
+        let folded = kinds.iter().find_map(|k| match k {
+            TextNode::DetailsSummary { folded, .. } => Some(*folded),
+            _ => None,
+        });
+        assert_eq!(
+            folded,
+            Some(false),
+            "<details open> should start unfolded, got {kinds:?}"
+        );
+    }
+
+    #[test]
+    fn parses_details_without_open_starts_folded() {
+        // Plain `<details>` (no `open` attribute) starts collapsed.
+        let md = "<details>\n<summary>S</summary>\n\nbody\n\n</details>\n";
+        let kinds = component_kinds(md);
+        let folded = kinds.iter().find_map(|k| match k {
+            TextNode::DetailsSummary { folded, .. } => Some(*folded),
+            _ => None,
+        });
+        assert_eq!(
+            folded,
+            Some(true),
+            "<details> without `open` should start folded, got {kinds:?}"
+        );
+    }
+
+    #[test]
+    fn parses_details_without_summary() {
+        let md = "<details>\n\nplain body\n\n</details>\n";
+        let kinds = component_kinds(md);
+        assert!(has_details_summary(&kinds));
+    }
+
+    #[test]
+    fn parses_uppercase_details() {
+        let md = "<DETAILS>\n<SUMMARY>Caps</SUMMARY>\n\nbody\n\n</DETAILS>\n";
+        let kinds = component_kinds(md);
+        assert!(
+            has_details_summary(&kinds),
+            "case-insensitive matching failed, got {kinds:?}"
+        );
+    }
+
+    #[test]
+    fn malformed_details_does_not_panic() {
+        let md = "<details>\n<summary>S</summary>\n\nbody never closes\n";
+        let _ = parse_markdown(None, md, 80);
+    }
+
+    #[test]
+    fn nested_details_produces_two_summary_headers() {
+        let md = "<details>\n<summary>Outer</summary>\n\n<details>\n<summary>Inner</summary>\n\ninner body\n\n</details>\n\n</details>\n";
+        let kinds = component_kinds(md);
+        let summary_count = kinds
+            .iter()
+            .filter(|k| matches!(k, TextNode::DetailsSummary { .. }))
+            .count();
+        assert_eq!(summary_count, 2, "expected 2 DetailsSummary, got {kinds:?}");
+    }
+
+    #[test]
+    fn html_close_tag_not_autolink() {
+        let md = "</details>";
+        let kinds = component_kinds(md);
+        assert!(
+            kinds
+                .iter()
+                .all(|k| !matches!(k, TextNode::DetailsSummary { .. })),
+            "stray close tag shouldn't produce DetailsSummary"
+        );
+    }
+
+    #[test]
+    fn issue_169_example_parses() {
+        // The exact example from issue #169 — two <details> blocks with tables.
+        let md = "# Dependencies\n\n\
+            <details>\n<summary>Explicit dependencies</summary>\n\n\
+            |Dependency|Before|After|\n|-|-|-|\n|bpy|0.10.1|2.10.1|\n\n\
+            </details>\n\n\
+            <details open>\n<summary>Implicit dependencies</summary>\n\n\
+            |Dependency|Before|After|\n|-|-|-|\n|python|0.10.0|0.10.1|\n\n\
+            </details>\n";
+        let kinds = component_kinds(md);
+        let summary_count = kinds
+            .iter()
+            .filter(|k| matches!(k, TextNode::DetailsSummary { .. }))
+            .count();
+        assert_eq!(
+            summary_count, 2,
+            "expected 2 summary headers, got {kinds:?}"
+        );
+        let table_count = kinds
+            .iter()
+            .filter(|k| matches!(k, TextNode::Table(_, _)))
+            .count();
+        assert_eq!(
+            table_count, 2,
+            "expected 2 tables inside details, got {kinds:?}"
+        );
+    }
+
+    #[test]
+    fn plain_paragraph_unaffected() {
+        let md = "Just a paragraph.\n";
+        let kinds = component_kinds(md);
+        assert!(!has_details_summary(&kinds));
+    }
+
+    #[test]
+    fn nested_details_tags_inner_components_with_both_ids() {
+        let md = "<details>\n<summary>Outer</summary>\n\n<details>\n<summary>Inner</summary>\n\ninner body\n\n</details>\n\n</details>\n";
+        let root = parse_markdown(None, md, 80);
+        let comps = root.components();
+        // Find the inner summary's owning chain — it should have exactly
+        // one id (the outer's). The inner body should have two (outer,
+        // inner — outermost-first ordering).
+        let summaries: Vec<&[u32]> = comps
+            .iter()
+            .filter(|c| matches!(c.kind(), TextNode::DetailsSummary { .. }))
+            .map(|c| c.owning_details_ids())
+            .collect();
+        assert_eq!(summaries.len(), 2, "expected 2 summaries");
+        // First (outer) summary has no owning details. Second (inner)
+        // summary has one: the outer.
+        assert_eq!(summaries[0].len(), 0, "outer summary has no owners");
+        assert_eq!(
+            summaries[1].len(),
+            1,
+            "inner summary belongs to one outer details body"
+        );
+
+        // The inner body paragraph belongs to both outer + inner.
+        let inner_para = comps
+            .iter()
+            .find(|c| matches!(c.kind(), TextNode::Paragraph) && c.owning_details_ids().len() == 2)
+            .expect("inner body paragraph with two owning details ids");
+        assert_eq!(
+            inner_para.owning_details_ids().len(),
+            2,
+            "inner body paragraph belongs to outer and inner"
+        );
+    }
+
+    #[test]
+    fn default_collapsed_hides_body_components() {
+        // A plain (collapsed-by-default) <details> hides its body
+        // components, so they contribute zero height to the layout.
+        let md = "<details>\n<summary>S</summary>\n\nhidden body\n\n</details>\n";
+        let root = parse_markdown(None, md, 80);
+        let comps = root.components();
+        let body_para = comps
+            .iter()
+            .find(|c| matches!(c.kind(), TextNode::Paragraph))
+            .expect("expected body paragraph component");
+        assert!(body_para.is_hidden(), "collapsed body should be hidden");
+        assert_eq!(
+            body_para.height(),
+            0,
+            "hidden component height must be 0 so set_scroll positions correctly"
+        );
+    }
+
+    #[test]
+    fn open_attribute_keeps_body_visible() {
+        let md = "<details open>\n<summary>S</summary>\n\nvisible body\n\n</details>\n";
+        let root = parse_markdown(None, md, 80);
+        let comps = root.components();
+        let body_para = comps
+            .iter()
+            .find(|c| matches!(c.kind(), TextNode::Paragraph))
+            .expect("expected body paragraph component");
+        assert!(!body_para.is_hidden(), "open body should be visible");
+    }
+
+    #[test]
+    fn toggle_fold_hides_and_reveals_body() {
+        let md = "<details open>\n<summary>S</summary>\n\nbody text\n\n</details>\n";
+        let mut root = parse_markdown(None, md, 80);
+        let initial_height = root.height();
+        // Select the only details summary, then toggle it folded.
+        root.select_details(0).expect("select_details");
+        root.toggle_selected_details().expect("toggle");
+        let folded_height = root.height();
+        assert!(
+            folded_height < initial_height,
+            "folding should reduce total height ({folded_height} < {initial_height})"
+        );
+        // Toggle again to re-expand.
+        root.toggle_selected_details().expect("untoggle");
+        let unfolded_height = root.height();
+        assert_eq!(
+            unfolded_height, initial_height,
+            "unfolding restores original height"
+        );
+    }
+
+    #[test]
+    fn outer_fold_hides_inner_summary() {
+        let md = "<details open>\n<summary>Outer</summary>\n\n<details open>\n<summary>Inner</summary>\n\ninner body\n\n</details>\n\n</details>\n";
+        let mut root = parse_markdown(None, md, 80);
+        // Fold the outer details — the inner summary header AND its body
+        // should both become hidden.
+        root.select_details(0).expect("select outer");
+        root.toggle_selected_details().expect("fold outer");
+
+        let mut inner_summary_hidden = false;
+        let mut inner_body_hidden = false;
+        for c in root.components() {
+            if matches!(c.kind(), TextNode::DetailsSummary { .. })
+                && c.owning_details_ids().len() == 1
+                && c.is_hidden()
+            {
+                inner_summary_hidden = true;
+            }
+            if matches!(c.kind(), TextNode::Paragraph)
+                && c.owning_details_ids().len() == 2
+                && c.is_hidden()
+            {
+                inner_body_hidden = true;
+            }
+        }
+        assert!(
+            inner_summary_hidden,
+            "inner summary should be hidden when outer is folded"
+        );
+        assert!(
+            inner_body_hidden,
+            "inner body should be hidden when outer is folded"
+        );
+
+        // num_details reports only currently-visible summaries — the
+        // inner one disappears from the selector cycle while outer is
+        // folded.
+        assert_eq!(
+            root.num_details(),
+            1,
+            "only the outer summary is visible when outer is folded"
+        );
+    }
+
+    #[test]
+    fn linebreak_inherits_shared_owning_ids() {
+        // The block-separator-inserted LineBreaks should inherit the
+        // owning-details chain that is shared between their neighbors,
+        // so a LineBreak between two body components is hidden together
+        // with them when the surrounding details folds.
+        let md = "<details>\n<summary>S</summary>\n\nfirst body\n\nsecond body\n\n</details>\n";
+        let root = parse_markdown(None, md, 80);
+        let comps = root.components();
+        let interior_linebreak = comps.iter().find(|c| {
+            matches!(c.kind(), TextNode::LineBreak) && !c.owning_details_ids().is_empty()
+        });
+        assert!(
+            interior_linebreak.is_some(),
+            "expected a LineBreak inside the details body to inherit its owners"
+        );
+        let lb = interior_linebreak.unwrap();
+        assert!(
+            lb.is_hidden(),
+            "LineBreak inside a folded details body should be hidden"
+        );
     }
 }

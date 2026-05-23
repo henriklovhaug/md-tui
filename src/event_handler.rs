@@ -254,6 +254,16 @@ fn keyboard_mode_view(
                     } else {
                         app.vertical_scroll
                     };
+                } else if app.details_selected {
+                    let max_idx = markdown.num_details().saturating_sub(1);
+                    app.details_select_index = cmp::min(app.details_select_index + 1, max_idx);
+                    app.vertical_scroll =
+                        if let Ok(scroll) = markdown.select_details(app.details_select_index) {
+                            app.details_selected = true;
+                            scroll.saturating_sub(height / 3)
+                        } else {
+                            app.vertical_scroll
+                        };
                 } else {
                     app.vertical_scroll = cmp::min(
                         app.vertical_scroll + 1,
@@ -270,6 +280,15 @@ fn keyboard_mode_view(
                     } else {
                         app.vertical_scroll
                     };
+                } else if app.details_selected {
+                    app.details_select_index = app.details_select_index.saturating_sub(1);
+                    app.vertical_scroll =
+                        if let Ok(scroll) = markdown.select_details(app.details_select_index) {
+                            app.details_selected = true;
+                            scroll.saturating_sub(height / 3)
+                        } else {
+                            app.vertical_scroll
+                        };
                 } else {
                     app.vertical_scroll = app.vertical_scroll.saturating_sub(1);
                 }
@@ -351,6 +370,8 @@ fn keyboard_mode_view(
                         app.vertical_scroll
                     };
                     app.selected = true;
+                    app.details_selected = false;
+                    markdown.deselect_details();
                 } else {
                     // Something weird must have happened at this point
                     markdown.deselect();
@@ -377,7 +398,48 @@ fn keyboard_mode_view(
 
                 app.select_index = index;
                 app.selected = true;
+                app.details_selected = false;
+                markdown.deselect_details();
                 app.vertical_scroll = if let Ok(scroll) = markdown.select(app.select_index) {
+                    scroll.saturating_sub(height / 3)
+                } else {
+                    app.vertical_scroll
+                };
+            }
+
+            // Cycle to the details summary nearest (and at-or-below) the
+            // current scroll position. Mirrors `SelectLink` but for
+            // `<details>` blocks. Mutually exclusive with link selection.
+            Action::SelectDetails => {
+                let details = markdown.details_index_and_height();
+                if details.is_empty() {
+                    app.message_box
+                        .set_message("No details blocks found".to_string());
+                    app.boxes = Boxes::Error;
+                    return KeyBoardAction::Continue;
+                }
+
+                // Clear any link selection first — the two modes are
+                // mutually exclusive.
+                app.selected = false;
+                markdown.deselect();
+
+                let next_idx = if app.details_selected {
+                    // Already in details mode — advance to the next.
+                    cmp::min(app.details_select_index + 1, details.len() - 1)
+                } else {
+                    // Pick the first summary at or below the current
+                    // scroll position, else the last one above.
+                    details
+                        .iter()
+                        .find(|(_, y)| *y >= app.vertical_scroll)
+                        .map(|(i, _)| *i)
+                        .unwrap_or(details.last().map(|(i, _)| *i).unwrap_or(0))
+                };
+
+                app.details_select_index = next_idx;
+                app.details_selected = true;
+                app.vertical_scroll = if let Ok(scroll) = markdown.select_details(next_idx) {
                     scroll.saturating_sub(height / 3)
                 } else {
                     app.vertical_scroll
@@ -437,9 +499,21 @@ fn keyboard_mode_view(
             Action::Escape => {
                 app.selected = false;
                 markdown.deselect();
+                app.details_selected = false;
+                markdown.deselect_details();
             }
 
             Action::Enter => {
+                // A focused `<details>` summary toggles its fold state
+                // and stays in selection mode so the user can chain
+                // multiple toggles without re-pressing `D`.
+                if app.details_selected {
+                    if markdown.toggle_selected_details().is_ok() {
+                        markdown.set_scroll(app.vertical_scroll);
+                    }
+                    return KeyBoardAction::Continue;
+                }
+
                 if !app.selected {
                     return KeyBoardAction::Continue;
                 }

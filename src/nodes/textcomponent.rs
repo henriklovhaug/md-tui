@@ -29,6 +29,11 @@ pub enum TextNode {
     CodeBlock,
     Quote,
     HorizontalSeparator,
+    DetailsSummary {
+        id: u32,
+        folded: bool,
+        body_len: usize,
+    },
 }
 
 pub(crate) const TABLE_CELL_PADDING: u16 = 1;
@@ -43,6 +48,8 @@ pub struct TextComponent {
     scroll_offset: u16,
     focused: bool,
     focused_index: usize,
+    owning_details_ids: Vec<u32>,
+    hidden: bool,
 }
 
 impl TextComponent {
@@ -65,6 +72,8 @@ impl TextComponent {
             scroll_offset: 0,
             focused: false,
             focused_index: 0,
+            owning_details_ids: Vec::new(),
+            hidden: false,
         }
     }
 
@@ -101,6 +110,8 @@ impl TextComponent {
             scroll_offset: 0,
             focused: false,
             focused_index: 0,
+            owning_details_ids: Vec::new(),
+            hidden: false,
         }
     }
 
@@ -164,7 +175,55 @@ impl TextComponent {
 
     #[must_use]
     pub fn height(&self) -> u16 {
+        if self.hidden { 0 } else { self.height }
+    }
+
+    #[must_use]
+    pub fn raw_height(&self) -> u16 {
         self.height
+    }
+
+    #[must_use]
+    pub fn owning_details_ids(&self) -> &[u32] {
+        &self.owning_details_ids
+    }
+
+    pub fn prepend_owning_details_id(&mut self, id: u32) {
+        self.owning_details_ids.insert(0, id);
+    }
+
+    pub fn set_owning_details_ids(&mut self, ids: Vec<u32>) {
+        self.owning_details_ids = ids;
+    }
+
+    #[must_use]
+    pub fn is_hidden(&self) -> bool {
+        self.hidden
+    }
+
+    pub fn set_hidden(&mut self, hidden: bool) {
+        self.hidden = hidden;
+    }
+
+    /// If this component is a `DetailsSummary`, set its `folded` field.
+    /// Returns the new folded state on success, `None` if the component
+    /// is not a `DetailsSummary`.
+    pub fn set_details_folded(&mut self, folded: bool) -> Option<bool> {
+        if let TextNode::DetailsSummary {
+            id,
+            folded: _,
+            body_len,
+        } = self.kind.clone()
+        {
+            self.kind = TextNode::DetailsSummary {
+                id,
+                folded,
+                body_len,
+            };
+            Some(folded)
+        } else {
+            None
+        }
     }
 
     #[must_use]
@@ -200,6 +259,19 @@ impl TextComponent {
             .for_each(|c| {
                 c.clear_kind();
             });
+    }
+
+    /// Mark a `DetailsSummary` component as focused. Unlike
+    /// `visually_select`, no inner word changes kind — the renderer
+    /// reads `is_focused()` directly to apply selection styling to the
+    /// whole header line.
+    pub fn visually_select_summary(&mut self) {
+        self.focused = true;
+    }
+
+    /// Clear focus on a `DetailsSummary` component.
+    pub fn deselect_summary(&mut self) {
+        self.focused = false;
     }
 
     pub fn visually_select(&mut self, index: usize) -> Result<(), String> {
@@ -267,6 +339,9 @@ impl TextComponent {
 
     #[must_use]
     pub fn num_links(&self) -> usize {
+        if self.hidden {
+            return 0;
+        }
         self.meta_info
             .iter()
             .filter(|c| matches!(c.kind(), WordType::LinkData | WordType::FootnoteInline))
@@ -276,6 +351,9 @@ impl TextComponent {
     #[must_use]
     pub fn selected_heights(&self) -> Vec<usize> {
         let mut heights = Vec::new();
+        if self.hidden {
+            return heights;
+        }
 
         if let TextNode::Table(widths, row_heights) = self.kind() {
             let column_count = widths.len();
@@ -319,7 +397,7 @@ impl TextComponent {
             TextNode::Paragraph | TextNode::Task | TextNode::Quote => {
                 transform_paragraph(self, width);
             }
-            TextNode::LineBreak | TextNode::Heading => {
+            TextNode::LineBreak | TextNode::Heading | TextNode::DetailsSummary { .. } => {
                 self.height = 1;
             }
             TextNode::Table(_, _) => {
