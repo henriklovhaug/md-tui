@@ -96,7 +96,9 @@ impl Widget for TextComponent {
             TextNode::HorizontalSeparator => render_horizontal_separator(area, buf),
             TextNode::Image => todo!(),
             TextNode::Footnote => (),
-            TextNode::DetailsSummary => render_details_summary(area, buf, self),
+            TextNode::DetailsSummary { folded, .. } => {
+                render_details_summary(area, buf, self, folded);
+            }
         }
     }
 }
@@ -417,11 +419,18 @@ fn render_paragraph(area: Rect, buf: &mut Buffer, component: TextComponent, clip
     paragraph.render(area, buf);
 }
 
-fn render_details_summary(area: Rect, buf: &mut Buffer, component: TextComponent) {
-    let bold = Style::default().add_modifier(Modifier::BOLD);
-    let mut spans: Vec<Span> = vec![Span::styled("▼ ", bold)];
+fn render_details_summary(area: Rect, buf: &mut Buffer, component: TextComponent, folded: bool) {
+    let focused = component.is_focused();
+    let mut style = Style::default().add_modifier(Modifier::BOLD);
+    if focused {
+        style = style
+            .fg(color_config().link_selected_fg_color)
+            .bg(color_config().link_selected_bg_color);
+    }
+    let marker = if folded { "▶ " } else { "▼ " };
+    let mut spans: Vec<Span> = vec![Span::styled(marker, style)];
     for word in component.content_owned().into_iter().flatten() {
-        spans.push(Span::styled(word.content().to_string(), bold));
+        spans.push(Span::styled(word.content().to_string(), style));
     }
     Paragraph::new(Line::from(spans)).render(area, buf);
 }

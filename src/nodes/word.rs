@@ -73,6 +73,7 @@ impl From<MdParseEnum> for WordType {
             | MdParseEnum::CodeStr
             | MdParseEnum::Details
             | MdParseEnum::DetailsBody
+            | MdParseEnum::DetailsOpenAttr
             | MdParseEnum::DetailsSummary
             | MdParseEnum::Image
             | MdParseEnum::ItalicStr

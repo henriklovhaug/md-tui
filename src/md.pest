@@ -142,7 +142,8 @@ image          = { NEWLINE? ~ "![" ~ alt_text ~ "](" ~ link_data+ ~ ")" }
 
 comment = _{ "<!--" ~ (NEWLINE | comment_char)+ ~ "-->" }
 
-details_open_tag  = _{ ^"<details" ~ (WHITESPACE_S+ ~ ^"open")? ~ WHITESPACE_S* ~ ">" }
+details_open_attr =  { ^"open" }
+details_open_tag  = _{ ^"<details" ~ (WHITESPACE_S+ ~ details_open_attr)? ~ WHITESPACE_S* ~ ">" }
 details_close_tag = _{ ^"</details>" }
 summary_open_tag  = _{ ^"<summary>" }
 summary_close_tag = _{ ^"</summary>" }

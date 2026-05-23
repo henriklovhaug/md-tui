@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use crate::search::{compare_heading, find_and_mark};
 
 use super::{
@@ -175,6 +177,7 @@ impl ComponentRoot {
                 Component::TextComponent(comp) => Some(comp),
                 Component::Image(_) => None,
             })
+            .filter(|comp| !comp.is_hidden())
             .for_each(|comp| {
                 let height = comp.y_offset();
                 comp.content().iter().enumerate().for_each(|(index, row)| {
@@ -278,15 +281,32 @@ impl ComponentRoot {
         let mut iter = self.components.into_iter().peekable();
         while let Some(component) = iter.next() {
             let kind = component.kind();
+            let curr_ids: Vec<u32> = match &component {
+                Component::TextComponent(tc) => tc.owning_details_ids().to_vec(),
+                Component::Image(_) => Vec::new(),
+            };
             components.push(component);
             if let Some(next) = iter.peek()
                 && kind != TextNode::LineBreak
                 && next.kind() != TextNode::LineBreak
             {
-                components.push(Component::TextComponent(TextComponent::new(
-                    TextNode::LineBreak,
-                    Vec::new(),
-                )));
+                let next_ids: Vec<u32> = match next {
+                    Component::TextComponent(tc) => tc.owning_details_ids().to_vec(),
+                    Component::Image(_) => Vec::new(),
+                };
+                // An inserted LineBreak inherits the longest common
+                // outermost prefix of its two neighbors' owning-details
+                // chains, so it is hidden iff both neighbors are inside
+                // the same folded `<details>` body.
+                let shared_ids: Vec<u32> = curr_ids
+                    .iter()
+                    .zip(next_ids.iter())
+                    .take_while(|(a, b)| a == b)
+                    .map(|(a, _)| *a)
+                    .collect();
+                let mut lb = TextComponent::new(TextNode::LineBreak, Vec::new());
+                lb.set_owning_details_ids(shared_ids);
+                components.push(Component::TextComponent(lb));
             }
         }
         Self {
@@ -311,6 +331,125 @@ impl ComponentRoot {
             })
             .map(TextComponent::num_links)
             .sum()
+    }
+
+    /// Walk all components and set their `hidden` flag based on whether
+    /// any of their `owning_details_ids` references a currently-folded
+    /// `<details>` block. Must be called after parse and after every
+    /// fold-toggle so that `height()`, `num_links()`, etc. return the
+    /// post-fold values used by `set_scroll` and the renderer.
+    pub fn recompute_visibility(&mut self) {
+        let folded: HashSet<u32> = self
+            .components
+            .iter()
+            .filter_map(|f| match f {
+                Component::TextComponent(comp) => Some(comp),
+                Component::Image(_) => None,
+            })
+            .filter_map(|tc| match tc.kind() {
+                TextNode::DetailsSummary {
+                    id, folded: true, ..
+                } => Some(id),
+                _ => None,
+            })
+            .collect();
+
+        for c in self.components.iter_mut() {
+            if let Component::TextComponent(tc) = c {
+                let hidden = tc.owning_details_ids().iter().any(|id| folded.contains(id));
+                tc.set_hidden(hidden);
+            }
+        }
+    }
+
+    /// Count of `<details>` summary headers that are currently *visible*
+    /// (i.e. not hidden by an outer folded block). Used by the event
+    /// handler to bound the cyclable selection index.
+    #[must_use]
+    pub fn num_details(&self) -> usize {
+        self.components
+            .iter()
+            .filter_map(|f| match f {
+                Component::TextComponent(comp) => Some(comp),
+                Component::Image(_) => None,
+            })
+            .filter(|comp| {
+                !comp.is_hidden() && matches!(comp.kind(), TextNode::DetailsSummary { .. })
+            })
+            .count()
+    }
+
+    /// Returns `(index, y_offset)` for each visible details summary, in
+    /// document order. Parallels `link_index_and_height` — callers use it
+    /// to pick the summary nearest the current scroll position.
+    #[must_use]
+    pub fn details_index_and_height(&self) -> Vec<(usize, u16)> {
+        let mut out = Vec::new();
+        let mut idx = 0usize;
+        for c in &self.components {
+            if let Component::TextComponent(comp) = c
+                && !comp.is_hidden()
+                && matches!(comp.kind(), TextNode::DetailsSummary { .. })
+            {
+                out.push((idx, comp.y_offset()));
+                idx += 1;
+            }
+        }
+        out
+    }
+
+    /// Visually mark the `index`-th visible details summary as focused,
+    /// returning its `y_offset` so the caller can scroll it into view.
+    /// Clears any prior details focus first.
+    pub fn select_details(&mut self, index: usize) -> Result<u16, String> {
+        self.deselect_details();
+        let mut count = 0;
+        for c in self.components.iter_mut() {
+            if let Component::TextComponent(comp) = c
+                && !comp.is_hidden()
+                && matches!(comp.kind(), TextNode::DetailsSummary { .. })
+            {
+                if count == index {
+                    comp.visually_select_summary();
+                    return Ok(comp.y_offset());
+                }
+                count += 1;
+            }
+        }
+        Err(format!("Details index out of bounds: {index} >= {count}"))
+    }
+
+    /// Clear focus from whichever details summary currently has it.
+    pub fn deselect_details(&mut self) {
+        for c in self.components.iter_mut() {
+            if let Component::TextComponent(comp) = c
+                && matches!(comp.kind(), TextNode::DetailsSummary { .. })
+            {
+                comp.deselect_summary();
+            }
+        }
+    }
+
+    /// Flip the `folded` flag on the currently-focused details summary
+    /// and recompute visibility. Returns `Err` if no details summary is
+    /// focused.
+    pub fn toggle_selected_details(&mut self) -> Result<(), String> {
+        let mut toggled = false;
+        for c in self.components.iter_mut() {
+            if let Component::TextComponent(comp) = c
+                && comp.is_focused()
+                && let TextNode::DetailsSummary { folded, .. } = comp.kind()
+            {
+                comp.set_details_folded(!folded);
+                toggled = true;
+                break;
+            }
+        }
+        if !toggled {
+            return Err("No details summary is focused".to_string());
+        }
+        self.recompute_visibility();
+        Ok(())
     }
 }
 
