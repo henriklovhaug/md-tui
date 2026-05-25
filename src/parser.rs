@@ -54,7 +54,9 @@ pub fn parse_markdown(name: Option<&str>, content: &str, width: u16) -> Componen
     let children = parse_text(root_pair)
         .children_owned()
         .into_iter()
-        .dedup()
+        .dedup_by(|x, y| {
+            x.kind() == MdParseEnum::BlockSeparator && y.kind == MdParseEnum::BlockSeparator
+        })
         .collect();
 
     let parse_root = ParseRoot::new(name.map(str::to_string), children);
