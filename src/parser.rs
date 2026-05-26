@@ -508,7 +508,20 @@ fn get_leaf_nodes(node: ParseNode) -> Vec<ParseNode> {
     }
 
     if node.children().is_empty() {
-        leaf_nodes.push(node);
+        // Formatting containers (italic/bold/code/strikethrough) with no named
+        // children arise when the grammar matches only silent content — e.g.
+        // bare newlines between asterisks in CRLF documents.  Nothing to
+        // render; skip so WordType::from is never called on a container type.
+        if !matches!(
+            node.kind(),
+            MdParseEnum::ItalicStr
+                | MdParseEnum::BoldStr
+                | MdParseEnum::BoldItalicStr
+                | MdParseEnum::StrikethroughStr
+                | MdParseEnum::CodeStr
+        ) {
+            leaf_nodes.push(node);
+        }
     } else {
         for child in node.children_owned() {
             leaf_nodes.append(&mut get_leaf_nodes(child));
@@ -772,6 +785,17 @@ mod tests {
             .map(|c| c.kind())
             .collect()
     }
+
+    #[test]
+    fn italic_with_trailing_space_followed_by_italic_crlf() {
+        // italic_var_2 can match " *\r\n\r\n*" (space + asterisk + blank line +
+        // asterisk) with only silent NEWLINE iterations in the body, producing an
+        // ItalicStr node with no named children.  That must not panic.
+        let md = "*Section A*\r\n\r\n*Item with trailing space *\r\n\r\n*Section B*\r\n";
+        let kinds = component_kinds(md);
+        assert!(!kinds.is_empty());
+    }
+
 
     fn has_details_summary(kinds: &[TextNode]) -> bool {
         kinds
