@@ -2,6 +2,7 @@
 
 - (#169) Add support for HTML `<details>`/`<summary>` blocks
 - Fix autolink rule matching HTML closing tags like `</span>`
+- (#221) Fix too aggressive deduplication
 
 # Version 0.10.0
 
