@@ -19,9 +19,9 @@ impl ImageComponent {
 
         let image = picker.new_resize_protocol(image);
 
-        let (_, f_height) = picker.font_size();
+        let font = picker.font_size();
 
-        let height = cmp::min(height / u32::from(f_height), 20) as u16;
+        let height = cmp::min(height / u32::from(font.height), 20) as u16;
 
         Some(Self {
             height,
