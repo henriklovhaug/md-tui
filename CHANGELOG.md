@@ -1,4 +1,4 @@
-# Unreleased
+# Version 0.10.1
 
 - (#169) Add support for HTML `<details>`/`<summary>` blocks
 - Fix autolink rule matching HTML closing tags like `</span>`
