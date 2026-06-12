@@ -33,14 +33,13 @@ files. It focuses on keyboard navigation and functional link navigation.
 
 Prebuilt binaries with install script can be found on the release page.
 
-Using cargo: `cargo install md-tui --locked`
-
-On Arch Linux: `pacman -S md-tui`
-
-For Nix users, there's also Nix flake.
-
-On conda-forge: `pixi global install md-tui` or
-`pixi exec -s md-tui -- mdt my-file.md`
+| Target      | Method                          |
+| ----------- | ------------------------------- |
+| Arch        | `pacman -S md-tui`              |
+| Cargo       | `cargo install md-tui --locked` |
+| Conda-Forge | `pixi global install md-tui`    |
+| Homebrew    | `brew install md-tui`           |
+| Nix         | There is a flake                |
 
 ### Requirements
 
@@ -55,64 +54,64 @@ file tree.
 
 You can also pipe the content into the program. Example: `cat README.md | mdt`.
 
-## Key binds
+## Key Binds
 
 These are the default settings. See [keyboard configuration](#keyboard-actions)
 for configuration options.
 
-| Key              | Action                                                                 |
-| ---------------- | ---------------------------------------------------------------------- |
-| `j` or `<Down>`  | Scroll down                                                            |
-| `k` or `<Up>`    | Scroll up                                                              |
-| `h`              | Go down half a page                                                    |
-| `l`              | Go up half a page                                                      |
-| `d` or `<Left>`  | Scroll one page down                                                   |
-| `u` or `<Right>` | Scroll one page up                                                     |
-| `f` or `/`       | Search                                                                 |
-| `n` or `N`       | Jump to next or previous search result                                 |
-| `s` or `S`       | Enter select link mode. Different selection strategy                   |
-| `D`              | Enter select details mode. Cycle through `<details>` blocks            |
-| `K`              | Hover. Preview link targets without following them                     |
-| `<Enter>`        | Select. Open link, search, or toggle fold on selected `<details>`      |
-| `Esc`            | Go back to _normal_ mode                                               |
-| `t`              | Go back to files                                                       |
-| `b`              | Go back to previous file (file tree if no previous file)               |
-| `g`              | Go to top of file                                                      |
-| `G`              | Go to bottom of the file                                               |
-| `e`              | Edit file in `$EDITOR`                                                 |
-| `o`              | Sort files in file tree                                                |
-| `q`              | Quit the application                                                   |
+| Key              | Action                                                            |
+| ---------------- | ----------------------------------------------------------------- |
+| `j` or `<Down>`  | Scroll down                                                       |
+| `k` or `<Up>`    | Scroll up                                                         |
+| `h`              | Go down half a page                                               |
+| `l`              | Go up half a page                                                 |
+| `d` or `<Left>`  | Scroll one page down                                              |
+| `u` or `<Right>` | Scroll one page up                                                |
+| `f` or `/`       | Search                                                            |
+| `n` or `N`       | Jump to next or previous search result                            |
+| `s` or `S`       | Enter select link mode. Different selection strategy              |
+| `D`              | Enter select details mode. Cycle through `<details>` blocks       |
+| `K`              | Hover. Preview link targets without following them                |
+| `<Enter>`        | Select. Open link, search, or toggle fold on selected `<details>` |
+| `Esc`            | Go back to _normal_ mode                                          |
+| `t`              | Go back to files                                                  |
+| `b`              | Go back to previous file (file tree if no previous file)          |
+| `g`              | Go to top of file                                                 |
+| `G`              | Go to bottom of the file                                          |
+| `e`              | Edit file in `$EDITOR`                                            |
+| `o`              | Sort files in file tree                                           |
+| `q`              | Quit the application                                              |
 
-## Syntax highlighting
+## Syntax Highlighting
 
 `MD-TUI` supports syntax highlighting in code blocks for the following
 languages:
 
 - Bash/sh
 - C/C++
-- Css
+- CSS
 - Elixir
 - Go
-- Html
+- HTML
 - Java
 - JavaScript
-- Json
+- JSON
 - Lua
 - Luau
-- Ocaml
+- OCaml
 - PHP
 - Python
 - Rust
 - Scala
-- Typescript
-- Yaml
+- TypeScript
+- YAML
 
 ## Configuration
 
 The program checks for the file `~/.config/mdt/config.toml` at startup. The
 following parameters and their defaults are written below.
 
-### Keyboard actions
+### Keyboard Actions
 
 Some key actions are not configurable, including:
 
@@ -155,7 +154,7 @@ file_tree = 't'
 sort = 'o'
 ```
 
-### Colors and misc
+### Colors and Misc
 
 Setting color to `""` will not remove it, but leave it as its default. To remove
 colors, set it to `reset`.
@@ -216,7 +215,7 @@ MD-TUI supports the following link formats:
 - `[[link]]`
 - `[[link|Some title]]`
 
-## Neovim plugin
+## Neovim Plugin
 
 This application also exists as a plugin for Neovim called
 [Preview](https://github.com/henriklovhaug/Preview.nvim).
@@ -229,7 +228,7 @@ This application also exists as a plugin for Neovim called
 
 Both PRs and issues are appreciated!
 
-## Use as library
+## Use as Library
 
 It's possible to use this as a library. It's not well documented for that use,
 but the feature is there. There is one default feature attached, which is the
