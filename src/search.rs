@@ -206,38 +206,6 @@ pub fn find(query: &str, text: &str, precision: usize) -> Vec<usize> {
     result
 }
 
-/// Returns line numbers that match the query with the given precision.
-#[must_use]
-pub fn line_match(query: &str, text: Vec<&str>, precision: usize) -> Vec<usize> {
-    text.iter()
-        .enumerate()
-        .filter_map(|(i, line)| {
-            if find(query, line, precision).is_empty() {
-                None
-            } else {
-                Some(i)
-            }
-        })
-        .collect()
-}
-
-#[must_use]
-pub fn line_match_and_index(
-    query: &str,
-    lines: Vec<&str>,
-    precision: usize,
-) -> Vec<(usize, usize)> {
-    lines
-        .iter()
-        .enumerate()
-        .flat_map(|(i, line)| {
-            find(query, line, precision)
-                .into_iter()
-                .map(move |j| (i, j))
-        })
-        .collect()
-}
-
 #[must_use]
 pub fn find_with_ref<'a>(query: &str, text: Vec<&'a Word>) -> Vec<&'a Word> {
     let window_size = query
@@ -367,60 +335,6 @@ mod tests {
         let query = "wrold";
         let result = find_with_backoff(query, text);
         assert_eq!(result, vec![7]);
-    }
-
-    #[test]
-    fn test_vec_find() {
-        let text = vec!["Hello", "hello", "world", "World"];
-        let query = "world";
-        let precision = 0;
-        let result = line_match(query, text, precision);
-        assert_eq!(result, vec![2, 3]);
-    }
-
-    #[test]
-    fn test_vec_find_less_precision() {
-        let text = vec!["Hello", "hello", "world", "World"];
-        let query = "world";
-        let precision = 1;
-        let result = line_match(query, text, precision);
-        assert_eq!(result, vec![2, 3]);
-    }
-
-    #[test]
-    fn test_vec_find_with_typo() {
-        let text = vec!["Hello", "hello", "world", "World"];
-        let query = "wrold";
-        let precision = 2;
-        let result = line_match(query, text, precision);
-        assert_eq!(result, vec![2, 3]);
-    }
-
-    #[test]
-    fn test_find_line_match_and_index() {
-        let text = vec!["Hello", "hello", "world", "hello world"];
-        let query = "world";
-        let precision = 0;
-        let result = line_match_and_index(query, text, precision);
-        assert_eq!(result, vec![(2, 0), (3, 6)]);
-    }
-
-    #[test]
-    fn test_find_line_match_and_index_with_typo() {
-        let text = vec!["Hello", "hello", "world", "hello world"];
-        let query = "wrold";
-        let precision = 2;
-        let result = line_match_and_index(query, text, precision);
-        assert_eq!(result, vec![(2, 0), (3, 6)]);
-    }
-
-    #[test]
-    fn test_find_line_match_and_index_with_leading_space() {
-        let text = vec!["Hello", "hello", "world", " hello world"];
-        let query = "world";
-        let precision = 0;
-        let result = line_match_and_index(query, text, precision);
-        assert_eq!(result, vec![(2, 0), (3, 7)]);
     }
 
     #[test]
