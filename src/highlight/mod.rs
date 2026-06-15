@@ -240,10 +240,11 @@ pub fn highlight_code(language: &str, lines: &[u8]) -> HighlightInfo {
 }
 
 thread_local! {
-    /// Per-language `HighlightConfiguration` cache. Tree-sitter's
-    /// `HighlightConfiguration` is `Send` but not `Sync`, so a thread-local
-    /// keyed by language name is the simplest correct cache for a
-    /// single-threaded TUI render loop.
+    /// Per-language `HighlightConfiguration` cache: lock-free, build-on-demand
+    /// memoization that needs no synchronization at any thread count and matches
+    /// tree-sitter's per-thread `Highlighter` model. (The type is `Sync`, so a
+    /// shared `OnceLock`-per-language cache is also possible; not worth it since
+    /// highlighting is main-thread-only.)
     static HIGHLIGHT_CONFIGS: RefCell<HashMap<&'static str, HighlightConfiguration>> =
         RefCell::new(HashMap::new());
 }
