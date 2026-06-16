@@ -1496,6 +1496,7 @@ dependencies = [
  "ratatui-image",
  "serde",
  "strsim",
+ "tree-sitter",
  "tree-sitter-bash",
  "tree-sitter-c",
  "tree-sitter-cpp",
