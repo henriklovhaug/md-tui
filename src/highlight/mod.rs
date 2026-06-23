@@ -263,9 +263,7 @@ pub fn highlight_with_language(
             config.configure(&HIGHLIGHT_NAMES);
             configs.insert(lang_name, config);
         }
-        let config = configs
-            .get(lang_name)
-            .expect("inserted above if missing");
+        let config = configs.get(lang_name).expect("inserted above if missing");
 
         let mut highlighter = Highlighter::new();
         let events = highlighter

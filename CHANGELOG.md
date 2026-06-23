@@ -1,3 +1,8 @@
+# Version 0.10.2
+
+- Add version as cli arg
+- Support inline code block in header
+
 # Version 0.10.1
 
 - (#169) Add support for HTML `<details>`/`<summary>` blocks

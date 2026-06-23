@@ -43,7 +43,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     }));
 
     let args: Vec<String> = std::env::args().collect();
-    if args.get(1).is_some_and(|a| a == "--version" || a == "-V" || a == "-v") {
+    if args
+        .get(1)
+        .is_some_and(|a| a == "--version" || a == "-V" || a == "-v")
+    {
         println!("mdt {}", env!("CARGO_PKG_VERSION"));
         std::process::exit(0);
     }
