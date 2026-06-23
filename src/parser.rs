@@ -798,7 +798,6 @@ mod tests {
         assert!(!kinds.is_empty());
     }
 
-
     fn has_details_summary(kinds: &[TextNode]) -> bool {
         kinds
             .iter()
@@ -1085,6 +1084,64 @@ mod tests {
         assert!(
             lb.is_hidden(),
             "LineBreak inside a folded details body should be hidden"
+        );
+    }
+
+    #[test]
+    fn inline_code_in_heading_parses_as_single_heading() {
+        // Backtick code spans inside headings must not be split into a separate
+        // Paragraph component — the whole line should be one Heading node.
+        let md = "## Title — `Code in title`\n";
+        let kinds = component_kinds(md);
+        let heading_count = kinds.iter().filter(|k| **k == TextNode::Heading).count();
+        let paragraph_count = kinds.iter().filter(|k| **k == TextNode::Paragraph).count();
+        assert_eq!(
+            heading_count, 1,
+            "expected exactly one Heading, got {kinds:?}"
+        );
+        assert_eq!(
+            paragraph_count, 0,
+            "inline code must not spill into a Paragraph, got {kinds:?}"
+        );
+    }
+
+    #[test]
+    fn inline_code_in_heading_contains_code_word() {
+        let md = "## Service — `MyService`\n";
+        let root = parse_markdown(None, md, 80);
+        let comps = root.components();
+        let heading = comps
+            .iter()
+            .find(|c| c.kind() == TextNode::Heading)
+            .expect("no Heading found");
+        let has_code_word = heading
+            .content()
+            .iter()
+            .flatten()
+            .any(|w| w.kind() == WordType::Code);
+        assert!(
+            has_code_word,
+            "heading content should contain a Code word, got {:?}",
+            heading.content()
+        );
+    }
+
+    #[test]
+    fn inline_code_on_line_after_heading_stays_separate() {
+        // A heading must not swallow a following line that begins with an inline
+        // code span: `code`'s leading optional NEWLINE must not leak across the
+        // heading boundary.
+        let md = "# Heading\n`foo` bar\n";
+        let kinds = component_kinds(md);
+        let heading_count = kinds.iter().filter(|k| **k == TextNode::Heading).count();
+        let paragraph_count = kinds.iter().filter(|k| **k == TextNode::Paragraph).count();
+        assert_eq!(
+            heading_count, 1,
+            "expected exactly one Heading, got {kinds:?}"
+        );
+        assert_eq!(
+            paragraph_count, 1,
+            "code line after heading must be its own Paragraph, got {kinds:?}"
         );
     }
 }
