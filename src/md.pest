@@ -103,12 +103,12 @@ u_list = { indent ~ ("-" | "*") ~ WHITESPACE_S ~ sentence+ }
 o_list = { indent ~ o_list_counter ~ sentence+ }
 
 // Headings
-h1 = { "# " ~ (h_word | WHITESPACE_S)+ }
-h2 = { "## " ~ (h_word | WHITESPACE_S)+ }
-h3 = { "### " ~ (h_word | WHITESPACE_S)+ }
-h4 = { "#### " ~ (h_word | WHITESPACE_S)+ }
-h5 = { "##### " ~ (h_word | WHITESPACE_S)+ }
-h6 = { "###### " ~ (h_word | WHITESPACE_S)+ }
+h1 = { "# " ~ (h_word | (!NEWLINE ~ code) | WHITESPACE_S)+ }
+h2 = { "## " ~ (h_word | (!NEWLINE ~ code) | WHITESPACE_S)+ }
+h3 = { "### " ~ (h_word | (!NEWLINE ~ code) | WHITESPACE_S)+ }
+h4 = { "#### " ~ (h_word | (!NEWLINE ~ code) | WHITESPACE_S)+ }
+h5 = { "##### " ~ (h_word | (!NEWLINE ~ code) | WHITESPACE_S)+ }
+h6 = { "###### " ~ (h_word | (!NEWLINE ~ code) | WHITESPACE_S)+ }
 
 // Quote markings
 important = { ^"[!important]" }

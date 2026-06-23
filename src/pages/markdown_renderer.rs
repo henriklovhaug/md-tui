@@ -323,6 +323,9 @@ fn render_quote(area: Rect, buf: &mut Buffer, component: TextComponent, clip: Cl
 }
 
 fn style_heading(word: &Word, indent: u8) -> Span<'_> {
+    if word.kind() == WordType::Code {
+        return style_word_content(word, word.content());
+    }
     match indent {
         1 => Span::styled(
             word.content(),
