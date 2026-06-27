@@ -1,3 +1,8 @@
+# Version 0.10.3
+
+- Fix issue where normal text after a code string had spaces incorrectly
+  removed.
+
 # Version 0.10.2
 
 - Add version as cli arg
