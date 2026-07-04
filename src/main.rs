@@ -30,7 +30,7 @@ use ratatui::{
     style::{Color, Stylize},
     widgets::{Block, Clear},
 };
-use ratatui_image::{FilterType, Resize, StatefulImage};
+use ratatui_image::sliced::{SignedPosition, SlicedImage};
 
 const EMPTY_FILE: &str = "";
 
@@ -319,36 +319,12 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
                 f.render_widget(comp.clone(), area);
             }
             Component::Image(img) => {
-                if img.y_offset().saturating_sub(img.scroll_offset()) >= area.height
-                    || (img.y_offset() + img.height()).saturating_sub(img.scroll_offset()) == 0
-                {
-                    continue;
-                }
+                let position = SignedPosition::from((
+                    0,
+                    img.y_offset() as i16 - img.scroll_offset() as i16,
+                ));
 
-                let image = StatefulImage::default().resize(Resize::Fit(Some(FilterType::Nearest)));
-
-                // Resize height based on clipping top
-                let height = cmp::min(
-                    img.height(),
-                    (img.y_offset() + img.height()).saturating_sub(img.scroll_offset()),
-                );
-
-                // Resize height based on clipping bottom
-                let height = cmp::min(
-                    height,
-                    area.height
-                        .saturating_add(img.scroll_offset())
-                        .saturating_sub(img.y_offset()),
-                );
-
-                let inner_area = Rect::new(
-                    area.x,
-                    img.y_offset().saturating_sub(img.scroll_offset()),
-                    area.width,
-                    height,
-                );
-
-                f.render_stateful_widget(image, inner_area, img.image_mut());
+                f.render_widget(SlicedImage::new(img.image(), position), area);
             }
         }
     }
