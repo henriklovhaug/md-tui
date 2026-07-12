@@ -9,6 +9,27 @@ use crate::{
     util::general::GENERAL_CONFIG,
 };
 
+/// Smart-case normalisation: leaves `text` untouched when the query has any
+/// uppercase character, otherwise lower-cases it. Used by every search path
+/// so case sensitivity is consistent across file-tree and document search.
+fn smart_case_normalize(query: &str, text: &str) -> String {
+    if query.chars().any(char::is_uppercase) {
+        text.to_owned()
+    } else {
+        text.to_lowercase()
+    }
+}
+
+/// Window size for the multi-word fuzzy search. Two slots per word
+/// (the word itself plus a trailing space) minus one to drop the final
+/// trailing space.
+fn search_window_size(query: &str) -> usize {
+    query
+        .split_whitespace()
+        .fold(0usize, |acc, _| acc + 2)
+        .saturating_sub(1)
+}
+
 fn add_to_gitingore(path: &str, ignored_files: &mut Vec<String>) {
     let gitignore = std::fs::read_to_string(path);
     if let Ok(gitignore) = gitignore {
@@ -21,127 +42,111 @@ fn add_to_gitingore(path: &str, ignored_files: &mut Vec<String>) {
     }
 }
 
-pub fn find_md_files_channel(tx: Sender<Option<MdFile>>) {
+fn load_ignored_files() -> Vec<String> {
     let mut ignored_files = Vec::new();
-
     if GENERAL_CONFIG.gitignore {
         add_to_gitingore(".gitignore", &mut ignored_files);
     }
+    ignored_files
+}
 
-    let mut stack = VecDeque::new();
+fn get_sorted_entries(path: &std::path::Path) -> Vec<std::fs::DirEntry> {
+    if let Ok(entries) = std::fs::read_dir(path) {
+        entries
+            .flatten()
+            .sorted_unstable_by(|a, b| a.path().cmp(&b.path()))
+            .collect()
+    } else {
+        Vec::new()
+    }
+}
 
-    stack.push_back(std::path::PathBuf::from("."));
+fn should_skip_file(path: &std::path::Path, ignored_files: &[String]) -> bool {
+    let Some(path_str) = path.to_str() else {
+        return true;
+    };
 
-    while let Some(path) = stack.pop_front() {
-        for entry in if let Ok(entries) = std::fs::read_dir(&path) {
-            entries
-                .into_iter()
-                .sorted_unstable_by(|a, b| {
-                    let a = if let Ok(a) = a {
-                        a
-                    } else {
-                        return std::cmp::Ordering::Equal;
-                    };
-                    let b = if let Ok(b) = b {
-                        b
-                    } else {
-                        return std::cmp::Ordering::Equal;
-                    };
-                    a.path().cmp(&b.path())
-                })
-                .collect::<Vec<_>>()
-        } else {
-            continue;
-        } {
-            let path = if let Ok(path) = entry {
-                path.path()
-            } else {
-                continue;
-            };
-            if path.is_dir() {
-                stack.push_back(path);
-            } else if path.extension().unwrap_or_default() == "md" {
-                let (path_str, path_name) =
-                    if let (Some(path_str), Some(path_name)) = (path.to_str(), path.file_name()) {
-                        (path_str, path_name.to_str().unwrap_or("UNKNOWN"))
-                    } else {
-                        continue;
-                    };
-                // Check if the file is in the ignored files list
-                if ignored_files
-                    .iter()
-                    .any(|ignored_file| !find(ignored_file, path_str, 0).is_empty())
-                {
-                    continue;
-                }
+    ignored_files
+        .iter()
+        .any(|ignored_file| !find(ignored_file, path_str, 0).is_empty())
+}
 
-                tx.send(Some(MdFile::new(
-                    path_str.to_string(),
-                    path_name.to_string(),
-                )))
-                .unwrap();
-            } else if let (Some(file_name), Some(path)) = (path.file_name(), path.to_str())
-                && GENERAL_CONFIG.gitignore
-                && file_name == ".gitignore"
-            {
-                add_to_gitingore(path, &mut ignored_files);
-            }
+struct FileFinder {
+    ignored_files: Vec<String>,
+    stack: VecDeque<std::path::PathBuf>,
+    tx: Sender<Option<MdFile>>,
+}
+
+impl FileFinder {
+    fn new(tx: Sender<Option<MdFile>>) -> Self {
+        Self {
+            ignored_files: load_ignored_files(),
+            stack: VecDeque::from([std::path::PathBuf::from(".")]),
+            tx,
         }
     }
 
-    tx.send(None).unwrap();
+    fn find_files(mut self) {
+        while let Some(path) = self.stack.pop_front() {
+            for entry in get_sorted_entries(&path) {
+                self.process_entry(entry);
+            }
+        }
+        let _ = self.tx.send(None);
+    }
+
+    fn process_entry(&mut self, entry: std::fs::DirEntry) {
+        let path = entry.path();
+        if path.is_dir() {
+            self.stack.push_back(path);
+        } else if is_md_file(&path) {
+            self.handle_md_file(&path);
+        } else if is_gitignore(&path) && GENERAL_CONFIG.gitignore {
+            self.handle_gitignore(&path);
+        }
+    }
+
+    fn handle_md_file(&self, path: &std::path::Path) {
+        if should_skip_file(path, &self.ignored_files) {
+            return;
+        }
+
+        if let (Some(path_str), Some(path_name)) = (path.to_str(), path.file_name()) {
+            let _ = self.tx.send(Some(MdFile::new(
+                path_str.to_string(),
+                path_name.to_string_lossy().to_string(),
+            )));
+        }
+    }
+
+    fn handle_gitignore(&mut self, path: &std::path::Path) {
+        if let Some(path_str) = path.to_str() {
+            add_to_gitingore(path_str, &mut self.ignored_files);
+        }
+    }
+}
+
+fn is_md_file(path: &std::path::Path) -> bool {
+    path.extension().is_some_and(|ext| ext == "md")
+}
+
+fn is_gitignore(path: &std::path::Path) -> bool {
+    path.file_name().is_some_and(|name| name == ".gitignore")
+}
+
+pub fn find_md_files_channel(tx: Sender<Option<MdFile>>) {
+    let finder = FileFinder::new(tx);
+    finder.find_files();
 }
 
 #[must_use]
 pub fn find_md_files() -> FileTree {
-    let mut ignored_files = Vec::new();
-
-    if GENERAL_CONFIG.gitignore {
-        add_to_gitingore(".gitignore", &mut ignored_files);
-    }
+    let (tx, rx) = std::sync::mpsc::channel();
+    find_md_files_channel(tx);
 
     let mut tree = FileTree::new();
-
-    let mut stack = VecDeque::new();
-
-    stack.push_back(std::path::PathBuf::from("."));
-
-    while let Some(path) = stack.pop_front() {
-        for entry in if let Ok(entries) = std::fs::read_dir(&path) {
-            entries
-        } else {
-            continue;
-        } {
-            let path = if let Ok(path) = entry {
-                path.path()
-            } else {
-                continue;
-            };
-            if path.is_dir() {
-                stack.push_back(path);
-            } else if path.extension().unwrap_or_default() == "md" {
-                let (path_str, path_name) =
-                    if let (Some(path_str), Some(path_name)) = (path.to_str(), path.file_name()) {
-                        (path_str, path_name.to_str().unwrap_or("UNKNOWN"))
-                    } else {
-                        continue;
-                    };
-                // Check if the file is in the ignored files list
-                if ignored_files
-                    .iter()
-                    .any(|ignored_file| !find(ignored_file, path_str, 0).is_empty())
-                {
-                    continue;
-                }
-
-                tree.add_file(MdFile::new(path_str.to_string(), path_name.to_string()));
-            } else if let (Some(file_name), Some(path)) = (path.file_name(), path.to_str())
-                && GENERAL_CONFIG.gitignore
-                && file_name == ".gitignore"
-            {
-                add_to_gitingore(path, &mut ignored_files);
-            }
-        }
+    while let Ok(Some(file)) = rx.recv() {
+        tree.add_file(file);
     }
     tree.sort_name();
     tree
@@ -153,19 +158,11 @@ pub fn find_files(files: &[MdFile], query: &str) -> Vec<MdFile> {
         return files.to_vec();
     }
 
-    // Check if any char in the query is uppercase, making the search case sensitive
-    let case_sensitive = query.chars().any(char::is_uppercase);
-
     files
         .iter()
         .filter(|file| {
-            let file_path = if case_sensitive {
-                file.path.clone()
-            } else {
-                file.path.to_lowercase()
-            };
-
-            char_windows(&file_path, query.len())
+            let file_path = smart_case_normalize(query, &file.path);
+            char_windows(&file_path, query.chars().count())
                 .any(|window| damerau_levenshtein(window, query) == 0)
         })
         .cloned()
@@ -187,16 +184,10 @@ pub fn find_with_backoff(query: &str, text: &str) -> Vec<usize> {
 pub fn find(query: &str, text: &str, precision: usize) -> Vec<usize> {
     let mut result = Vec::new();
 
-    let case_sensitive = query.chars().any(char::is_uppercase);
-
-    char_windows(text, query.len())
+    char_windows(text, query.chars().count())
         .enumerate()
         .for_each(|(i, window)| {
-            let window = if case_sensitive {
-                window.to_owned()
-            } else {
-                window.to_lowercase()
-            };
+            let window = smart_case_normalize(query, window);
             let score = damerau_levenshtein(query, &window);
             if score <= precision {
                 result.push(i);
@@ -206,60 +197,17 @@ pub fn find(query: &str, text: &str, precision: usize) -> Vec<usize> {
     result
 }
 
-/// Returns line numbers that match the query with the given precision.
-#[must_use]
-pub fn line_match(query: &str, text: Vec<&str>, precision: usize) -> Vec<usize> {
-    text.iter()
-        .enumerate()
-        .filter_map(|(i, line)| {
-            if find(query, line, precision).is_empty() {
-                None
-            } else {
-                Some(i)
-            }
-        })
-        .collect()
-}
-
-#[must_use]
-pub fn line_match_and_index(
-    query: &str,
-    lines: Vec<&str>,
-    precision: usize,
-) -> Vec<(usize, usize)> {
-    lines
-        .iter()
-        .enumerate()
-        .flat_map(|(i, line)| {
-            find(query, line, precision)
-                .into_iter()
-                .map(move |j| (i, j))
-        })
-        .collect()
-}
-
 #[must_use]
 pub fn find_with_ref<'a>(query: &str, text: Vec<&'a Word>) -> Vec<&'a Word> {
-    let window_size = query
-        .split_whitespace()
-        .fold(0usize, |acc, _| acc + 2)
-        .saturating_sub(1);
-
+    let window_size = search_window_size(query);
     if window_size == 0 {
         return Vec::new();
     }
 
     text.windows(window_size)
         .filter(|word| {
-            let mut words = word.iter().map(|c| c.content()).join("");
-            let case_sensitive = query.chars().any(char::is_uppercase);
-
-            words = if case_sensitive {
-                words.clone()
-            } else {
-                words.to_lowercase()
-            };
-
+            let joined = word.iter().map(|c| c.content()).join("");
+            let words = smart_case_normalize(query, &joined);
             damerau_levenshtein(query, &words) == 0
         })
         .flatten()
@@ -268,24 +216,14 @@ pub fn find_with_ref<'a>(query: &str, text: Vec<&'a Word>) -> Vec<&'a Word> {
 }
 
 pub fn find_and_mark<'a>(query: &str, text: &'a mut Vec<&'a mut Word>) {
-    let window_size = query
-        .split_whitespace()
-        .fold(0usize, |acc, _| acc + 2)
-        .saturating_sub(1);
-
+    let window_size = search_window_size(query);
     if window_size == 0 {
         return;
     }
 
     windows_mut_for_each(text.as_mut_slice(), window_size, |window| {
-        let mut words = window.iter().map(|c| c.content()).join("");
-        let case_sensitive = query.chars().any(char::is_uppercase);
-
-        words = if case_sensitive {
-            words.clone()
-        } else {
-            words.to_lowercase()
-        };
+        let joined = window.iter().map(|c| c.content()).join("");
+        let words = smart_case_normalize(query, &joined);
 
         if damerau_levenshtein(query, &words) == 0 {
             window
@@ -307,9 +245,11 @@ fn windows_mut_for_each<T>(v: &mut [T], n: usize, f: impl Fn(&mut [T])) {
 
 fn char_windows(src: &str, win_size: usize) -> impl Iterator<Item = &'_ str> {
     src.char_indices().filter_map(move |(from, _)| {
+        // Guard against `win_size == 0`, which would underflow `win_size - 1`.
+        let last = win_size.checked_sub(1)?;
         src[from..]
             .char_indices()
-            .nth(win_size - 1)
+            .nth(last)
             .map(|(to, c)| &src[from..from + to + c.len_utf8()])
     })
 }
@@ -354,6 +294,14 @@ mod tests {
     }
 
     #[test]
+    fn find_matches_multibyte_query() {
+        // "naïve" is 5 chars but 6 bytes; the window must be sized in chars or
+        // the multi-byte query never matches. 'n' is the 3rd char (index 2).
+        let text = "a naïve approach";
+        assert_eq!(find("naïve", text, 0), vec![2]);
+    }
+
+    #[test]
     fn test_find_with_backoff() {
         let text = "Hello, world!";
         let query = "world";
@@ -367,60 +315,6 @@ mod tests {
         let query = "wrold";
         let result = find_with_backoff(query, text);
         assert_eq!(result, vec![7]);
-    }
-
-    #[test]
-    fn test_vec_find() {
-        let text = vec!["Hello", "hello", "world", "World"];
-        let query = "world";
-        let precision = 0;
-        let result = line_match(query, text, precision);
-        assert_eq!(result, vec![2, 3]);
-    }
-
-    #[test]
-    fn test_vec_find_less_precision() {
-        let text = vec!["Hello", "hello", "world", "World"];
-        let query = "world";
-        let precision = 1;
-        let result = line_match(query, text, precision);
-        assert_eq!(result, vec![2, 3]);
-    }
-
-    #[test]
-    fn test_vec_find_with_typo() {
-        let text = vec!["Hello", "hello", "world", "World"];
-        let query = "wrold";
-        let precision = 2;
-        let result = line_match(query, text, precision);
-        assert_eq!(result, vec![2, 3]);
-    }
-
-    #[test]
-    fn test_find_line_match_and_index() {
-        let text = vec!["Hello", "hello", "world", "hello world"];
-        let query = "world";
-        let precision = 0;
-        let result = line_match_and_index(query, text, precision);
-        assert_eq!(result, vec![(2, 0), (3, 6)]);
-    }
-
-    #[test]
-    fn test_find_line_match_and_index_with_typo() {
-        let text = vec!["Hello", "hello", "world", "hello world"];
-        let query = "wrold";
-        let precision = 2;
-        let result = line_match_and_index(query, text, precision);
-        assert_eq!(result, vec![(2, 0), (3, 6)]);
-    }
-
-    #[test]
-    fn test_find_line_match_and_index_with_leading_space() {
-        let text = vec!["Hello", "hello", "world", " hello world"];
-        let query = "world";
-        let precision = 0;
-        let result = line_match_and_index(query, text, precision);
-        assert_eq!(result, vec![(2, 0), (3, 7)]);
     }
 
     #[test]

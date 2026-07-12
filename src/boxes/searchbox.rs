@@ -1,8 +1,10 @@
 use ratatui::{
     buffer::Buffer,
     layout::Rect,
-    widgets::{Block, Borders, Paragraph, Widget, Wrap},
+    widgets::{Block, Borders, Widget},
 };
+
+use crate::boxes::textbox::TextBox;
 
 #[derive(Debug, Clone)]
 pub struct SearchBox {
@@ -33,8 +35,11 @@ impl SearchBox {
     }
 
     pub fn delete(&mut self) {
-        if self.cursor > 0 {
-            self.text.remove(self.cursor - 1);
+        // `cursor` tracks characters and the box only supports appending, so the
+        // cursor is always at the end of `text`; pop the last char to stay on a
+        // UTF-8 boundary (`String::remove` takes a byte index and would panic on
+        // multi-byte input).
+        if self.text.pop().is_some() {
             self.cursor -= 1;
         }
     }
@@ -97,9 +102,41 @@ impl Default for SearchBox {
 
 impl Widget for SearchBox {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let paragraph = Paragraph::new(self.text)
-            .block(Block::default().borders(Borders::BOTTOM))
-            .wrap(Wrap { trim: true });
-        paragraph.render(area, buf);
+        let block = Block::default().borders(Borders::BOTTOM);
+        let inner = block.inner(area);
+        block.render(area, buf);
+        // `self.cursor` counts characters, but `TextBox` matches the cursor
+        // against a byte index — convert so the caret renders in the right
+        // place after multi-byte input (e.g. "é").
+        let byte_cursor = self
+            .text
+            .char_indices()
+            .nth(self.cursor)
+            .map_or_else(|| self.text.len(), |(i, _)| i);
+        TextBox::new(&self.text)
+            .cursor(byte_cursor)
+            .render(inner, buf);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn delete_handles_multibyte_chars_without_panicking() {
+        let mut sb = SearchBox::new();
+        sb.insert('a');
+        sb.insert('é'); // 2 bytes — `cursor - 1` is not a byte boundary here.
+        assert_eq!(sb.cursor, 2);
+        sb.delete();
+        assert_eq!(sb.text, "a");
+        assert_eq!(sb.cursor, 1);
+        sb.delete();
+        assert_eq!(sb.text, "");
+        assert_eq!(sb.cursor, 0);
+        // Deleting past the start is a no-op.
+        sb.delete();
+        assert_eq!(sb.cursor, 0);
     }
 }

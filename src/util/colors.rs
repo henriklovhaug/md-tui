@@ -3,7 +3,6 @@ use std::{
     sync::{Arc, LazyLock, RwLock},
 };
 
-use config::{Config, Environment, File};
 use ratatui::style::Color;
 
 #[derive(Debug, Clone, Copy)]
@@ -44,13 +43,7 @@ pub struct ColorConfig {
 
 #[must_use]
 pub fn read_color_config_from_file() -> ColorConfig {
-    let config_dir = dirs::home_dir().unwrap();
-    let config_file = config_dir.join(".config").join("mdt").join("config.toml");
-    let settings = Config::builder()
-        .add_source(File::with_name(config_file.to_str().unwrap()).required(false))
-        .add_source(Environment::with_prefix("MDT").separator("_"))
-        .build()
-        .unwrap();
+    let settings = super::load_user_config();
 
     ColorConfig {
         heading_bg_color: Color::from_str(
@@ -67,7 +60,7 @@ pub fn read_color_config_from_file() -> ColorConfig {
             .unwrap_or(Color::Reset),
         striketrough_color: Color::from_str(
             &settings
-                .get_string("striketrough_color")
+                .get::<String>("striketrough_color")
                 .unwrap_or_default(),
         )
         .unwrap_or(Color::Reset),
@@ -198,12 +191,7 @@ pub struct HeadingColors {
 
 #[must_use]
 pub fn read_heading_colors_from_file() -> HeadingColors {
-    let config_dir = dirs::home_dir().unwrap();
-    let config_file = config_dir.join(".config").join("mdt").join("config.toml");
-    let settings = Config::builder()
-        .add_source(File::with_name(config_file.to_str().unwrap()).required(false))
-        .build()
-        .unwrap();
+    let settings = super::load_user_config();
 
     HeadingColors {
         level_2: settings
@@ -211,19 +199,19 @@ pub fn read_heading_colors_from_file() -> HeadingColors {
             .map(|s| Color::from_str(&s).unwrap_or(Color::Green))
             .unwrap_or(Color::Green),
         level_3: settings
-            .get_string("h3_fg_color")
+            .get::<String>("h3_fg_color")
             .map(|s| Color::from_str(&s).unwrap_or(Color::Magenta))
             .unwrap_or(Color::Magenta),
         level_4: settings
-            .get_string("h4_fg_color")
+            .get::<String>("h4_fg_color")
             .map(|s| Color::from_str(&s).unwrap_or(Color::Cyan))
             .unwrap_or(Color::Cyan),
         level_5: settings
-            .get_string("h5_fg_color")
+            .get::<String>("h5_fg_color")
             .map(|s| Color::from_str(&s).unwrap_or(Color::Yellow))
             .unwrap_or(Color::Yellow),
         level_6: settings
-            .get_string("h6_fg_color")
+            .get::<String>("h6_fg_color")
             .map(|s| Color::from_str(&s).unwrap_or(Color::LightRed))
             .unwrap_or(Color::LightRed),
     }

@@ -54,6 +54,9 @@ open = "5.3.5"
 pest = "2.8.6"
 pest_derive = "2.8.6"
 serde = { version = "1.0.228", features = ["derive"] }
+toml = "0.9.8"
+chrono = { version = "0.4.42", default-features = false, features = ["clock", "std"] }
+uuid = { version = "1.18.1", features = ["v4"] }
 strsim = "0.11.1"
 unicode-width = "0.2.2"
 ureq = { version = "3.3.0", optional = true }

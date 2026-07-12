@@ -1,31 +1,21 @@
-use std::borrow::ToOwned;
 use std::cmp;
-use std::path::Path;
 
-use itertools::Itertools;
-use ratatui::buffer::Buffer;
-use ratatui::layout::{Alignment, Rect};
-use ratatui::style::Stylize;
-use ratatui::text::Text;
-use ratatui::widgets::{HighlightSpacing, Widget};
+use crate::{
+    event_handler::viewport_height,
+    search::find_files,
+    util::{App, general::GENERAL_CONFIG},
+};
 use ratatui::{
-    style::{Modifier, Style},
-    widgets::{Block, List, ListItem, ListState, StatefulWidget},
+    Frame,
+    layout::Rect,
+    style::{Color, Style},
+    widgets::{Block, List, ListItem, ListState},
 };
 
-use crate::search::find_files;
-use crate::util::colors::color_config;
-
 #[derive(Debug, Clone)]
-enum MdFileComponent {
-    File(MdFile),
-    Spacer,
-}
-
-#[derive(Debug, Clone, Default)]
 pub struct MdFile {
-    pub path: String,
-    pub name: String,
+    pub(crate) path: String,
+    pub(crate) name: String,
 }
 
 impl MdFile {
@@ -35,97 +25,124 @@ impl MdFile {
     }
 
     #[must_use]
-    pub fn path_str(&self) -> &str {
-        &self.path
+    pub fn path(&self) -> &std::path::Path {
+        std::path::Path::new(&self.path)
     }
 
     #[must_use]
-    pub fn path(&self) -> &Path {
-        Path::new(&self.path)
+    pub fn path_str(&self) -> &str {
+        &self.path
     }
 
     #[must_use]
     pub fn name(&self) -> &str {
         &self.name
     }
-}
 
-impl From<MdFile> for ListItem<'_> {
-    fn from(val: MdFile) -> Self {
-        let mut text = Text::default();
-        text.extend([
-            val.name.clone().fg(color_config().file_tree_name_color),
-            val.path
-                .clone()
-                .italic()
-                .fg(color_config().file_tree_path_color),
-        ]);
-        ListItem::new(text)
+    pub(crate) fn sort_path(&self) -> String {
+        self.path()
+            .to_str()
+            .unwrap_or("")
+            .trim_start_matches("./")
+            .trim_start_matches(char::is_alphabetic)
+            .to_string()
     }
 }
 
-impl From<MdFileComponent> for ListItem<'_> {
-    fn from(value: MdFileComponent) -> Self {
-        match value {
-            MdFileComponent::File(f) => f.into(),
-            MdFileComponent::Spacer => ListItem::new(Text::raw("")),
-        }
-    }
+#[derive(Debug, Clone)]
+pub enum MdFileComponent {
+    File(MdFile),
+    Spacer,
 }
 
 #[derive(Debug, Clone, Default)]
 pub struct FileTree {
     all_files: Vec<MdFile>,
     files: Vec<MdFileComponent>,
-    page: u32,
-    list_state: ListState,
+    state: ListState,
+    page: usize,
     search: Option<String>,
-    loaded: bool,
+    /// Selection snapshot taken when the search box opens, so we can
+    /// restore the cursor row if the user dismisses search without
+    /// committing (Esc, or Backspace down to empty).
+    pre_search_selection: Option<usize>,
 }
 
 impl FileTree {
     #[must_use]
     pub fn new() -> Self {
-        Self {
-            all_files: Vec::new(),
-            files: Vec::new(),
-            list_state: ListState::default(),
-            page: 0,
-            search: None,
-            loaded: false,
-        }
+        Self::default()
+    }
+
+    pub fn add_file(&mut self, file: MdFile) {
+        self.all_files.push(file);
+    }
+
+    pub fn finish(&mut self) {
+        self.files = self
+            .all_files
+            .iter()
+            .cloned()
+            .flat_map(|f| vec![MdFileComponent::File(f), MdFileComponent::Spacer])
+            .collect();
+
+        self.sort_name();
     }
 
     #[must_use]
     pub fn loaded(&self) -> bool {
-        self.loaded
+        !self.all_files.is_empty()
     }
 
     #[must_use]
-    pub fn finish(self) -> Self {
-        let mut this = self;
-        this.loaded = true;
-        this
+    pub fn selected(&self) -> Option<&MdFile> {
+        let selected = self.state.selected()?;
+        match self.files.get(selected)? {
+            MdFileComponent::File(f) => Some(f),
+            MdFileComponent::Spacer => None,
+        }
     }
 
-    pub fn sort(&mut self) {
-        let filtered: Vec<&MdFile> = self
-            .files
-            .iter()
-            .filter_map(|c| match c {
-                MdFileComponent::File(f) => Some(f),
-                MdFileComponent::Spacer => None,
-            })
-            .sorted_unstable_by(|a, b| a.name.cmp(&b.name))
-            .collect();
+    pub fn next(&mut self, height: u16) {
+        let i = match self.state.selected() {
+            Some(i) => {
+                if i >= self.files.len().saturating_sub(2) {
+                    0
+                } else {
+                    i + 2
+                }
+            }
+            None => 0,
+        };
+        self.state.select(Some(i));
 
-        let spacers = vec![MdFileComponent::Spacer; filtered.len()];
+        let vh = viewport_height(height) as usize;
+        if i >= (self.page + 1) * vh {
+            self.page += 1;
+        } else if i < self.page * vh {
+            self.page = i / vh;
+        }
+    }
 
-        self.files = filtered
-            .into_iter()
-            .zip(spacers)
-            .flat_map(|(f, s)| vec![MdFileComponent::File(f.to_owned()), s])
-            .collect::<Vec<_>>();
+    pub fn previous(&mut self, height: u16) {
+        let i = match self.state.selected() {
+            Some(i) => {
+                if i == 0 {
+                    self.files.len().saturating_sub(2)
+                } else {
+                    i - 2
+                }
+            }
+            None => 0,
+        };
+        self.state.select(Some(i));
+
+        let vh = viewport_height(height) as usize;
+        if i < self.page * vh {
+            self.page = self.page.saturating_sub(1);
+        } else if i >= (self.page + 1) * vh {
+            self.page = i / vh;
+        }
     }
 
     pub fn sort_name(&mut self) {
@@ -138,25 +155,14 @@ impl FileTree {
         // Sort the files in-place by name
         files.sort_unstable_by(|a, b| match (a, b) {
             (MdFileComponent::File(fa), MdFileComponent::File(fb)) => {
-                let a = fa
-                    .path()
-                    .to_str()
-                    .unwrap()
-                    .trim_start_matches("./")
-                    .trim_start_matches(char::is_alphabetic);
-                let b = fb
-                    .path()
-                    .to_str()
-                    .unwrap()
-                    .trim_start_matches("./")
-                    .trim_start_matches(char::is_alphabetic);
+                let a = fa.sort_path();
+                let b = fb.sort_path();
 
                 b.to_lowercase().cmp(&a.to_lowercase())
             }
-            _ => unreachable!(), // This case should not happen
+            _ => unreachable!(),
         });
 
-        // Interleave files and spacers
         let mut result = Vec::with_capacity(files.len() + spacers.len());
         while let (Some(file), Some(spacer)) = (files.pop(), spacers.pop()) {
             result.push(file);
@@ -176,6 +182,7 @@ impl FileTree {
                 self.files = find_files(&self.all_files, query)
                     .into_iter()
                     .map(MdFileComponent::File)
+                    .flat_map(|f| vec![f, MdFileComponent::Spacer])
                     .collect();
             }
             None => {
@@ -183,219 +190,124 @@ impl FileTree {
                     .all_files
                     .iter()
                     .cloned()
-                    .map(MdFileComponent::File)
+                    .flat_map(|f| vec![MdFileComponent::File(f), MdFileComponent::Spacer])
                     .collect();
+                self.sort_name();
             }
         }
-        self.fill_spacers();
     }
 
-    fn fill_spacers(&mut self) {
-        let spacers = vec![MdFileComponent::Spacer; self.files.len()];
-        self.files = self
-            .files
-            .iter()
-            .cloned()
-            .zip(spacers)
-            .flat_map(|(f, s)| vec![f, s])
-            .collect::<Vec<_>>();
+    pub fn unselect(&mut self) {
+        self.state.select(None);
     }
 
-    pub fn next(&mut self, height: u16) {
-        let i = match self.list_state.selected() {
+    /// Remember the current selection so a later `restore_pre_search` can
+    /// put the cursor back if the user dismisses search without committing.
+    pub fn snapshot_pre_search(&mut self) {
+        self.pre_search_selection = self.state.selected();
+    }
+
+    /// Restore the selection saved by `snapshot_pre_search`. Falls back to
+    /// the first row if no snapshot exists or the index is now stale.
+    pub fn restore_pre_search(&mut self) {
+        let restore = self
+            .pre_search_selection
+            .take()
+            .filter(|&i| i < self.files.len());
+        match restore {
             Some(i) => {
-                if i >= self.files.len() - 2 {
-                    0
-                } else {
-                    i + 2
-                }
+                self.state.select(Some(i));
             }
-            None => 0,
-        };
-        self.page = (i / self.partition(height)) as u32;
-        self.list_state.select(Some(i));
-    }
-
-    pub fn previous(&mut self, height: u16) {
-        let i = match self.list_state.selected() {
-            Some(i) => {
-                if i == 0 {
-                    self.files.len() - 2
-                } else {
-                    i.saturating_sub(2)
-                }
-            }
-            None => 0,
-        };
-        self.page = (i / self.partition(height)) as u32;
-        self.list_state.select(Some(i));
-    }
-
-    pub fn next_page(&mut self, height: u16) {
-        let partition = self.partition(height);
-        let i = match self.list_state.selected() {
-            Some(i) => {
-                if i + partition >= self.files.len() {
-                    0
-                } else {
-                    i + partition
-                }
-            }
-            None => 0,
-        };
-        self.page = (i / partition) as u32;
-        self.list_state.select(Some(i));
-    }
-
-    pub fn previous_page(&mut self, height: u16) {
-        let partition = self.partition(height);
-        let i = match self.list_state.selected() {
-            Some(i) => {
-                if i < partition {
-                    self.files.len().saturating_sub(partition)
-                } else {
-                    i.saturating_sub(partition)
-                }
-            }
-            None => 0,
-        };
-        self.page = (i / partition) as u32;
-        self.list_state.select(Some(i));
+            None => self.first(),
+        }
     }
 
     pub fn first(&mut self) {
-        self.list_state.select(Some(0));
+        self.state.select(Some(0));
         self.page = 0;
     }
 
     pub fn last(&mut self, height: u16) {
-        let partition = self.partition(height);
-        let i = self.files.len() - 2;
-        self.list_state.select(Some(i));
-        self.page = (i / partition) as u32;
+        let i = self.files.len().saturating_sub(2);
+        self.state.select(Some(i));
+        let vh = viewport_height(height) as usize;
+        self.page = i / vh;
     }
 
-    pub fn unselect(&mut self) {
-        self.list_state.select(None);
+    pub fn next_page(&mut self, height: u16) {
+        let vh = viewport_height(height) as usize;
+        let i = match self.state.selected() {
+            Some(i) => cmp::min(i + vh, self.files.len().saturating_sub(2)),
+            None => 0,
+        };
+        self.state.select(Some(i));
+        self.page = i / vh;
     }
 
-    #[must_use]
-    pub fn selected(&self) -> Option<&MdFile> {
-        match self.list_state.selected() {
-            Some(i) => self.files.get(i).and_then(|f| match f {
-                MdFileComponent::File(f) => Some(f),
-                MdFileComponent::Spacer => None,
-            }),
-            None => None,
-        }
+    pub fn previous_page(&mut self, height: u16) {
+        let vh = viewport_height(height) as usize;
+        let i = match self.state.selected() {
+            Some(i) => i.saturating_sub(vh),
+            None => 0,
+        };
+        self.state.select(Some(i));
+        self.page = i / vh;
     }
 
-    pub fn add_file(&mut self, file: MdFile) {
-        self.all_files.push(file.clone());
-        self.files.push(MdFileComponent::File(file));
-        self.files.push(MdFileComponent::Spacer);
-    }
-
-    #[must_use]
-    pub fn files(&self) -> Vec<&MdFile> {
-        self.files
-            .iter()
-            .filter_map(|f| match f {
-                MdFileComponent::File(f) => Some(f),
-                MdFileComponent::Spacer => None,
-            })
-            .collect::<Vec<&MdFile>>()
-    }
-
-    #[must_use]
-    pub fn all_files(&self) -> &Vec<MdFile> {
-        &self.all_files
-    }
-
-    fn partition(&self, height: u16) -> usize {
-        let partition_size = usize::midpoint(height as usize, 2);
-
-        if partition_size.is_multiple_of(2) {
-            partition_size
-        } else {
-            partition_size + 1
-        }
-    }
-
-    #[must_use]
-    pub fn state(&self) -> &ListState {
-        &self.list_state
-    }
-
-    #[must_use]
     pub fn height(&self, height: u16) -> usize {
-        cmp::min(
-            self.partition(height) / 2 * 3,
-            self.files
-                .iter()
-                .filter(|f| matches!(f, MdFileComponent::File(_)))
-                .count()
-                * 3,
-        )
+        let vh = viewport_height(height) as usize;
+        cmp::min(self.files.len(), vh)
+    }
+
+    pub fn state(&self) -> &ListState {
+        &self.state
     }
 
     pub fn state_mut(&mut self) -> &mut ListState {
-        &mut self.list_state
+        &mut self.state
     }
 }
 
-impl Widget for FileTree {
-    fn render(self, area: Rect, buf: &mut Buffer) {
-        let mut state = self.state().to_owned();
-        let file_len = self.files.len();
-        let partition = self.partition(area.height);
+pub fn render_file_tree(f: &mut Frame, app: &App, file_tree: FileTree) {
+    let size = f.area();
+    let x = match GENERAL_CONFIG.centering {
+        crate::util::general::Centering::Left => 2,
+        crate::util::general::Centering::Center => {
+            if size.width > GENERAL_CONFIG.width {
+                (size.width - GENERAL_CONFIG.width) / 2
+            } else {
+                2
+            }
+        }
+        crate::util::general::Centering::Right => size
+            .width
+            .saturating_sub(GENERAL_CONFIG.width)
+            .saturating_sub(2),
+    };
 
-        let items = if let Some(iter) = self
-            .files
-            .chunks(self.partition(area.height))
-            .nth(self.page as usize)
-        {
-            iter.to_owned()
-        } else {
-            self.files
-        };
+    let vh = viewport_height(size.height);
 
-        state.select(state.selected().map(|i| i % partition));
+    let area = Rect::new(x, 2, app.width(), vh);
 
-        let y_height = items.len() / 2 * 3;
+    let items: Vec<ListItem> = file_tree
+        .files
+        .iter()
+        .skip(file_tree.page * vh as usize)
+        .take(vh as usize)
+        .map(|f| match f {
+            MdFileComponent::File(file) => ListItem::new(file.name()),
+            MdFileComponent::Spacer => ListItem::new(""),
+        })
+        .collect();
 
-        let items = List::new(items)
-            .block(
-                Block::default()
-                    .title("MD-TUI")
-                    .add_modifier(Modifier::BOLD)
-                    .title_alignment(Alignment::Center),
-            )
-            .highlight_style(
-                Style::default()
-                    .fg(color_config().file_tree_selected_fg_color)
-                    .add_modifier(Modifier::BOLD),
-            )
-            .highlight_symbol("\u{02503} ")
-            .repeat_highlight_symbol(true)
-            .highlight_spacing(HighlightSpacing::Always);
+    let list = List::new(items)
+        .block(Block::default())
+        .highlight_style(Style::default().bg(Color::Blue))
+        .highlight_symbol(">> ");
 
-        StatefulWidget::render(items, area, buf, &mut state);
+    let mut state = *file_tree.state();
+    let selected = state.selected().map(|i| i % vh as usize);
+    state.select(selected);
 
-        let area = Rect {
-            y: area.y + y_height as u16 + 2,
-            ..area
-        };
-
-        let total_pages = usize::div_ceil(file_len, partition);
-
-        let page_count_str = format!("  {}/{}", self.page + 1, total_pages);
-
-        let page_count = Text::styled(
-            page_count_str,
-            Style::default().fg(color_config().file_tree_page_count_color),
-        );
-
-        page_count.render(area, buf);
-    }
+    f.render_stateful_widget(list, area, &mut state);
 }

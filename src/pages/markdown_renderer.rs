@@ -12,15 +12,41 @@ use ratatui::{
 use crate::{
     nodes::{
         textcomponent::{
-            TABLE_CELL_PADDING, TextComponent, TextNode, content_entry_len, word_wrapping,
+            Clipping, TABLE_CELL_PADDING, TextComponent, TextNode, content_entry_len, word_wrapping,
         },
         word::{MetaData, Word, WordType},
     },
     util::{
         colors::{color_config, heading_colors},
-        general::GENERAL_CONFIG,
+        general::{Centering, GENERAL_CONFIG},
     },
 };
+
+/// Layout rectangle the markdown body is drawn into. Shared between the
+/// renderer and any input handler that needs to map screen coords back to a
+/// document position (e.g. mouse clicks).
+#[must_use = "constructing the area without using it is almost certainly a bug"]
+pub fn markdown_view_area(term_width: u16, term_height: u16, app_width: u16) -> Rect {
+    let footer_h: u16 = u16::from(GENERAL_CONFIG.footer);
+    let x = match GENERAL_CONFIG.centering {
+        Centering::Left => 2,
+        Centering::Center => {
+            let x = (term_width / 2).saturating_sub(GENERAL_CONFIG.width / 2);
+            if x > 2 { x } else { 2 }
+        }
+        Centering::Right => {
+            let x = term_width.saturating_sub(GENERAL_CONFIG.width + 2);
+            if x > 2 { x } else { 2 }
+        }
+    };
+    let reserved_bottom = if GENERAL_CONFIG.help_menu { 5 } else { 0 } + footer_h;
+    Rect {
+        x,
+        y: 0,
+        width: cmp::min(app_width.saturating_sub(3), term_width.saturating_sub(1)),
+        height: term_height.saturating_sub(reserved_bottom),
+    }
+}
 
 fn clips_upper_bound(_area: Rect, component: &TextComponent) -> bool {
     component.scroll_offset() > component.y_offset()
@@ -29,13 +55,6 @@ fn clips_upper_bound(_area: Rect, component: &TextComponent) -> bool {
 fn clips_lower_bound(area: Rect, component: &TextComponent) -> bool {
     (component.y_offset() + component.height()).saturating_sub(component.scroll_offset())
         > area.height
-}
-
-enum Clipping {
-    Both,
-    Upper,
-    Lower,
-    None,
 }
 
 impl Widget for TextComponent {
@@ -94,7 +113,7 @@ impl Widget for TextComponent {
             TextNode::Quote => render_quote(area, buf, self, clips),
             TextNode::LineBreak => (),
             TextNode::HorizontalSeparator => render_horizontal_separator(area, buf),
-            TextNode::Image => todo!(),
+            TextNode::Image => render_paragraph(area, buf, self, clips),
             TextNode::Footnote => (),
             TextNode::DetailsSummary { folded, .. } => {
                 render_details_summary(area, buf, self, folded);
@@ -143,10 +162,6 @@ fn style_word_content<'a>(word: &Word, content: impl Into<Cow<'a, str>>) -> Span
         ),
         WordType::CodeBlock(e) => Span::styled(content, e),
     }
-}
-
-fn style_word(word: &Word) -> Span<'_> {
-    style_word_content(word, word.content())
 }
 
 fn style_word_owned(word: &Word) -> Span<'static> {
@@ -253,39 +268,13 @@ fn build_table_lines(content: &[Vec<Word>], widths: &[u16], heights: &[u16]) -> 
     lines
 }
 
-fn render_quote(area: Rect, buf: &mut Buffer, component: TextComponent, clip: Clipping) {
-    let top = component
-        .scroll_offset()
-        .saturating_sub(component.y_offset());
-
+fn render_quote(area: Rect, buf: &mut Buffer, component: TextComponent, _clip: Clipping) {
     let meta = component.meta_info().to_owned();
-
-    let mut content = component.content_owned();
-    let content = match clip {
-        Clipping::Both => {
-            content.drain(0..top as usize);
-            content.drain(area.height as usize..);
-            content
-        }
-        Clipping::Upper => {
-            let len = content.len();
-            let height = area.height;
-            let offset = len - height as usize;
-            let mut content = content;
-            content.drain(0..offset);
-            content
-        }
-        Clipping::Lower => {
-            let mut content = content;
-            content.drain(area.height as usize..);
-            content
-        }
-        Clipping::None => content,
-    };
+    let (content, _) = component.clip_content(area.height);
 
     let lines = content
         .iter()
-        .map(|c| Line::from(c.iter().map(style_word).collect::<Vec<_>>()))
+        .map(|c| Line::from(c.iter().map(style_word_owned).collect::<Vec<_>>()))
         .collect::<Vec<_>>();
 
     let bar_color = if let Some(meta) = meta.first() {
@@ -315,7 +304,7 @@ fn render_quote(area: Rect, buf: &mut Buffer, component: TextComponent, clip: Cl
 
     let area = Rect {
         x: area.x + 1,
-        width: cmp::min(area.width, GENERAL_CONFIG.width) - 1,
+        width: cmp::min(area.width, GENERAL_CONFIG.width).saturating_sub(1),
         ..area
     };
 
@@ -385,36 +374,12 @@ fn render_heading(area: Rect, buf: &mut Buffer, component: TextComponent) {
     paragraph.render(area, buf);
 }
 
-fn render_paragraph(area: Rect, buf: &mut Buffer, component: TextComponent, clip: Clipping) {
-    let top = component
-        .scroll_offset()
-        .saturating_sub(component.y_offset());
-    let mut content = component.content_owned();
-    let content = match clip {
-        Clipping::Both => {
-            content.drain(0..top as usize);
-            content.drain(area.height as usize..);
-            content
-        }
-        Clipping::Upper => {
-            let len = content.len();
-            let height = area.height;
-            let offset = len - height as usize;
-            let mut content = content;
-            content.drain(0..offset);
-            content
-        }
-        Clipping::Lower => {
-            let mut content = content;
-            content.drain(area.height as usize..);
-            content
-        }
-        Clipping::None => content,
-    };
+fn render_paragraph(area: Rect, buf: &mut Buffer, component: TextComponent, _clip: Clipping) {
+    let (content, _) = component.clip_content(area.height);
 
     let lines = content
         .iter()
-        .map(|c| Line::from(c.iter().map(style_word).collect::<Vec<_>>()))
+        .map(|c| Line::from(c.iter().map(style_word_owned).collect::<Vec<_>>()))
         .collect::<Vec<_>>();
 
     let paragraph = Paragraph::new(lines);
@@ -438,36 +403,14 @@ fn render_details_summary(area: Rect, buf: &mut Buffer, component: TextComponent
     Paragraph::new(Line::from(spans)).render(area, buf);
 }
 
-fn render_list(area: Rect, buf: &mut Buffer, component: TextComponent, clip: Clipping) {
-    let top = component
-        .scroll_offset()
-        .saturating_sub(component.y_offset());
-    let mut content = component.content_owned();
-    let content = match clip {
-        Clipping::Both => {
-            content.drain(0..top as usize);
-            content.drain(area.height as usize..);
-            content
-        }
-        Clipping::Upper => {
-            let len = content.len();
-            let height = area.height;
-            let offset = len - height as usize;
-            let mut content = content;
-            content.drain(0..offset);
-            content
-        }
-        Clipping::Lower => {
-            let mut content = content;
-            content.drain(area.height as usize..);
-            content
-        }
-        Clipping::None => content,
-    };
+fn render_list(area: Rect, buf: &mut Buffer, component: TextComponent, _clip: Clipping) {
+    let (content, _) = component.clip_content(area.height);
     let content: Vec<ListItem<'_>> = content
         .iter()
         .map(|c| -> ListItem<'_> {
-            ListItem::new(Line::from(c.iter().map(style_word).collect::<Vec<_>>()))
+            ListItem::new(Line::from(
+                c.iter().map(style_word_owned).collect::<Vec<_>>(),
+            ))
         })
         .collect();
 
@@ -476,11 +419,13 @@ fn render_list(area: Rect, buf: &mut Buffer, component: TextComponent, clip: Cli
 }
 
 fn render_code_block(area: Rect, buf: &mut Buffer, component: TextComponent, clip: Clipping) {
-    let mut content = component
+    let lines = component
         .content()
         .iter()
-        .map(|c| Line::from(c.iter().map(style_word).collect::<Vec<_>>()))
+        .map(|c| Line::from(c.iter().map(style_word_owned).collect::<Vec<_>>()))
         .collect::<Vec<_>>();
+
+    let content = clip_lines(lines, area.height, &component, clip);
 
     let max_width = cmp::max(
         component
@@ -494,25 +439,6 @@ fn render_code_block(area: Rect, buf: &mut Buffer, component: TextComponent, cli
             + 2,
         area.width,
     );
-
-    match clip {
-        Clipping::Both => {
-            let top = component.scroll_offset() - component.y_offset();
-            content.drain(0..top as usize);
-            content.drain(area.height as usize..);
-        }
-        Clipping::Upper => {
-            let len = content.len();
-            let height = area.height;
-            let offset = len - height as usize;
-            // panic!("offset: {}, height: {}, len: {}", offset, height, len);
-            content.drain(0..offset);
-        }
-        Clipping::Lower => {
-            content.drain(area.height as usize..);
-        }
-        Clipping::None => (),
-    }
 
     let block = Block::default().style(Style::default().bg(color_config().code_block_bg_color));
 
@@ -544,6 +470,32 @@ fn render_code_block(area: Rect, buf: &mut Buffer, component: TextComponent, cli
     paragraph.render(area, buf);
 }
 
+fn clip_lines(
+    mut lines: Vec<Line<'static>>,
+    area_height: u16,
+    component: &TextComponent,
+    clip: Clipping,
+) -> Vec<Line<'static>> {
+    match clip {
+        Clipping::Both => {
+            let top = component
+                .scroll_offset()
+                .saturating_sub(component.y_offset());
+            lines.drain(0..top as usize);
+            lines.drain(area_height as usize..);
+        }
+        Clipping::Upper => {
+            let offset = lines.len().saturating_sub(area_height as usize);
+            lines.drain(0..offset);
+        }
+        Clipping::Lower => {
+            lines.drain(area_height as usize..);
+        }
+        Clipping::None => (),
+    }
+    lines
+}
+
 fn render_table(
     area: Rect,
     buf: &mut Buffer,
@@ -559,29 +511,8 @@ fn render_table(
         return;
     }
 
-    let top = component
-        .scroll_offset()
-        .saturating_sub(component.y_offset());
-
-    let mut lines = build_table_lines(component.content(), &widths, &heights);
-
-    let lines = match clip {
-        Clipping::Both => {
-            lines.drain(0..top as usize);
-            lines.drain(area.height as usize..);
-            lines
-        }
-        Clipping::Upper => {
-            let offset = lines.len().saturating_sub(area.height as usize);
-            lines.drain(0..offset);
-            lines
-        }
-        Clipping::Lower => {
-            lines.drain(area.height as usize..);
-            lines
-        }
-        Clipping::None => lines,
-    };
+    let lines = build_table_lines(component.content(), &widths, &heights);
+    let lines = clip_lines(lines, area.height, &component, clip);
 
     Paragraph::new(lines).render(area, buf);
 }
@@ -590,7 +521,7 @@ fn render_task(
     area: Rect,
     buf: &mut Buffer,
     component: TextComponent,
-    clip: Clipping,
+    _clip: Clipping,
     meta_info: &Word,
 ) {
     const CHECKBOX: &str = "✅ ";
@@ -612,37 +543,11 @@ fn render_task(
         ..area
     };
 
-    let top = component
-        .scroll_offset()
-        .saturating_sub(component.y_offset());
-
-    let mut content = component.content_owned();
-
-    let content = match clip {
-        Clipping::Both => {
-            content.drain(0..top as usize);
-            content.drain(area.height as usize..);
-            content
-        }
-        Clipping::Upper => {
-            let len = content.len();
-            let height = area.height;
-            let offset = len - height as usize;
-            let mut content = content;
-            content.drain(0..offset);
-            content
-        }
-        Clipping::Lower => {
-            let mut content = content;
-            content.drain(area.height as usize..);
-            content
-        }
-        Clipping::None => content,
-    };
+    let (content, _) = component.clip_content(area.height);
 
     let lines = content
         .iter()
-        .map(|c| Line::from(c.iter().map(style_word).collect::<Vec<_>>()))
+        .map(|c| Line::from(c.iter().map(style_word_owned).collect::<Vec<_>>()))
         .collect::<Vec<_>>();
 
     let paragraph = Paragraph::new(lines);
@@ -651,9 +556,11 @@ fn render_task(
 }
 
 fn render_horizontal_separator(area: Rect, buf: &mut Buffer) {
-    let paragraph = Paragraph::new(Line::from(vec![Span::raw(
-        "\u{2014}".repeat(GENERAL_CONFIG.width.into()),
-    )]));
+    // `GENERAL_CONFIG.width` is `u16::MAX` when the user configured "full
+    // terminal width" (0), so clamp to the actual draw area to avoid allocating
+    // a 65k-char string for every horizontal rule on every render.
+    let width = cmp::min(area.width, GENERAL_CONFIG.width) as usize;
+    let paragraph = Paragraph::new(Line::from(vec![Span::raw("\u{2014}".repeat(width))]));
 
     paragraph.render(area, buf);
 }
