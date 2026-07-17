@@ -1,15 +1,15 @@
 use std::cmp;
 
 use crate::{
-    event_handler::viewport_height,
     search::find_files,
-    util::{App, general::GENERAL_CONFIG},
+    util::{App, Boxes, colors::color_config, general::GENERAL_CONFIG},
 };
 use ratatui::{
     Frame,
-    layout::Rect,
-    style::{Color, Style},
-    widgets::{Block, List, ListItem, ListState},
+    layout::{Alignment, Rect},
+    style::{Modifier, Style, Stylize},
+    text::{Line, Text},
+    widgets::{Block, Clear, HighlightSpacing, List, ListItem, ListState, Paragraph},
 };
 
 #[derive(Debug, Clone)]
@@ -114,14 +114,8 @@ impl FileTree {
             }
             None => 0,
         };
+        self.page = i / self.partition(height);
         self.state.select(Some(i));
-
-        let vh = viewport_height(height) as usize;
-        if i >= (self.page + 1) * vh {
-            self.page += 1;
-        } else if i < self.page * vh {
-            self.page = i / vh;
-        }
     }
 
     pub fn previous(&mut self, height: u16) {
@@ -135,14 +129,8 @@ impl FileTree {
             }
             None => 0,
         };
+        self.page = i / self.partition(height);
         self.state.select(Some(i));
-
-        let vh = viewport_height(height) as usize;
-        if i < self.page * vh {
-            self.page = self.page.saturating_sub(1);
-        } else if i >= (self.page + 1) * vh {
-            self.page = i / vh;
-        }
     }
 
     pub fn sort_name(&mut self) {
@@ -230,33 +218,43 @@ impl FileTree {
     pub fn last(&mut self, height: u16) {
         let i = self.files.len().saturating_sub(2);
         self.state.select(Some(i));
-        let vh = viewport_height(height) as usize;
-        self.page = i / vh;
+        self.page = i / self.partition(height);
     }
 
     pub fn next_page(&mut self, height: u16) {
-        let vh = viewport_height(height) as usize;
+        let partition = self.partition(height);
         let i = match self.state.selected() {
-            Some(i) => cmp::min(i + vh, self.files.len().saturating_sub(2)),
+            Some(i) => cmp::min(i + partition, self.files.len().saturating_sub(2)),
             None => 0,
         };
         self.state.select(Some(i));
-        self.page = i / vh;
+        self.page = i / partition;
     }
 
     pub fn previous_page(&mut self, height: u16) {
-        let vh = viewport_height(height) as usize;
+        let partition = self.partition(height);
         let i = match self.state.selected() {
-            Some(i) => i.saturating_sub(vh),
+            Some(i) => i.saturating_sub(partition),
             None => 0,
         };
         self.state.select(Some(i));
-        self.page = i / vh;
+        self.page = i / partition;
+    }
+
+    /// Number of `files` entries (files + interleaved spacers) shown per page.
+    /// Rounded up to an even number so a page never ends between a file and
+    /// its trailing spacer. Kept in sync with the render area height.
+    fn partition(&self, height: u16) -> usize {
+        let partition_size = usize::midpoint(height as usize, 2);
+        if partition_size.is_multiple_of(2) {
+            partition_size
+        } else {
+            partition_size + 1
+        }
     }
 
     pub fn height(&self, height: u16) -> usize {
-        let vh = viewport_height(height) as usize;
-        cmp::min(self.files.len(), vh)
+        cmp::min(self.files.len(), self.partition(height))
     }
 
     pub fn state(&self) -> &ListState {
@@ -285,29 +283,97 @@ pub fn render_file_tree(f: &mut Frame, app: &App, file_tree: FileTree) {
             .saturating_sub(2),
     };
 
-    let vh = viewport_height(size.height);
+    // The list gets the full terminal height; paging is driven by `partition`,
+    // which is derived from this same height so the visible page matches the
+    // selection math in `next`/`previous`.
+    let area = Rect {
+        x,
+        width: app.width().saturating_sub(3),
+        ..size
+    };
 
-    let area = Rect::new(x, 2, app.width(), vh);
+    let mut state = file_tree.state().to_owned();
+    let file_len = file_tree.files.len();
+    let partition = file_tree.partition(area.height);
 
-    let items: Vec<ListItem> = file_tree
+    let page = file_tree
         .files
+        .chunks(partition)
+        .nth(file_tree.page)
+        .unwrap_or(&file_tree.files);
+
+    // Selection index is global; map it into the currently rendered page.
+    state.select(state.selected().map(|i| i % partition));
+
+    // Each file card is two lines (name + italic path) plus a spacer row.
+    let y_height = page.len() / 2 * 3;
+
+    let items: Vec<ListItem> = page
         .iter()
-        .skip(file_tree.page * vh as usize)
-        .take(vh as usize)
-        .map(|f| match f {
-            MdFileComponent::File(file) => ListItem::new(file.name()),
-            MdFileComponent::Spacer => ListItem::new(""),
+        .map(|c| match c {
+            MdFileComponent::File(file) => ListItem::new(Text::from(vec![
+                Line::from(file.name().fg(color_config().file_tree_name_color)),
+                Line::from(
+                    file.path_str()
+                        .italic()
+                        .fg(color_config().file_tree_path_color),
+                ),
+            ])),
+            MdFileComponent::Spacer => ListItem::new(Text::raw("")),
         })
         .collect();
 
     let list = List::new(items)
-        .block(Block::default())
-        .highlight_style(Style::default().bg(Color::Blue))
-        .highlight_symbol(">> ");
-
-    let mut state = *file_tree.state();
-    let selected = state.selected().map(|i| i % vh as usize);
-    state.select(selected);
+        .block(
+            Block::default()
+                .title("MD-TUI")
+                .add_modifier(Modifier::BOLD)
+                .title_alignment(Alignment::Center),
+        )
+        .highlight_style(
+            Style::default()
+                .fg(color_config().file_tree_selected_fg_color)
+                .add_modifier(Modifier::BOLD),
+        )
+        .highlight_symbol("\u{02503} ")
+        .repeat_highlight_symbol(true)
+        .highlight_spacing(HighlightSpacing::Always);
 
     f.render_stateful_widget(list, area, &mut state);
+
+    let total_pages = usize::div_ceil(file_len, partition).max(1);
+    let page_count = Paragraph::new(format!("  {}/{}", file_tree.page + 1, total_pages))
+        .style(Style::default().fg(color_config().file_tree_page_count_color));
+    let page_count_area = Rect {
+        y: area.y + y_height as u16 + 2,
+        ..area
+    };
+    f.render_widget(page_count, page_count_area);
+
+    // Bottom-anchored help overlay, sized to the collapsed hint or the full
+    // table. Mirrors the markdown view's help sizing so it never clobbers the
+    // list on short terminals. Hidden while the search box is open.
+    if GENERAL_CONFIG.help_menu && app.boxes != Boxes::Search {
+        const HELP_BLOCK_HEIGHT: u16 = 30;
+        const HELP_CONTENT_HEIGHT: u16 = 28;
+        let (block_h, content_basis, content_h) = if app.help_box.expanded() {
+            (HELP_BLOCK_HEIGHT, HELP_CONTENT_HEIGHT, HELP_CONTENT_HEIGHT)
+        } else {
+            (3, 1, 3)
+        };
+        let block_area = Rect {
+            x: area.x,
+            y: size.height.saturating_sub(block_h + 1),
+            width: area.width.saturating_sub(1),
+            height: cmp::min(block_h, size.height),
+        };
+        let help_area = Rect {
+            x: area.x + 2,
+            y: size.height.saturating_sub(content_basis + 2),
+            width: app.width().saturating_sub(5),
+            height: cmp::min(content_h, size.height),
+        };
+        f.render_widget(Clear, block_area);
+        f.render_widget(app.help_box, help_area);
+    }
 }
