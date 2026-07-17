@@ -32,6 +32,9 @@ pub struct ColorConfig {
     pub file_tree_name_color: Color,
     pub file_tree_path_color: Color,
 
+    // Comment sidebar
+    pub comment_sidebar_bg_color: Color,
+
     // Quote markings
     pub quote_important: Color,
     pub quote_warning: Color,
@@ -132,6 +135,12 @@ pub fn read_color_config_from_file() -> ColorConfig {
                 .unwrap_or_default(),
         )
         .unwrap_or(Color::DarkGray),
+        comment_sidebar_bg_color: Color::from_str(
+            &settings
+                .get::<String>("comment_sidebar_bg_color")
+                .unwrap_or_default(),
+        )
+        .unwrap_or(Color::Black),
         bold_italic_color: Color::from_str(
             &settings
                 .get::<String>("bold_italic_color")

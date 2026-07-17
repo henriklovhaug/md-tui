@@ -1,7 +1,7 @@
 use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Layout, Rect},
-    style::{Color, Modifier, Style},
+    style::{Modifier, Style},
     widgets::{Block, Borders, Paragraph, Widget, Wrap},
 };
 
@@ -15,7 +15,7 @@ use crate::util::keys::{KEY_CONFIG, display_key};
 pub const SIDEBAR_WIDTH: u16 = 32;
 const CARD_GAP: u16 = 1;
 
-/// The fundamental states a comment card can be in.
+/// Fundamental states
 #[derive(Debug, PartialEq, Eq)]
 pub enum CommentBoxState<'a> {
     Inactive(&'a Comment),
@@ -54,13 +54,18 @@ impl<'a> Widget for &CommentBox<'a> {
                 .bg(color_config().link_selected_bg_color),
         };
 
-        let mut constraints = vec![
-            Constraint::Min(0),    // Body
-            Constraint::Length(1), // Bottom border
-        ];
-        if self.header.is_some() {
-            constraints.insert(0, Constraint::Length(1));
-        }
+        let constraints = if self.header.is_some() {
+            vec![
+                Constraint::Length(1),
+                Constraint::Min(0),    // Body
+                Constraint::Length(1), // Bottom border
+            ]
+        } else {
+            vec![
+                Constraint::Min(0),    // Body
+                Constraint::Length(1), // Bottom border
+            ]
+        };
         let layout = Layout::vertical(constraints).split(area);
 
         let (body_area, border_area) = if let Some(text) = self.header {
@@ -108,7 +113,7 @@ impl<'a> Widget for CommentSideBar<'a> {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let block = Block::default()
             .borders(Borders::LEFT)
-            .style(Style::default().bg(Color::Black));
+            .style(Style::default().bg(color_config().comment_sidebar_bg_color));
         let inner = block.inner(area);
         block.render(area, buf);
 
@@ -126,13 +131,13 @@ impl<'a> Widget for CommentSideBar<'a> {
         let mut sorted_boxes = self.boxes;
         sorted_boxes.sort_by_key(|b| (b.anchor.line, b.anchor.col));
 
-        let inner_top = inner.y as i32;
-        let inner_bottom = (inner.y + inner.height) as i32;
+        let inner_top = inner.y as i16;
+        let inner_bottom = (inner.y + inner.height) as i16;
         let mut next_y_min = inner_top;
 
         for cb in &sorted_boxes {
             let height = cb.height(inner.width);
-            let preferred_y = inner_top + cb.anchor.line as i32 - self.markdown_scroll as i32;
+            let preferred_y = inner_top + cb.anchor.line as i16 - self.markdown_scroll as i16;
             let y = preferred_y.max(next_y_min);
 
             if y >= inner_bottom {
@@ -142,15 +147,15 @@ impl<'a> Widget for CommentSideBar<'a> {
             if let Some(card_area) = clip_card_area(inner, y, height) {
                 cb.render(card_area, buf);
             }
-            next_y_min = y + height as i32 + CARD_GAP as i32;
+            next_y_min = y + height as i16 + CARD_GAP as i16;
         }
     }
 }
 
-fn clip_card_area(inner: Rect, top: i32, height: u16) -> Option<Rect> {
-    let bottom = top + height as i32;
-    let inner_top = inner.y as i32;
-    let inner_bottom = (inner.y + inner.height) as i32;
+fn clip_card_area(inner: Rect, top: i16, height: u16) -> Option<Rect> {
+    let bottom = top + height as i16;
+    let inner_top = inner.y as i16;
+    let inner_bottom = (inner.y + inner.height) as i16;
     if bottom <= inner_top || top >= inner_bottom {
         return None;
     }

@@ -193,6 +193,9 @@ file_tree_page_count_color = "lightgreen"
 file_tree_path_color = "gray"
 file_tree_selected_fg_color = "lightgreen"
 
+# Comment sidebar
+comment_sidebar_bg_color = "black"
+
 # Quote bar
 quote_caution = "lightmagenta"
 quote_default = "white"
@@ -228,7 +231,7 @@ This application also exists as a plugin for Neovim called
 >
 > This version does not support images regardless of your terminal capabilities.
 
-## Comments and review
+## Comments and Review
 
 `MD-TUI` can attach freeform comments to ranges of a rendered Markdown document.
 Comments live in a sidebar and are emitted on exit as a [Sidemark](https://sidemark.org)
@@ -253,7 +256,7 @@ document. The flow:
 All of `toggle_caret` (`v`), `comment` (`c`), and `comment_select` (`Space`) are
 configurable in `config.toml` (see [Keyboard actions](#keyboard-actions)).
 
-## Claude Code review hook
+## Claude Code Review Hook
 
 A [Claude Code](https://claude.com/claude-code) `PostToolUse` hook lets you
 review Markdown that Claude writes — in `mdt`'s comment mode — and have your

@@ -10,11 +10,13 @@ use std::{
 };
 
 use md_tui::bookmarks;
+use md_tui::boxes::comment_sidebar::SIDEBAR_WIDTH;
 use md_tui::event_handler::{KeyBoardAction, handle_keyboard_input};
 use md_tui::nodes::image::ImageComponent;
 use md_tui::nodes::root::{Component, ComponentRoot};
 use md_tui::pages::file_explorer::{FileTree, MdFile};
 use md_tui::pages::footer::render_footer;
+use md_tui::pages::markdown_renderer::markdown_view_area;
 use md_tui::parser::parse_markdown;
 use md_tui::search::find_md_files_channel;
 use md_tui::util::{App, Boxes, Mode, destruct_terminal, general::GENERAL_CONFIG};
@@ -34,13 +36,6 @@ use ratatui::{
 };
 use ratatui_image::{FilterType, Resize, StatefulImage};
 
-/// Enables crossterm's standard mouse capture (DEC modes 1000+1002+1003+1006).
-/// Capture stays on for the lifetime of the app — it's enabled at startup,
-/// disabled before launching the editor (and re-enabled after), and disabled
-/// at shutdown. `handle_mouse_input` filters events itself; native terminal
-/// click+drag text selection is not available while capture is on (use the
-/// terminal's bypass modifier — Shift on Terminal.app/Kitty/WezTerm,
-/// Option on iTerm2 — to copy text to the OS clipboard).
 fn enable_mouse() {
     let _ = execute!(io::stdout(), EnableMouseCapture);
 }
@@ -52,8 +47,6 @@ fn disable_mouse() {
 const EMPTY_FILE: &str = "";
 
 fn main() -> Result<(), Box<dyn Error>> {
-    // Parse CLI before touching the terminal: a malformed flag should print
-    // an error and exit, not strand the user inside the alternate screen.
     let raw_args: Vec<String> = std::env::args().skip(1).collect();
     let parsed = match parse_cli(&raw_args) {
         Ok(p) => p,
@@ -80,8 +73,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     let mut terminal = ratatui::init();
-    // Mouse capture stays on for the lifetime of the app — see `enable_mouse`
-    // for the trade-off vs native terminal selection.
     enable_mouse();
 
     // create app and run it
@@ -91,10 +82,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     let res = run_app(&mut terminal, &mut app, tick_rate, parsed.file);
 
     disable_mouse();
-    ratatui::restore();
-
     // Restore the main screen BEFORE dumping so the YAML lands in the user's
     // shell rather than the alternate buffer (which the terminal just exited).
+    ratatui::restore();
+
     let dump_inputs = md_tui::sidemark::DumpInputs {
         document: res.as_ref().ok().and_then(|d| d.file_name.as_deref()),
         author: app.username.as_deref(),
@@ -477,11 +468,8 @@ fn handle_input(
 }
 
 fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
-    use md_tui::boxes::comment_sidebar::SIDEBAR_WIDTH;
-
     let size = f.area();
-    let area =
-        md_tui::pages::markdown_renderer::markdown_view_area(size.width, size.height, app.width());
+    let area = markdown_view_area(size.width, size.height, app.width());
 
     render_markdown_content(f, markdown, area);
     apply_comment_highlights(f, app, &area);
@@ -657,7 +645,7 @@ fn render_comment_sidebar_ui(
     area: &Rect,
     size: Rect,
 ) {
-    use md_tui::boxes::comment_sidebar::{CommentSideBar, SIDEBAR_WIDTH};
+    use md_tui::boxes::comment_sidebar::CommentSideBar;
 
     let sb_x = area.x + area.width;
     let sb_w = SIDEBAR_WIDTH.min(size.width.saturating_sub(sb_x));

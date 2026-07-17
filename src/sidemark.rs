@@ -50,7 +50,9 @@ pub fn render(inputs: DumpInputs<'_>) -> Option<String> {
     if inputs.comments.is_empty() {
         return None;
     }
-    let timestamp = chrono::Utc::now().to_rfc3339();
+    let timestamp = time::OffsetDateTime::now_utc()
+        .format(&time::format_description::well_known::Rfc3339)
+        .unwrap_or_default();
     let document = inputs.document.unwrap_or("<stdin>");
     let author = inputs.author.unwrap_or(ANONYMOUS_AUTHOR);
 
