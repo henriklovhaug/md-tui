@@ -8,3 +8,7 @@ test3.md
 test.jpeg
 test4.md
 test5.md
+
+# Local-only tool output — SonarQube scanner cache and Playwright session captures.
+.scannerwork/
+.playwright-cli/

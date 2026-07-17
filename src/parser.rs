@@ -42,6 +42,94 @@ fn tag_owning_details(components: &mut [Component], id: u32) {
 #[grammar = "md.pest"]
 pub struct MdParser;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct SourcePos {
+    pub byte: usize,
+    pub line: u32,
+    pub column: u32,
+}
+
+impl SourcePos {
+    fn new(byte: usize, line: usize, column: usize) -> Self {
+        Self {
+            byte,
+            line: line as u32,
+            column: column as u32,
+        }
+    }
+
+    fn advance(self, text: &str) -> Self {
+        let mut byte = self.byte;
+        let mut line = self.line;
+        let mut column = self.column;
+
+        for ch in text.chars() {
+            byte += ch.len_utf8();
+            if ch == '\n' {
+                line += 1;
+                column = 1;
+            } else {
+                column += 1;
+            }
+        }
+
+        Self { byte, line, column }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct SourceSpan {
+    pub start: SourcePos,
+    pub end: SourcePos,
+}
+
+impl SourceSpan {
+    #[must_use]
+    pub fn new(start: SourcePos, end: SourcePos) -> Self {
+        Self { start, end }
+    }
+
+    fn from_pest_span(span: pest::Span<'_>) -> Self {
+        let start = span.start_pos();
+        let end = span.end_pos();
+        let (start_line, start_column) = start.line_col();
+        let (end_line, end_column) = end.line_col();
+
+        Self {
+            start: SourcePos::new(start.pos(), start_line, start_column),
+            end: SourcePos::new(end.pos(), end_line, end_column),
+        }
+    }
+
+    pub(crate) fn subspan(
+        self,
+        source_text: &str,
+        start_offset: usize,
+        end_offset: usize,
+    ) -> Option<Self> {
+        let prefix = source_text.get(..start_offset)?;
+        let slice = source_text.get(start_offset..end_offset)?;
+        let start = self.start.advance(prefix);
+        let end = start.advance(slice);
+
+        Some(Self { start, end })
+    }
+
+    /// Sub-span of `take_len` bytes beginning where `suffix` starts within
+    /// `original` — i.e. at byte offset `original.len() - suffix.len()`.
+    /// `suffix` must be a trailing slice of `original`. Returns `None` if the
+    /// resulting range isn't on char boundaries of `original`.
+    pub(crate) fn subspan_of_suffix(
+        self,
+        original: &str,
+        suffix: &str,
+        take_len: usize,
+    ) -> Option<Self> {
+        let offset = original.len().saturating_sub(suffix.len());
+        self.subspan(original, offset, offset + take_len)
+    }
+}
+
 pub fn parse_markdown(name: Option<&str>, content: &str, width: u16) -> ComponentRoot {
     let root: Pairs<'_, Rule> = if let Ok(file) = MdParser::parse(Rule::txt, content) {
         file
@@ -49,7 +137,9 @@ pub fn parse_markdown(name: Option<&str>, content: &str, width: u16) -> Componen
         return ComponentRoot::new(name.map(str::to_string), Vec::new());
     };
 
-    let root_pair = root.into_iter().next().unwrap();
+    let Some(root_pair) = root.into_iter().next() else {
+        return ComponentRoot::new(name.map(str::to_string), Vec::new());
+    };
 
     let children = parse_text(root_pair)
         .children_owned()
@@ -69,12 +159,14 @@ pub fn parse_markdown(name: Option<&str>, content: &str, width: u16) -> Componen
 }
 
 fn parse_text(pair: Pair<'_, Rule>) -> ParseNode {
+    let source_span = SourceSpan::from_pest_span(pair.as_span());
     let content = if pair.as_rule() == Rule::code_line {
         pair.as_str().replace('\t', "    ").replace('\r', "")
     } else {
         pair.as_str().replace('\n', " ")
     };
-    let mut component = ParseNode::new(pair.as_rule().into(), content);
+    let mut component =
+        ParseNode::new_with_source_span(pair.as_rule().into(), content, source_span);
     let children = parse_node_children(pair.into_inner());
     component.add_children(children);
     component
@@ -160,317 +252,65 @@ fn is_url(url: &str) -> bool {
     url.starts_with("http://") || url.starts_with("https://")
 }
 
+fn word_with_source_span(
+    content: String,
+    word_type: WordType,
+    source_span: Option<SourceSpan>,
+) -> Word {
+    Word::new_with_source_span(content, word_type, source_span)
+}
+
+fn node_word(node: &ParseNode, content: String, word_type: WordType) -> Word {
+    word_with_source_span(content, word_type, node.source_span())
+}
+
+fn push_leaf_word(
+    words: &mut Vec<Word>,
+    node: &ParseNode,
+    mut content: String,
+    split_leading_space: bool,
+) {
+    let word_type = WordType::from(node.kind());
+
+    if matches!(node.kind(), MdParseEnum::WikiLink | MdParseEnum::InlineLink) {
+        words.push(node_word(node, content.clone(), WordType::LinkData));
+    }
+
+    if split_leading_space && content.starts_with(' ') {
+        content.remove(0);
+        // The stripped leading space is the first source byte.
+        let space_span = node
+            .source_span()
+            .and_then(|span| span.subspan(node.content(), 0, 1));
+        words.push(word_with_source_span(" ".to_owned(), word_type, space_span));
+
+        // `content` is the (possibly space-deduplicated) display text with its
+        // leading space stripped. Because a leaf word is `WHITESPACE_S* ~ p_char+`,
+        // it only ever has leading whitespace, so `content` is always a byte-suffix
+        // of `node.content()`. Deriving the offset from the suffix length keeps the
+        // source span byte-aligned with the displayed text regardless of how much
+        // leading whitespace was collapsed, so comment/selection anchoring stays
+        // correct (see `resolve_selection_on_word`).
+        let source_span = node
+            .source_span()
+            .and_then(|span| span.subspan_of_suffix(node.content(), &content, content.len()));
+        words.push(word_with_source_span(content, word_type, source_span));
+    } else {
+        words.push(node_word(node, content, word_type));
+    }
+}
+
 fn parse_component(parse_node: ParseNode) -> Component {
     match parse_node.kind() {
-        MdParseEnum::Image => {
-            let leaf_nodes = get_leaf_nodes(parse_node);
-            let mut alt_text = String::new();
-            let mut image = None;
-            for node in leaf_nodes {
-                if node.kind() == MdParseEnum::AltText {
-                    node.content().clone_into(&mut alt_text);
-                } else if is_url(node.content()) {
-                    #[cfg(feature = "network")]
-                    {
-                        let mut buf = Vec::new();
-                        image = ureq::get(node.content()).call().ok().and_then(|b| {
-                            let noe = b.into_body().read_to_vec();
-                            noe.ok().and_then(|b| {
-                                buf = b;
-                                image::load_from_memory(&buf).ok()
-                            })
-                        });
-                    }
-                    #[cfg(not(feature = "network"))]
-                    {
-                        image = None;
-                    }
-                } else {
-                    image = ImageReader::open(node.content())
-                        .ok()
-                        .and_then(|r| r.decode().ok());
-                }
-            }
-
-            if let Some(img) = image.as_ref() {
-                let height = img.height();
-
-                let comp = ImageComponent::new(img.to_owned(), height, alt_text.clone());
-
-                if let Some(comp) = comp {
-                    Component::Image(comp)
-                } else {
-                    let word = [Word::new(format!("[{alt_text}]"), WordType::Normal)];
-
-                    let comp = TextComponent::new(TextNode::Paragraph, word.into());
-                    Component::TextComponent(comp)
-                }
-            } else {
-                let word = [
-                    Word::new("Image".to_string(), WordType::Normal),
-                    Word::new(" ".to_owned(), WordType::Normal),
-                    Word::new("not".to_owned(), WordType::Normal),
-                    Word::new(" ".to_owned(), WordType::Normal),
-                    Word::new("found".to_owned(), WordType::Normal),
-                    Word::new("/".to_owned(), WordType::Normal),
-                    Word::new("fetched".to_owned(), WordType::Normal),
-                    Word::new(" ".to_owned(), WordType::Normal),
-                    Word::new(format!("[{alt_text}]"), WordType::Normal),
-                ];
-
-                let comp = TextComponent::new(TextNode::Paragraph, word.into());
-                Component::TextComponent(comp)
-            }
-        }
-
-        MdParseEnum::Task => {
-            let leaf_nodes = get_leaf_nodes(parse_node);
-            let mut words = Vec::new();
-            for node in leaf_nodes {
-                let word_type = WordType::from(node.kind());
-
-                let mut content: String = node
-                    .content()
-                    .chars()
-                    .dedup_by(|x, y| *x == ' ' && *y == ' ')
-                    .collect();
-
-                if matches!(node.kind(), MdParseEnum::WikiLink | MdParseEnum::InlineLink) {
-                    let comp = Word::new(content.clone(), WordType::LinkData);
-                    words.push(comp);
-                }
-
-                if content.starts_with(' ') {
-                    content.remove(0);
-                    let comp = Word::new(" ".to_owned(), word_type);
-                    words.push(comp);
-                }
-                words.push(Word::new(content, word_type));
-            }
-            Component::TextComponent(TextComponent::new(TextNode::Task, words))
-        }
-
-        MdParseEnum::Quote => {
-            let leaf_nodes = get_leaf_nodes(parse_node);
-            let mut words = Vec::new();
-            for node in leaf_nodes {
-                let word_type = WordType::from(node.kind());
-                let mut content = node.content().to_owned();
-
-                if matches!(node.kind(), MdParseEnum::WikiLink | MdParseEnum::InlineLink) {
-                    let comp = Word::new(content.clone(), WordType::LinkData);
-                    words.push(comp);
-                }
-                if content.starts_with(' ') {
-                    content.remove(0);
-                    let comp = Word::new(" ".to_owned(), word_type);
-                    words.push(comp);
-                }
-                words.push(Word::new(content, word_type));
-            }
-            if let Some(w) = words.first_mut() {
-                w.set_content(w.content().trim_start().to_owned());
-            }
-            Component::TextComponent(TextComponent::new(TextNode::Quote, words))
-        }
-
-        MdParseEnum::Heading => {
-            let indent = parse_node
-                .content()
-                .chars()
-                .take_while(|c| *c == '#')
-                .count();
-            let leaf_nodes = get_leaf_nodes(parse_node);
-            let mut words = Vec::new();
-
-            words.push(Word::new(
-                String::new(),
-                WordType::MetaInfo(MetaData::HeadingLevel(indent as u8)),
-            ));
-
-            if indent > 1 {
-                words.push(Word::new(
-                    format!("{} ", "#".repeat(indent)),
-                    WordType::Normal,
-                ));
-            }
-
-            for node in leaf_nodes {
-                let word_type = WordType::from(node.kind());
-                let mut content = node
-                    .content()
-                    .to_owned()
-                    .chars()
-                    .dedup_by(|x, y| *x == ' ' && *y == ' ')
-                    .collect::<String>();
-
-                if matches!(node.kind(), MdParseEnum::WikiLink | MdParseEnum::InlineLink) {
-                    let comp = Word::new(content.clone(), WordType::LinkData);
-                    words.push(comp);
-                }
-
-                if content.starts_with(' ') {
-                    content.remove(0);
-                    let comp = Word::new(" ".to_owned(), word_type);
-                    words.push(comp);
-                }
-                words.push(Word::new(content, word_type));
-            }
-
-            if let Some(w) = words
-                .iter_mut()
-                .filter(|f| f.kind() == WordType::Normal)
-                .nth(1)
-                && indent > 1
-            {
-                w.set_content(w.content().trim_start().to_owned());
-            }
-
-            Component::TextComponent(TextComponent::new(TextNode::Heading, words))
-        }
-
-        MdParseEnum::Paragraph => {
-            let leaf_nodes = get_leaf_nodes(parse_node);
-            let mut words = Vec::new();
-            for node in leaf_nodes {
-                let word_type = WordType::from(node.kind());
-                let mut content = node.content().to_owned();
-
-                if matches!(node.kind(), MdParseEnum::WikiLink | MdParseEnum::InlineLink) {
-                    let comp = Word::new(content.clone(), WordType::LinkData);
-                    words.push(comp);
-                }
-
-                if content.starts_with(' ') {
-                    content.remove(0);
-                    let comp = Word::new(" ".to_owned(), word_type);
-                    words.push(comp);
-                }
-                words.push(Word::new(content, word_type));
-            }
-            if let Some(w) = words.first_mut() {
-                w.set_content(w.content().trim_start().to_owned());
-            }
-            Component::TextComponent(TextComponent::new(TextNode::Paragraph, words))
-        }
-
-        MdParseEnum::CodeBlock => {
-            let leaf_nodes = get_leaf_nodes(parse_node);
-            let mut words = Vec::new();
-
-            let mut space_indented = false;
-
-            for node in leaf_nodes {
-                if node.kind() == MdParseEnum::CodeBlockStrSpaceIndented {
-                    space_indented = true;
-                }
-                let word_type = WordType::from(node.kind());
-                let content = node.content().to_owned();
-                words.push(vec![Word::new(content, word_type)]);
-            }
-
-            if space_indented {
-                words.push(vec![Word::new(
-                    " ".to_owned(),
-                    WordType::CodeBlock(Color::Reset),
-                )]);
-            }
-
-            Component::TextComponent(TextComponent::new_formatted(TextNode::CodeBlock, words))
-        }
-
-        MdParseEnum::ListContainer => {
-            let mut words = Vec::new();
-            for child in parse_node.children_owned() {
-                let kind = child.kind();
-                let leaf_nodes = get_leaf_nodes(child);
-                let mut inner_words = Vec::new();
-                for node in leaf_nodes {
-                    let word_type = WordType::from(node.kind());
-
-                    let mut content = match node.kind() {
-                        MdParseEnum::Indent => node.content().to_owned(),
-                        _ => node
-                            .content()
-                            .chars()
-                            .dedup_by(|x, y| *x == ' ' && *y == ' ')
-                            .collect(),
-                    };
-
-                    if matches!(node.kind(), MdParseEnum::WikiLink | MdParseEnum::InlineLink) {
-                        let comp = Word::new(content.clone(), WordType::LinkData);
-                        inner_words.push(comp);
-                    }
-                    if content.starts_with(' ') && node.kind() != MdParseEnum::Indent {
-                        content.remove(0);
-                        let comp = Word::new(" ".to_owned(), word_type);
-                        inner_words.push(comp);
-                    }
-
-                    inner_words.push(Word::new(content, word_type));
-                }
-                if kind == MdParseEnum::UnorderedList {
-                    inner_words.push(Word::new(
-                        "X".to_owned(),
-                        WordType::MetaInfo(MetaData::UList),
-                    ));
-                    let list_symbol = Word::new("• ".to_owned(), WordType::ListMarker);
-                    inner_words.insert(1, list_symbol);
-                } else if kind == MdParseEnum::OrderedList {
-                    inner_words.push(Word::new(
-                        "X".to_owned(),
-                        WordType::MetaInfo(MetaData::OList),
-                    ));
-                }
-                words.push(inner_words);
-            }
-            Component::TextComponent(TextComponent::new_formatted(TextNode::List, words))
-        }
-
-        MdParseEnum::Table => {
-            let mut words = Vec::new();
-            let mut meta_info = Vec::new();
-            for cell in parse_node.children_owned() {
-                if cell.kind() == MdParseEnum::TableSeparator {
-                    meta_info.push(Word::new(
-                        cell.content().to_owned(),
-                        WordType::MetaInfo(MetaData::ColumnsCount),
-                    ));
-                    continue;
-                }
-                let mut inner_words = Vec::new();
-
-                if cell.children().is_empty() {
-                    words.push(inner_words);
-                    continue;
-                }
-
-                for word in get_leaf_nodes(cell) {
-                    let word_type = WordType::from(word.kind());
-                    let mut content = word.content().to_owned();
-
-                    if matches!(word.kind(), MdParseEnum::WikiLink | MdParseEnum::InlineLink) {
-                        let comp = Word::new(content.clone(), WordType::LinkData);
-                        inner_words.push(comp);
-                    }
-
-                    if content.starts_with(' ') {
-                        content.remove(0);
-                        let comp = Word::new(" ".to_owned(), word_type);
-                        inner_words.push(comp);
-                    }
-
-                    inner_words.push(Word::new(content, word_type));
-                }
-                words.push(inner_words);
-            }
-            Component::TextComponent(TextComponent::new_formatted_with_meta(
-                TextNode::Table(vec![], vec![]),
-                words,
-                meta_info,
-            ))
-        }
-
+        MdParseEnum::Image => parse_image(parse_node),
+        MdParseEnum::Task => parse_task(parse_node),
+        MdParseEnum::Quote => parse_quote(parse_node),
+        MdParseEnum::Heading => parse_heading(parse_node),
+        MdParseEnum::Paragraph => parse_paragraph(parse_node),
+        MdParseEnum::CodeBlock => parse_code_block(parse_node),
+        MdParseEnum::ListContainer => parse_list_container(parse_node),
+        MdParseEnum::Table => parse_table(parse_node),
+        MdParseEnum::Footnote => parse_footnote(parse_node),
         MdParseEnum::BlockSeparator => {
             Component::TextComponent(TextComponent::new(TextNode::LineBreak, Vec::new()))
         }
@@ -478,21 +318,284 @@ fn parse_component(parse_node: ParseNode) -> Component {
             TextNode::HorizontalSeparator,
             Vec::new(),
         )),
-        MdParseEnum::Footnote => {
-            let mut words = Vec::new();
-            let foot_ref = parse_node.children().first().unwrap().to_owned();
-            words.push(Word::new(foot_ref.content, WordType::FootnoteData));
-            let _rest = parse_node
-                .children_owned()
-                .into_iter()
-                .skip(1)
-                .map(|e| e.content)
-                .collect::<String>();
-            words.push(Word::new(_rest, WordType::Footnote));
-            Component::TextComponent(TextComponent::new(TextNode::Footnote, words))
-        }
-        _ => todo!("Not implemented for {:?}", parse_node.kind()),
+        // Any node kind the higher-level parser doesn't route here is rendered as
+        // an empty paragraph rather than panicking, so grammar drift degrades
+        // gracefully instead of taking down the whole render.
+        _ => Component::TextComponent(TextComponent::new(TextNode::Paragraph, Vec::new())),
     }
+}
+
+fn parse_image(node: ParseNode) -> Component {
+    let leaf_nodes = get_leaf_nodes(node);
+    let mut alt_text = String::new();
+    let mut image = None;
+    for node in leaf_nodes {
+        if node.kind() == MdParseEnum::AltText {
+            node.content().clone_into(&mut alt_text);
+        } else if is_url(node.content()) {
+            #[cfg(feature = "network")]
+            {
+                let mut buf = Vec::new();
+                image = ureq::get(node.content()).call().ok().and_then(|b| {
+                    let noe = b.into_body().read_to_vec();
+                    noe.ok().and_then(|b| {
+                        buf = b;
+                        image::load_from_memory(&buf).ok()
+                    })
+                });
+            }
+            #[cfg(not(feature = "network"))]
+            {
+                let _ = node;
+                image = None;
+            }
+        } else {
+            image = ImageReader::open(node.content())
+                .ok()
+                .and_then(|r| r.decode().ok());
+        }
+    }
+
+    if let Some(img) = image.as_ref() {
+        let height = img.height();
+
+        let comp = ImageComponent::new(img.to_owned(), height, alt_text.clone());
+
+        if let Some(comp) = comp {
+            Component::Image(comp)
+        } else {
+            let word = [Word::new(format!("[{alt_text}]"), WordType::Normal)];
+
+            let comp = TextComponent::new(TextNode::Paragraph, word.into());
+            Component::TextComponent(comp)
+        }
+    } else {
+        let words = vec![
+            Word::new("Image not found/fetched ".to_owned(), WordType::Normal),
+            Word::new(format!("[{alt_text}]"), WordType::Normal),
+        ];
+
+        let comp = TextComponent::new(TextNode::Paragraph, words);
+        Component::TextComponent(comp)
+    }
+}
+
+fn parse_task(node: ParseNode) -> Component {
+    let leaf_nodes = get_leaf_nodes(node);
+    let mut words = Vec::new();
+    for node in leaf_nodes {
+        let mut content: String = node
+            .content()
+            .chars()
+            .dedup_by(|x, y| *x == ' ' && *y == ' ')
+            .collect();
+        push_leaf_word(&mut words, &node, std::mem::take(&mut content), true);
+    }
+    Component::TextComponent(TextComponent::new(TextNode::Task, words))
+}
+
+fn parse_quote(node: ParseNode) -> Component {
+    let leaf_nodes = get_leaf_nodes(node);
+    let mut words = Vec::new();
+    for node in leaf_nodes {
+        let mut content = node.content().to_owned();
+        push_leaf_word(&mut words, &node, std::mem::take(&mut content), true);
+    }
+    if let Some(w) = words.first_mut() {
+        w.set_content(w.content().trim_start().to_owned());
+    }
+    Component::TextComponent(TextComponent::new(TextNode::Quote, words))
+}
+
+fn parse_heading(node: ParseNode) -> Component {
+    // Markdown headings only go up to level 6; clamp so a pathological run of
+    // `#` can't overflow the `u8` level or allocate an oversized prefix string.
+    let indent = node
+        .content()
+        .chars()
+        .take_while(|c| *c == '#')
+        .count()
+        .min(6);
+    let leaf_nodes = get_leaf_nodes(node);
+    let mut words = Vec::new();
+
+    words.push(Word::new(
+        String::new(),
+        WordType::MetaInfo(MetaData::HeadingLevel(indent as u8)),
+    ));
+
+    if indent > 1 {
+        words.push(Word::new(
+            format!("{} ", "#".repeat(indent)),
+            WordType::Normal,
+        ));
+    }
+
+    for node in leaf_nodes {
+        let mut content: String = node
+            .content()
+            .chars()
+            .dedup_by(|x, y| *x == ' ' && *y == ' ')
+            .collect();
+        push_leaf_word(&mut words, &node, std::mem::take(&mut content), true);
+    }
+
+    if let Some(w) = words
+        .iter_mut()
+        .filter(|f| f.kind() == WordType::Normal)
+        .nth(1)
+        && indent > 1
+    {
+        w.set_content(w.content().trim_start().to_owned());
+    }
+
+    Component::TextComponent(TextComponent::new(TextNode::Heading, words))
+}
+
+fn parse_paragraph(node: ParseNode) -> Component {
+    let leaf_nodes = get_leaf_nodes(node);
+    let mut words = Vec::new();
+    for node in leaf_nodes {
+        let mut content = node.content().to_owned();
+        push_leaf_word(&mut words, &node, std::mem::take(&mut content), true);
+    }
+    if let Some(w) = words.first_mut() {
+        w.set_content(w.content().trim_start().to_owned());
+    }
+    Component::TextComponent(TextComponent::new(TextNode::Paragraph, words))
+}
+
+fn parse_code_block(node: ParseNode) -> Component {
+    let leaf_nodes = get_leaf_nodes(node);
+    let mut words = Vec::new();
+
+    let mut space_indented = false;
+
+    for node in leaf_nodes {
+        if node.kind() == MdParseEnum::CodeBlockStrSpaceIndented {
+            space_indented = true;
+        }
+        let word_type = WordType::from(node.kind());
+        let content = node.content().to_owned();
+        words.push(vec![node_word(&node, content, word_type)]);
+    }
+
+    if space_indented {
+        words.push(vec![Word::new(
+            " ".to_owned(),
+            WordType::CodeBlock(Color::Reset),
+        )]);
+    }
+
+    Component::TextComponent(TextComponent::new_formatted(TextNode::CodeBlock, words))
+}
+
+fn parse_list_container(node: ParseNode) -> Component {
+    let mut words = Vec::new();
+    for child in node.children_owned() {
+        let kind = child.kind();
+        let leaf_nodes = get_leaf_nodes(child);
+        let mut inner_words = Vec::new();
+        for node in leaf_nodes {
+            let mut content = match node.kind() {
+                MdParseEnum::Indent => node.content().to_owned(),
+                _ => node
+                    .content()
+                    .chars()
+                    .dedup_by(|x, y| *x == ' ' && *y == ' ')
+                    .collect(),
+            };
+            push_leaf_word(
+                &mut inner_words,
+                &node,
+                std::mem::take(&mut content),
+                node.kind() != MdParseEnum::Indent,
+            );
+        }
+        if kind == MdParseEnum::UnorderedList {
+            inner_words.push(Word::new(
+                "X".to_owned(),
+                WordType::MetaInfo(MetaData::UList),
+            ));
+            let list_symbol = Word::new("• ".to_owned(), WordType::ListMarker);
+            inner_words.insert(1, list_symbol);
+        } else if kind == MdParseEnum::OrderedList {
+            inner_words.push(Word::new(
+                "X".to_owned(),
+                WordType::MetaInfo(MetaData::OList),
+            ));
+        }
+        words.push(inner_words);
+    }
+    Component::TextComponent(TextComponent::new_formatted(TextNode::List, words))
+}
+
+fn parse_table(node: ParseNode) -> Component {
+    let mut words = Vec::new();
+    let mut meta_info = Vec::new();
+    for cell in node.children_owned() {
+        if cell.kind() == MdParseEnum::TableSeparator {
+            meta_info.push(node_word(
+                &cell,
+                cell.content().to_owned(),
+                WordType::MetaInfo(MetaData::ColumnsCount),
+            ));
+            continue;
+        }
+        let mut inner_words = Vec::new();
+
+        if cell.children().is_empty() {
+            words.push(inner_words);
+            continue;
+        }
+
+        for word in get_leaf_nodes(cell) {
+            let mut content = word.content().to_owned();
+            push_leaf_word(&mut inner_words, &word, std::mem::take(&mut content), true);
+        }
+        words.push(inner_words);
+    }
+    Component::TextComponent(TextComponent::new_formatted_with_meta(
+        TextNode::Table(vec![], vec![]),
+        words,
+        meta_info,
+    ))
+}
+
+fn parse_footnote(node: ParseNode) -> Component {
+    let mut words = Vec::new();
+    let Some(foot_ref) = node.children().first().cloned() else {
+        return Component::TextComponent(TextComponent::new(TextNode::Footnote, words));
+    };
+    words.push(node_word(
+        &foot_ref,
+        foot_ref.content().to_owned(),
+        WordType::FootnoteData,
+    ));
+    let rest_children = node.children();
+    let rest_span = if rest_children.len() > 1 {
+        match (
+            rest_children.get(1).and_then(ParseNode::source_span),
+            rest_children.last().and_then(ParseNode::source_span),
+        ) {
+            (Some(start), Some(end)) => Some(SourceSpan::new(start.start, end.end)),
+            _ => None,
+        }
+    } else {
+        None
+    };
+    let footnote_rest = node
+        .children()
+        .iter()
+        .skip(1)
+        .map(ParseNode::content)
+        .collect::<String>();
+    words.push(word_with_source_span(
+        footnote_rest,
+        WordType::Footnote,
+        rest_span,
+    ));
+    Component::TextComponent(TextComponent::new(TextNode::Footnote, words))
 }
 
 fn get_leaf_nodes(node: ParseNode) -> Vec<ParseNode> {
@@ -602,15 +705,36 @@ impl ParseRoot {
 pub struct ParseNode {
     kind: MdParseEnum,
     content: String,
+    source_span: Option<SourceSpan>,
     children: Vec<ParseNode>,
 }
 
 impl ParseNode {
     #[must_use]
     pub fn new(kind: MdParseEnum, content: String) -> Self {
+        Self::new_synthetic(kind, content)
+    }
+
+    #[must_use]
+    pub fn new_with_source_span(
+        kind: MdParseEnum,
+        content: String,
+        source_span: SourceSpan,
+    ) -> Self {
         Self {
             kind,
             content,
+            source_span: Some(source_span),
+            children: Vec::new(),
+        }
+    }
+
+    #[must_use]
+    pub fn new_synthetic(kind: MdParseEnum, content: String) -> Self {
+        Self {
+            kind,
+            content,
+            source_span: None,
             children: Vec::new(),
         }
     }
@@ -623,6 +747,11 @@ impl ParseNode {
     #[must_use]
     pub fn content(&self) -> &str {
         &self.content
+    }
+
+    #[must_use]
+    pub fn source_span(&self) -> Option<SourceSpan> {
+        self.source_span
     }
 
     pub fn add_children(&mut self, children: Vec<ParseNode>) {
@@ -764,6 +893,10 @@ impl From<Rule> for MdParseEnum {
             Rule::alt_word | Rule::alt_text => Self::AltText,
             Rule::footnote_ref => Self::FootnoteRef,
             Rule::footnote => Self::Footnote,
+            // Structural / character rules that the higher-level parser
+            // never converts directly. Fall back to Paragraph so any
+            // future grammar drift produces benign output instead of a
+            // runtime panic.
             Rule::heading_prefix
             | Rule::alt_char
             | Rule::b_char
@@ -778,11 +911,14 @@ impl From<Rule> for MdParseEnum {
             | Rule::s_char
             | Rule::WHITESPACE_S
             | Rule::wiki_link
-            | Rule::footnote_ref_container
-            | Rule::details_open_tag
+            | Rule::footnote_ref_container => Self::Paragraph,
+            // `<details>`/`<summary>` tag markers are consumed structurally by
+            // `parse_details` and never converted directly. Fall back to Paragraph
+            // rather than panicking if a malformed tag reaches conversion.
+            Rule::details_open_tag
             | Rule::details_close_tag
             | Rule::summary_open_tag
-            | Rule::summary_close_tag => todo!(),
+            | Rule::summary_close_tag => Self::Paragraph,
         }
     }
 }
@@ -1193,5 +1329,82 @@ mod tests {
             heading_text("##    Many   spaces   here\n"),
             "## Many spaces here"
         );
+    }
+
+    fn parse_node(rule: Rule, input: &str) -> ParseNode {
+        let pair = MdParser::parse(rule, input).unwrap().next().unwrap();
+        parse_text(pair)
+    }
+
+    #[test]
+    fn parse_text_captures_source_span_metadata() {
+        let node = parse_node(Rule::paragraph, "hello world");
+
+        assert_eq!(
+            node.source_span(),
+            Some(SourceSpan::new(
+                SourcePos {
+                    byte: 0,
+                    line: 1,
+                    column: 1,
+                },
+                SourcePos {
+                    byte: 11,
+                    line: 1,
+                    column: 12,
+                },
+            ))
+        );
+
+        let child = node.children().first().unwrap();
+        assert!(child.source_span().is_some());
+    }
+
+    #[test]
+    fn source_backed_words_keep_spans_while_synthetic_words_do_not() {
+        let component = match parse_component(parse_node(Rule::heading, "## heading")) {
+            Component::TextComponent(component) => component,
+            Component::Image(_) => panic!("expected text component"),
+        };
+
+        let words: Vec<&Word> = component.content().iter().flatten().collect();
+
+        assert_eq!(
+            words
+                .iter()
+                .find(|word| word.content() == "## ")
+                .unwrap()
+                .source_span(),
+            None
+        );
+        assert!(
+            words
+                .iter()
+                .find(|word| word.content() == "heading")
+                .unwrap()
+                .source_span()
+                .is_some()
+        );
+    }
+
+    #[test]
+    fn deduped_word_span_stays_byte_aligned_with_content() {
+        // A list/task leaf with a multi-space run between words has its display
+        // text space-collapsed, but its source span must still point at the exact
+        // source bytes so comment/selection anchoring resolves to the right text.
+        let input = "- foo   bar";
+        let component = match parse_component(parse_node(Rule::list_container, input)) {
+            Component::TextComponent(component) => component,
+            Component::Image(_) => panic!("expected text component"),
+        };
+
+        let words: Vec<&Word> = component.content().iter().flatten().collect();
+        let bar = words
+            .iter()
+            .find(|word| word.content() == "bar")
+            .expect("expected a 'bar' word");
+        let span = bar.source_span().expect("'bar' should carry a source span");
+
+        assert_eq!(&input[span.start.byte..span.end.byte], "bar");
     }
 }

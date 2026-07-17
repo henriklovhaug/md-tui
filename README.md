@@ -13,6 +13,8 @@
     - [Colors and misc](#colors-and-misc)
   - [Links](#links)
   - [Neovim plugin](#neovim-plugin)
+  - [Comments and review](#comments-and-review)
+  - [Claude Code review hook](#claude-code-review-hook)
   - [Contributions](#contributions)
   - [Use as library](#use-as-library)
 
@@ -90,21 +92,23 @@ languages:
 - Bash/sh
 - C/C++
 - CSS
+- Diff/patch
 - Elixir
 - Go
 - HTML
 - Java
-- JavaScript
+- JavaScript (`js`)
 - JSON
 - Lua
-- Luau
 - OCaml
 - PHP
 - Python
 - Rust
 - Scala
-- TypeScript
-- YAML
+- TypeScript (`ts`) / TSX
+- YAML (`yml`)
+
+> Mermaid code blocks are rendered as diagrams rather than syntax-highlighted.
 
 ## Configuration
 
@@ -189,6 +193,9 @@ file_tree_page_count_color = "lightgreen"
 file_tree_path_color = "gray"
 file_tree_selected_fg_color = "lightgreen"
 
+# Comment sidebar
+comment_sidebar_bg_color = "black"
+
 # Quote bar
 quote_caution = "lightmagenta"
 quote_default = "white"
@@ -223,6 +230,81 @@ This application also exists as a plugin for Neovim called
 > [!NOTE]
 >
 > This version does not support images regardless of your terminal capabilities.
+
+## Comments and Review
+
+`MD-TUI` can attach freeform comments to ranges of a rendered Markdown document.
+Comments live in a sidebar and are emitted on exit as a [Sidemark](https://sidemark.org)
+YAML document (to stdout, or to a file via the `MDT_DUMP_PATH` environment
+variable), so another tool can pick them up.
+
+Commenting builds on **caret mode**, which puts a movable text caret in the
+document. The flow:
+
+| Step | Key | What happens |
+| ---- | --- | ------------ |
+| 1. Enter caret mode | `v` | A caret appears; move it with `j`/`k`/`h`/`l`, arrows, `g`/`G`, `0`/`$`. Press `v` again or `Esc` to leave. |
+| 2. Enter comment mode | `c` | Opens the comment sidebar (`Browsing`). Requires caret mode. `c` or `Esc` closes it. |
+| 3. Start a selection | `Space` | Anchors the selection at the caret (`Selecting`). |
+| 4. Extend the selection | `j`/`k`/`h`/`l` or arrows | Moves the caret; the range grows from the anchor. |
+| 5. Open the editor | `<Enter>` | Switches to text entry for the comment (`Editing`). |
+| 6. Type the comment | text / `<Backspace>` | Edit the draft inline. |
+| 7. Save | `<Enter>` | Stores the comment and returns to the sidebar. |
+| — Cancel | `Esc` | Discards the current selection or draft. |
+| — Navigate comments | `n` / `N` | Jump to the next / previous comment while browsing. |
+
+All of `toggle_caret` (`v`), `comment` (`c`), and `comment_select` (`Space`) are
+configurable in `config.toml` (see [Keyboard actions](#keyboard-actions)).
+
+## Claude Code Review Hook
+
+A [Claude Code](https://claude.com/claude-code) `PostToolUse` hook lets you
+review Markdown that Claude writes — in `mdt`'s comment mode — and have your
+comments fed straight back to Claude as revisions.
+
+When Claude writes a Markdown file whose path matches a glob you configure, the
+hook opens `mdt` in a `tmux` popup. You comment using the flow above, then quit
+`mdt`; your comments are returned to Claude as context it must address. No
+comments means the write passes silently.
+
+### Requirements
+
+- Claude Code is launched **inside `tmux`** (the review uses `tmux popup`).
+  Outside `tmux` the hook silently does nothing and the write proceeds.
+- `mdt` and `jq` are on `PATH`.
+
+### Install
+
+Add to `.claude/settings.json` (project) or `~/.claude/settings.json` (global),
+using the script's **real absolute path** and one or more globs (relative to the
+project root):
+
+```json
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/ABSOLUTE/PATH/TO/md-tui/scripts/mdt-review-hook.sh 'docs/**/*.md' 'specs/**/*.md'",
+            "timeout": 1800
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+- `matcher: "Write"` reviews only full writes, not incremental edits.
+- `timeout` is in **seconds**; set it generously (the hook blocks Claude's turn
+  until you close the popup). Author defaults to `$USER`; override with
+  `MDT_REVIEW_AUTHOR`.
+
+See [`docs/mdt-review-hook.md`](docs/mdt-review-hook.md) for the full behavior
+table, fail-open semantics, and the symlink caveat.
 
 ## Contributions
 

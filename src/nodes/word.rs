@@ -1,6 +1,6 @@
 use ratatui::style::Color;
 
-use crate::parser::MdParseEnum;
+use crate::parser::{MdParseEnum, SourceSpan};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MetaData {
@@ -66,6 +66,13 @@ impl From<MdParseEnum> for WordType {
             MdParseEnum::Tip => WordType::MetaInfo(MetaData::Tip),
             MdParseEnum::Warning => WordType::MetaInfo(MetaData::Warning),
             MdParseEnum::Caution => WordType::MetaInfo(MetaData::Caution),
+            MdParseEnum::CodeBlockStr | MdParseEnum::CodeBlockStrSpaceIndented => {
+                WordType::CodeBlock(Color::Reset)
+            }
+            // Container variants that the higher-level parser unpacks before
+            // word conversion. If one ever flows through here (grammar drift
+            // or a malformed parse), fall back to Normal instead of
+            // crashing the viewer.
             MdParseEnum::Heading
             | MdParseEnum::BoldItalicStr
             | MdParseEnum::BoldStr
@@ -85,12 +92,7 @@ impl From<MdParseEnum> for WordType {
             | MdParseEnum::TableCell
             | MdParseEnum::Task
             | MdParseEnum::UnorderedList
-            | MdParseEnum::TableSeparator => {
-                unreachable!("Edit this or pest file to fix for value: {:?}", value)
-            }
-            MdParseEnum::CodeBlockStr | MdParseEnum::CodeBlockStrSpaceIndented => {
-                WordType::CodeBlock(Color::Reset)
-            } // MdParseEnum::FootnoteRef => todo!(),
+            | MdParseEnum::TableSeparator => WordType::Normal,
         }
     }
 }
@@ -100,15 +102,26 @@ pub struct Word {
     content: String,
     word_type: WordType,
     previous_type: Option<WordType>,
+    source_span: Option<SourceSpan>,
 }
 
 impl Word {
     #[must_use]
     pub fn new(content: String, word_type: WordType) -> Self {
+        Self::new_with_source_span(content, word_type, None)
+    }
+
+    #[must_use]
+    pub fn new_with_source_span(
+        content: String,
+        word_type: WordType,
+        source_span: Option<SourceSpan>,
+    ) -> Self {
         Self {
             word_type,
             previous_type: None,
             content,
+            source_span,
         }
     }
 
@@ -128,6 +141,11 @@ impl Word {
 
     pub fn set_content(&mut self, content: impl Into<String>) {
         self.content = content.into();
+    }
+
+    #[must_use]
+    pub fn source_span(&self) -> Option<SourceSpan> {
+        self.source_span
     }
 
     #[must_use]
@@ -154,10 +172,62 @@ impl Word {
     }
 
     pub fn split_off(&mut self, at: usize) -> Word {
+        let (head_content, tail_content) = self.content.split_at(at);
+        let head_content = head_content.to_owned();
+        let tail_content = tail_content.to_owned();
+
+        let (head_span, tail_span) = if let Some(span) = self.source_span {
+            (
+                span.subspan(&self.content, 0, at),
+                span.subspan(&self.content, at, self.content.len()),
+            )
+        } else {
+            (None, None)
+        };
+
+        self.content = head_content;
+        self.source_span = head_span;
+
         Word {
-            content: self.content.split_off(at),
+            content: tail_content,
             word_type: self.word_type,
             previous_type: self.previous_type,
+            source_span: tail_span,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn source_span() -> SourceSpan {
+        SourceSpan {
+            start: crate::parser::SourcePos {
+                byte: 0,
+                line: 1,
+                column: 1,
+            },
+            end: crate::parser::SourcePos {
+                byte: 5,
+                line: 1,
+                column: 6,
+            },
+        }
+    }
+
+    #[test]
+    fn synthetic_words_default_to_no_source_span() {
+        let word = Word::new("synthetic".to_string(), WordType::Normal);
+
+        assert_eq!(word.source_span(), None);
+    }
+
+    #[test]
+    fn source_backed_words_store_source_span() {
+        let span = source_span();
+        let word = Word::new_with_source_span("hello".to_string(), WordType::Bold, Some(span));
+
+        assert_eq!(word.source_span(), Some(span));
     }
 }

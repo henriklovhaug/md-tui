@@ -1,6 +1,5 @@
 use std::sync::LazyLock;
 
-use config::{Config, Environment, File};
 use serde::Deserialize;
 
 #[derive(Debug)]
@@ -9,6 +8,7 @@ pub struct GeneralConfig {
     pub gitignore: bool,
     pub centering: Centering,
     pub help_menu: bool,
+    pub footer: bool,
 }
 
 #[derive(Debug, Deserialize)]
@@ -19,13 +19,7 @@ pub enum Centering {
 }
 
 pub static GENERAL_CONFIG: LazyLock<GeneralConfig> = LazyLock::new(|| {
-    let config_dir = dirs::home_dir().unwrap();
-    let config_file = config_dir.join(".config").join("mdt").join("config.toml");
-    let settings = Config::builder()
-        .add_source(File::with_name(config_file.to_str().unwrap()).required(false))
-        .add_source(Environment::with_prefix("MDT").separator("_"))
-        .build()
-        .unwrap();
+    let settings = super::load_user_config();
 
     let width = settings.get::<u16>("width").unwrap_or(100);
     GeneralConfig {
@@ -36,5 +30,6 @@ pub static GENERAL_CONFIG: LazyLock<GeneralConfig> = LazyLock::new(|| {
             .get::<Centering>("alignment")
             .unwrap_or(Centering::Left),
         help_menu: settings.get::<bool>("help_menu").unwrap_or(true),
+        footer: settings.get::<bool>("footer").unwrap_or(true),
     }
 });
