@@ -9,7 +9,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use md_tui::event_handler::{KeyBoardAction, handle_keyboard_input};
+use md_tui::event_handler::{KeyBoardAction, handle_keyboard_input, handle_mouse_input};
 use md_tui::nodes::root::{Component, ComponentRoot};
 use md_tui::pages::file_explorer::{FileTree, MdFile};
 use md_tui::parser::parse_markdown;
@@ -53,12 +53,21 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut terminal = ratatui::init();
 
+    // `ratatui::init` sets up raw mode and the alternate screen, but leaves the
+    // mouse to the terminal. Claim it so the wheel reaches us.
+    if GENERAL_CONFIG.mouse {
+        execute!(io::stdout(), EnableMouseCapture)?;
+    }
+
     // create app and run it
     let tick_rate = Duration::from_millis(100);
     let app = App::default();
     let res = run_app(&mut terminal, app, tick_rate);
 
     // restore terminal
+    if GENERAL_CONFIG.mouse {
+        let _ = execute!(io::stdout(), DisableMouseCapture);
+    }
     ratatui::restore();
 
     if let Err(err) = res {
@@ -216,29 +225,32 @@ fn run_app(terminal: &mut DefaultTerminal, mut app: App, tick_rate: Duration) ->
             .checked_sub(last_tick.elapsed())
             .unwrap_or_else(|| Duration::from_secs(0));
 
-        if event::poll(timeout)?
-            && let Event::Key(key) = event::read()?
-        {
-            if key.kind != event::KeyEventKind::Press {
-                continue;
-            }
-            match handle_keyboard_input(
-                key.code,
-                &mut app,
-                &mut markdown,
-                &mut file_tree,
-                height,
-                &mut watcher,
-            ) {
-                KeyBoardAction::Exit => {
-                    return Ok(());
+        if event::poll(timeout)? {
+            match event::read()? {
+                Event::Key(key) if key.kind == event::KeyEventKind::Press => {
+                    match handle_keyboard_input(
+                        key.code,
+                        &mut app,
+                        &mut markdown,
+                        &mut file_tree,
+                        height,
+                        &mut watcher,
+                    ) {
+                        KeyBoardAction::Exit => {
+                            return Ok(());
+                        }
+                        KeyBoardAction::Continue => {}
+                        KeyBoardAction::Edit => {
+                            terminal.draw(|f| {
+                                open_editor(f, &mut app, markdown.file_name());
+                            })?;
+                        }
+                    }
                 }
-                KeyBoardAction::Continue => {}
-                KeyBoardAction::Edit => {
-                    terminal.draw(|f| {
-                        open_editor(f, &mut app, markdown.file_name());
-                    })?;
+                Event::Mouse(mouse) => {
+                    handle_mouse_input(mouse, &mut app, &markdown, &mut file_tree, height);
                 }
+                _ => {}
             }
         }
         if last_tick.elapsed() >= tick_rate {
@@ -428,7 +440,10 @@ fn open_editor(f: &mut Frame, app: &mut App, file_name: Option<&str>) {
 
     enable_raw_mode().expect("Failed to enable raw mode");
     let mut stdout = io::stdout();
-    execute!(stdout, EnterAlternateScreen, EnableMouseCapture).unwrap();
+    execute!(stdout, EnterAlternateScreen).unwrap();
+    if GENERAL_CONFIG.mouse {
+        execute!(stdout, EnableMouseCapture).unwrap();
+    }
 
     app.boxes = Boxes::None;
     f.render_widget(Clear, f.area());

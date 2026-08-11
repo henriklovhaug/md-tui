@@ -1,6 +1,6 @@
 use std::{cmp, fs::read_to_string};
 
-use crossterm::event::KeyCode;
+use crossterm::event::{KeyCode, MouseEvent, MouseEventKind};
 use notify::{PollWatcher, Watcher};
 
 use crate::{
@@ -20,6 +20,22 @@ pub enum KeyBoardAction {
     Exit,
 }
 
+/// Rows moved per wheel notch.
+const MOUSE_SCROLL_LINES: u16 = 3;
+
+/// Scroll the view down, clamped to the bottom of the document.
+fn scroll_down(app: &mut App, markdown: &ComponentRoot, height: u16, lines: u16) {
+    app.vertical_scroll = cmp::min(
+        app.vertical_scroll.saturating_add(lines),
+        markdown.height().saturating_sub(height / 2),
+    );
+}
+
+/// Scroll the view up, clamped to the top of the document.
+fn scroll_up(app: &mut App, lines: u16) {
+    app.vertical_scroll = app.vertical_scroll.saturating_sub(lines);
+}
+
 pub fn handle_keyboard_input(
     key: KeyCode,
     app: &mut App,
@@ -34,6 +50,50 @@ pub fn handle_keyboard_input(
     match app.mode {
         Mode::FileTree => keyboard_mode_file_tree(key, app, markdown, file_tree, height, watcher),
         Mode::View => keyboard_mode_view(key, app, markdown, height, watcher),
+    }
+}
+
+/// Handle a mouse event. Only the wheel is wired up; clicks and drags are
+/// ignored so that Shift-selection still behaves the way the terminal expects.
+pub fn handle_mouse_input(
+    mouse: MouseEvent,
+    app: &mut App,
+    markdown: &ComponentRoot,
+    file_tree: &mut FileTree,
+    height: u16,
+) {
+    let down = match mouse.kind {
+        MouseEventKind::ScrollDown => true,
+        MouseEventKind::ScrollUp => false,
+        _ => return,
+    };
+
+    // An open box owns the viewport, so leave the scroll position alone.
+    if app.boxes != Boxes::None {
+        return;
+    }
+
+    match app.mode {
+        // Scrolling moves the viewport only. Unlike `j`/`k` it never advances
+        // link or details selection, which stays where the user put it.
+        Mode::View => {
+            if down {
+                scroll_down(app, markdown, height, MOUSE_SCROLL_LINES);
+            } else {
+                scroll_up(app, MOUSE_SCROLL_LINES);
+            }
+        }
+        // The file tree has no scroll offset independent of the selection, so
+        // the wheel walks the selection the same way `j`/`k` do.
+        Mode::FileTree => {
+            for _ in 0..MOUSE_SCROLL_LINES {
+                if down {
+                    file_tree.next(height);
+                } else {
+                    file_tree.previous(height);
+                }
+            }
+        }
     }
 }
 
@@ -265,10 +325,7 @@ fn keyboard_mode_view(
                             app.vertical_scroll
                         };
                 } else {
-                    app.vertical_scroll = cmp::min(
-                        app.vertical_scroll + 1,
-                        markdown.height().saturating_sub(height / 2),
-                    );
+                    scroll_down(app, markdown, height, 1);
                 }
             }
             Action::Up => {
@@ -290,7 +347,7 @@ fn keyboard_mode_view(
                             app.vertical_scroll
                         };
                 } else {
-                    app.vertical_scroll = app.vertical_scroll.saturating_sub(1);
+                    scroll_up(app, 1);
                 }
             }
             Action::ToTop => {
@@ -301,25 +358,18 @@ fn keyboard_mode_view(
             }
 
             Action::HalfPageDown => {
-                app.vertical_scroll += height / 2;
-                app.vertical_scroll = cmp::min(
-                    app.vertical_scroll,
-                    markdown.height().saturating_sub(height / 2),
-                );
+                scroll_down(app, markdown, height, height / 2);
             }
             Action::HalfPageUp => {
-                app.vertical_scroll = app.vertical_scroll.saturating_sub(height / 2);
+                scroll_up(app, height / 2);
             }
 
             Action::PageDown => {
-                app.vertical_scroll = cmp::min(
-                    app.vertical_scroll + height,
-                    markdown.height().saturating_sub(height / 2),
-                );
+                scroll_down(app, markdown, height, height);
             }
 
             Action::PageUp => {
-                app.vertical_scroll = app.vertical_scroll.saturating_sub(height);
+                scroll_up(app, height);
             }
 
             Action::Hover => {
@@ -638,4 +688,115 @@ fn keyboard_mode_view(
         }
     }
     KeyBoardAction::Continue
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crossterm::event::KeyModifiers;
+
+    const TERM_HEIGHT: u16 = 20;
+
+    /// A document comfortably taller than the viewport.
+    fn long_markdown() -> ComponentRoot {
+        let body = (0..100)
+            .map(|i| format!("Line {i}\n\n"))
+            .collect::<String>();
+        parse_markdown(None, &body, 80)
+    }
+
+    fn view_app() -> App {
+        let mut app = App::default();
+        app.mode = Mode::View;
+        app
+    }
+
+    fn wheel(kind: MouseEventKind) -> MouseEvent {
+        MouseEvent {
+            kind,
+            column: 0,
+            row: 0,
+            modifiers: KeyModifiers::NONE,
+        }
+    }
+
+    fn scroll(app: &mut App, markdown: &ComponentRoot, kind: MouseEventKind) {
+        handle_mouse_input(
+            wheel(kind),
+            app,
+            markdown,
+            &mut FileTree::default(),
+            TERM_HEIGHT,
+        );
+    }
+
+    #[test]
+    fn wheel_down_scrolls_the_view() {
+        let markdown = long_markdown();
+        let mut app = view_app();
+
+        scroll(&mut app, &markdown, MouseEventKind::ScrollDown);
+
+        assert_eq!(app.vertical_scroll, MOUSE_SCROLL_LINES);
+    }
+
+    #[test]
+    fn wheel_up_stops_at_the_top() {
+        let markdown = long_markdown();
+        let mut app = view_app();
+        app.vertical_scroll = 1;
+
+        scroll(&mut app, &markdown, MouseEventKind::ScrollUp);
+
+        assert_eq!(app.vertical_scroll, 0);
+    }
+
+    #[test]
+    fn wheel_down_stops_at_the_bottom() {
+        let markdown = long_markdown();
+        let max = markdown.height().saturating_sub(TERM_HEIGHT / 2);
+        let mut app = view_app();
+        app.vertical_scroll = max;
+
+        scroll(&mut app, &markdown, MouseEventKind::ScrollDown);
+
+        assert_eq!(app.vertical_scroll, max);
+    }
+
+    #[test]
+    fn scrolling_leaves_link_selection_alone() {
+        let markdown = long_markdown();
+        let mut app = view_app();
+        app.selected = true;
+        app.select_index = 4;
+
+        scroll(&mut app, &markdown, MouseEventKind::ScrollDown);
+
+        assert!(app.selected);
+        assert_eq!(app.select_index, 4);
+        assert_eq!(app.vertical_scroll, MOUSE_SCROLL_LINES);
+    }
+
+    #[test]
+    fn an_open_box_swallows_the_wheel() {
+        let markdown = long_markdown();
+        let mut app = view_app();
+        app.boxes = Boxes::Search;
+
+        scroll(&mut app, &markdown, MouseEventKind::ScrollDown);
+
+        assert_eq!(app.vertical_scroll, 0);
+    }
+
+    #[test]
+    fn non_wheel_events_are_ignored() {
+        let markdown = long_markdown();
+        let mut app = view_app();
+        app.vertical_scroll = 7;
+
+        scroll(&mut app, &markdown, MouseEventKind::Moved);
+        scroll(&mut app, &markdown, MouseEventKind::ScrollLeft);
+
+        assert_eq!(app.vertical_scroll, 7);
+    }
 }

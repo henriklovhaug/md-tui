@@ -7,6 +7,7 @@
     - [Requirements](#requirements)
   - [Usage](#usage)
   - [Key binds](#key-binds)
+  - [Mouse](#mouse)
   - [Syntax highlighting](#syntax-highlighting)
   - [Configuration](#configuration)
     - [Keyboard actions](#keyboard-actions)
@@ -81,6 +82,17 @@ for configuration options.
 | `e`              | Edit file in `$EDITOR`                                            |
 | `o`              | Sort files in file tree                                           |
 | `q`              | Quit the application                                              |
+
+## Mouse
+
+The scroll wheel scrolls the document in view mode and moves the selection in
+the file tree. Scrolling never changes which link is selected — use `s`/`S` for
+that.
+
+Capturing the mouse means the terminal no longer sees click-drag, so selecting
+text for copy requires holding `Shift`. If you would rather keep the terminal's
+native behaviour, set `mouse = false` in the config and the program will not
+claim the mouse at all.
 
 ## Syntax Highlighting
 
@@ -165,6 +177,7 @@ width = 100 # Set to 0 for full terminal width
 gitignore = false
 alignment = "left" # "center" | "right"
 help_menu = true # false hides it
+mouse = true # false leaves the mouse to the terminal
 
 # Inline styling
 bold_color = "reset"
