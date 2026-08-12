@@ -37,9 +37,9 @@ pub static GENERAL_CONFIG: LazyLock<GeneralConfig> = LazyLock::new(|| {
             .get::<Centering>("alignment")
             .unwrap_or(Centering::Left),
         help_menu: settings.get::<bool>("help_menu").unwrap_or(true),
-        // Capturing the mouse hands the wheel to us, but takes click-drag
-        // selection away from the terminal (Shift still selects). Set
-        // `mouse = false` to keep the terminal's native behaviour.
-        mouse: settings.get::<bool>("mouse").unwrap_or(true),
+        // Opt-in: capturing the mouse hands us the wheel, but takes click-drag
+        // selection away from the terminal (Shift still selects). Leaving the
+        // terminal in charge is the less surprising default for a viewer.
+        mouse: settings.get::<bool>("mouse").unwrap_or(false),
     }
 });
