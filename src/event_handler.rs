@@ -20,9 +20,6 @@ pub enum KeyBoardAction {
     Exit,
 }
 
-/// Rows moved per wheel notch.
-const MOUSE_SCROLL_LINES: u16 = 3;
-
 /// Scroll the view down, clamped to the bottom of the document.
 fn scroll_down(app: &mut App, markdown: &ComponentRoot, height: u16, lines: u16) {
     app.vertical_scroll = cmp::min(
@@ -73,20 +70,22 @@ pub fn handle_mouse_input(
         return;
     }
 
+    let lines = GENERAL_CONFIG.mouse_scroll_lines;
+
     match app.mode {
         // Scrolling moves the viewport only. Unlike `j`/`k` it never advances
         // link or details selection, which stays where the user put it.
         Mode::View => {
             if down {
-                scroll_down(app, markdown, height, MOUSE_SCROLL_LINES);
+                scroll_down(app, markdown, height, lines);
             } else {
-                scroll_up(app, MOUSE_SCROLL_LINES);
+                scroll_up(app, lines);
             }
         }
         // The file tree has no scroll offset independent of the selection, so
         // the wheel walks the selection the same way `j`/`k` do.
         Mode::FileTree => {
-            for _ in 0..MOUSE_SCROLL_LINES {
+            for _ in 0..lines {
                 if down {
                     file_tree.next(height);
                 } else {
@@ -737,7 +736,7 @@ mod tests {
 
         scroll(&mut app, &markdown, MouseEventKind::ScrollDown);
 
-        assert_eq!(app.vertical_scroll, MOUSE_SCROLL_LINES);
+        assert_eq!(app.vertical_scroll, GENERAL_CONFIG.mouse_scroll_lines);
     }
 
     #[test]
@@ -774,7 +773,7 @@ mod tests {
 
         assert!(app.selected);
         assert_eq!(app.select_index, 4);
-        assert_eq!(app.vertical_scroll, MOUSE_SCROLL_LINES);
+        assert_eq!(app.vertical_scroll, GENERAL_CONFIG.mouse_scroll_lines);
     }
 
     #[test]
@@ -798,5 +797,47 @@ mod tests {
         scroll(&mut app, &markdown, MouseEventKind::ScrollLeft);
 
         assert_eq!(app.vertical_scroll, 7);
+    }
+
+    // The wheel tests above assert against the configured rate, so the
+    // arithmetic itself is pinned here with explicit line counts.
+
+    #[test]
+    fn scroll_down_advances_by_the_requested_lines() {
+        let markdown = long_markdown();
+        let mut app = view_app();
+
+        scroll_down(&mut app, &markdown, TERM_HEIGHT, 5);
+
+        assert_eq!(app.vertical_scroll, 5);
+    }
+
+    #[test]
+    fn scroll_up_advances_by_the_requested_lines() {
+        let mut app = view_app();
+        app.vertical_scroll = 9;
+
+        scroll_up(&mut app, 5);
+
+        assert_eq!(app.vertical_scroll, 4);
+    }
+
+    #[test]
+    fn an_oversized_scroll_clamps_without_overflowing() {
+        let markdown = long_markdown();
+        let max = markdown.height().saturating_sub(TERM_HEIGHT / 2);
+        let mut app = view_app();
+        app.vertical_scroll = u16::MAX - 1;
+
+        scroll_down(&mut app, &markdown, TERM_HEIGHT, u16::MAX);
+        assert_eq!(app.vertical_scroll, max);
+
+        scroll_up(&mut app, u16::MAX);
+        assert_eq!(app.vertical_scroll, 0);
+    }
+
+    #[test]
+    fn configured_scroll_rate_is_at_least_one_line() {
+        assert!(GENERAL_CONFIG.mouse_scroll_lines >= 1);
     }
 }

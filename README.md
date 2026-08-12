@@ -95,6 +95,14 @@ With it on, the scroll wheel scrolls the document in view mode and moves the
 selection in the file tree. Scrolling never changes which link is selected —
 use `s`/`S` for that.
 
+Each wheel notch moves 3 rows by default. Change it with:
+
+```toml
+mouse_scroll_lines = 5
+```
+
+Values below 1 are treated as 1, so the wheel is never silently dead.
+
 It is opt-in because capturing the mouse means the terminal no longer sees
 click-drag, so selecting text for copy requires holding `Shift`. Left off, the
 program does not claim the mouse at all and your terminal or multiplexer keeps
@@ -184,6 +192,7 @@ gitignore = false
 alignment = "left" # "center" | "right"
 help_menu = true # false hides it
 mouse = false # true captures the wheel; Shift then selects text
+mouse_scroll_lines = 3 # rows per wheel notch, minimum 1
 
 # Inline styling
 bold_color = "reset"

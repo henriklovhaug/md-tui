@@ -10,7 +10,11 @@ pub struct GeneralConfig {
     pub centering: Centering,
     pub help_menu: bool,
     pub mouse: bool,
+    pub mouse_scroll_lines: u16,
 }
+
+/// Rows moved per wheel notch when no value is configured.
+const DEFAULT_MOUSE_SCROLL_LINES: u16 = 3;
 
 #[derive(Debug, Deserialize)]
 pub enum Centering {
@@ -41,5 +45,11 @@ pub static GENERAL_CONFIG: LazyLock<GeneralConfig> = LazyLock::new(|| {
         // selection away from the terminal (Shift still selects). Leaving the
         // terminal in charge is the less surprising default for a viewer.
         mouse: settings.get::<bool>("mouse").unwrap_or(false),
+        // Clamped to at least 1: a zero here would leave the wheel silently
+        // dead, and `mouse = false` already covers wanting no wheel at all.
+        mouse_scroll_lines: settings
+            .get::<u16>("mouse_scroll_lines")
+            .unwrap_or(DEFAULT_MOUSE_SCROLL_LINES)
+            .max(1),
     }
 });
