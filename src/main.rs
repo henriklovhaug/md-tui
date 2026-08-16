@@ -119,9 +119,12 @@ fn run_app(terminal: &mut DefaultTerminal, mut app: App, tick_rate: Duration) ->
             let event = event.unwrap();
 
             if let notify::EventKind::Modify(_) = event.kind {
-                if let Ok(file) = read_to_string(markdown.file_name().unwrap()) {
-                    markdown =
-                        parse_markdown(Some(markdown.file_name().unwrap()), &file, app.width() - 2);
+                // Watches are never removed, so a Modify event can arrive after
+                // returning to the file tree (markdown.clear() drops file_name).
+                if let Some(name) = markdown.file_name().map(str::to_owned)
+                    && let Ok(file) = read_to_string(&name)
+                {
+                    markdown = parse_markdown(Some(&name), &file, app.width() - 2);
                     app.mode = Mode::View;
                     app.vertical_scroll = cmp::min(
                         app.vertical_scroll,
