@@ -50,7 +50,7 @@ pub fn read_color_config_from_file() -> ColorConfig {
         .add_source(File::with_name(config_file.to_str().unwrap()).required(false))
         .add_source(Environment::with_prefix("MDT").separator("_"))
         .build()
-        .unwrap();
+        .unwrap_or_default();
 
     ColorConfig {
         heading_bg_color: Color::from_str(
@@ -203,7 +203,7 @@ pub fn read_heading_colors_from_file() -> HeadingColors {
     let settings = Config::builder()
         .add_source(File::with_name(config_file.to_str().unwrap()).required(false))
         .build()
-        .unwrap();
+        .unwrap_or_default();
 
     HeadingColors {
         level_2: settings

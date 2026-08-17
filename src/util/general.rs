@@ -12,6 +12,7 @@ pub struct GeneralConfig {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum Centering {
     Left,
     Center,
@@ -25,7 +26,7 @@ pub static GENERAL_CONFIG: LazyLock<GeneralConfig> = LazyLock::new(|| {
         .add_source(File::with_name(config_file.to_str().unwrap()).required(false))
         .add_source(Environment::with_prefix("MDT").separator("_"))
         .build()
-        .unwrap();
+        .unwrap_or_default();
 
     let width = settings.get::<u16>("width").unwrap_or(100);
     GeneralConfig {
