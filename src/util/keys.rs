@@ -157,7 +157,7 @@ pub static KEY_CONFIG: LazyLock<KeyConfig> = LazyLock::new(|| {
         .add_source(File::with_name(config_file.to_str().unwrap()).required(false))
         .add_source(Environment::with_prefix("MDT").separator("_"))
         .build()
-        .unwrap();
+        .unwrap_or_default();
 
     KeyConfig {
         up: settings.get::<char>("up").unwrap_or('k'),
