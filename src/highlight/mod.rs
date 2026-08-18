@@ -5,8 +5,7 @@ use tree_sitter_highlight::{HighlightConfiguration, HighlightEvent, Highlighter}
 
 use ratatui::style::Color;
 
-#[allow(dead_code)]
-static HIGHLIGHT_NAMES: [&str; 18] = [
+pub const HIGHLIGHT_NAMES: [&str; 18] = [
     "attribute",
     "constant",
     "function.builtin",
@@ -27,7 +26,7 @@ static HIGHLIGHT_NAMES: [&str; 18] = [
     "variable.parameter",
 ];
 
-pub static COLOR_MAP: [Color; 18] = [
+pub static DEFAULT_COLOR_MAP: [Color; 18] = [
     Color::Yellow,
     Color::Yellow,
     Color::Green,
@@ -281,7 +280,7 @@ mod tests {
 
     #[test]
     fn test_equal_length() {
-        assert_eq!(HIGHLIGHT_NAMES.len(), COLOR_MAP.len());
+        assert_eq!(HIGHLIGHT_NAMES.len(), DEFAULT_COLOR_MAP.len());
     }
 
     #[test]

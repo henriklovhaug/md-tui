@@ -8,9 +8,9 @@ use ratatui::style::Color;
 use tree_sitter_highlight::HighlightEvent;
 
 use crate::{
-    highlight::{COLOR_MAP, HighlightInfo, highlight_code},
+    highlight::{HighlightInfo, highlight_code},
     nodes::word::MetaData,
-    util::general::GENERAL_CONFIG,
+    util::{colors::highlight_colors, general::GENERAL_CONFIG},
 };
 
 use super::word::{Word, WordType};
@@ -570,6 +570,7 @@ fn transform_codeblock(component: &mut TextComponent) {
     }
     match highlight {
         HighlightInfo::Highlighted(e) => {
+            let highlight_colors = highlight_colors();
             let mut color = Color::Reset;
             for event in e {
                 match event {
@@ -579,7 +580,7 @@ fn transform_codeblock(component: &mut TextComponent) {
                         new_content.push(word);
                     }
                     HighlightEvent::HighlightStart(index) => {
-                        color = COLOR_MAP[index.0];
+                        color = highlight_colors[index.0];
                     }
                     HighlightEvent::HighlightEnd => color = Color::Reset,
                 }

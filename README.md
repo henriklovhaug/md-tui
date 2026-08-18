@@ -159,6 +159,8 @@ sort = 'o'
 Setting color to `""` will not remove it, but leave it as its default. To remove
 colors, set it to `reset`.
 
+The `code_hl_*` keys color the highlighting inside fenced code blocks.
+
 ```toml
 # General settings
 width = 100 # Set to 0 for full terminal width
@@ -182,6 +184,26 @@ code_block_bg_color = "#2A2A2A"
 quote_bg_color = "reset"
 table_header_bg_color = "reset"
 table_header_fg_color = "yellow"
+
+# Code block syntax highlighting
+code_hl_attribute = "yellow"
+code_hl_constant = "yellow"
+code_hl_function = "green"
+code_hl_function_builtin = "green"
+code_hl_keyword = "red"
+code_hl_operator = "red"
+code_hl_property = "blue"
+code_hl_punctuation = "blue"
+code_hl_punctuation_bracket = "blue"
+code_hl_punctuation_delimiter = "blue"
+code_hl_string = "magenta"
+code_hl_string_special = "magenta"
+code_hl_tag = "cyan"
+code_hl_type = "cyan"
+code_hl_type_builtin = "cyan"
+code_hl_variable = "reset"
+code_hl_variable_builtin = "reset"
+code_hl_variable_parameter = "reset"
 
 # File tree
 file_tree_name_color = "blue"
