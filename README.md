@@ -159,8 +159,7 @@ sort = 'o'
 Setting color to `""` will not remove it, but leave it as its default. To remove
 colors, set it to `reset`.
 
-The `code_hl_*` keys color the highlighting inside fenced code
-blocks.
+The `code_hl_*` keys color the highlighting inside fenced code blocks.
 
 ```toml
 # General settings

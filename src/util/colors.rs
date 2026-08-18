@@ -8,8 +8,6 @@ use ratatui::style::Color;
 
 use crate::highlight::{DEFAULT_COLOR_MAP, HIGHLIGHT_NAMES};
 
-/// Every colour reader below reads the same `~/.config/mdt/config.toml`; this
-/// keeps the path and file source in one place.
 fn config_builder() -> ConfigBuilder<DefaultState> {
     let config_dir = dirs::home_dir().unwrap();
     let config_file = config_dir.join(".config").join("mdt").join("config.toml");
@@ -194,8 +192,6 @@ pub fn color_config() -> ColorConfig {
     *COLOR_CONFIG_INTERNAL.read().unwrap()
 }
 
-/// Colours for the tree-sitter highlight captures in [`HIGHLIGHT_NAMES`],
-/// indexed the same way tree-sitter reports them.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct HighlightColors([Color; HIGHLIGHT_NAMES.len()]);
 
@@ -207,9 +203,7 @@ impl std::ops::Index<usize> for HighlightColors {
     }
 }
 
-/// Each capture is overridable with a `code_hl_`-prefixed key, dots replaced by
-/// underscores: `function.builtin` becomes `code_hl_function_builtin`. Missing
-/// or unparseable values keep the built-in colour.
+/// Allow overriding with a `code_hl_`-prefixed key, dots replaced by `_`
 #[must_use]
 pub fn highlight_colors_from_settings(settings: &Config) -> HighlightColors {
     let mut colors = DEFAULT_COLOR_MAP;
