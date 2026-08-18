@@ -3,8 +3,18 @@ use std::{
     sync::{Arc, LazyLock, RwLock},
 };
 
-use config::{Config, Environment, File};
+use config::{Config, ConfigBuilder, Environment, File, builder::DefaultState};
 use ratatui::style::Color;
+
+use crate::highlight::{DEFAULT_COLOR_MAP, HIGHLIGHT_NAMES};
+
+/// Every colour reader below reads the same `~/.config/mdt/config.toml`; this
+/// keeps the path and file source in one place.
+fn config_builder() -> ConfigBuilder<DefaultState> {
+    let config_dir = dirs::home_dir().unwrap();
+    let config_file = config_dir.join(".config").join("mdt").join("config.toml");
+    Config::builder().add_source(File::with_name(config_file.to_str().unwrap()).required(false))
+}
 
 #[derive(Debug, Clone, Copy)]
 pub struct ColorConfig {
@@ -44,10 +54,7 @@ pub struct ColorConfig {
 
 #[must_use]
 pub fn read_color_config_from_file() -> ColorConfig {
-    let config_dir = dirs::home_dir().unwrap();
-    let config_file = config_dir.join(".config").join("mdt").join("config.toml");
-    let settings = Config::builder()
-        .add_source(File::with_name(config_file.to_str().unwrap()).required(false))
+    let settings = config_builder()
         .add_source(Environment::with_prefix("MDT").separator("_"))
         .build()
         .unwrap_or_default();
@@ -187,6 +194,61 @@ pub fn color_config() -> ColorConfig {
     *COLOR_CONFIG_INTERNAL.read().unwrap()
 }
 
+/// Colours for the tree-sitter highlight captures in [`HIGHLIGHT_NAMES`],
+/// indexed the same way tree-sitter reports them.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct HighlightColors([Color; HIGHLIGHT_NAMES.len()]);
+
+impl std::ops::Index<usize> for HighlightColors {
+    type Output = Color;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.0[index]
+    }
+}
+
+/// Each capture is overridable with a `code_hl_`-prefixed key, dots replaced by
+/// underscores: `function.builtin` becomes `code_hl_function_builtin`. Missing
+/// or unparseable values keep the built-in colour.
+#[must_use]
+pub fn highlight_colors_from_settings(settings: &Config) -> HighlightColors {
+    let mut colors = DEFAULT_COLOR_MAP;
+
+    for (color, name) in colors.iter_mut().zip(HIGHLIGHT_NAMES) {
+        let key = format!("code_hl_{}", name.replace('.', "_"));
+        if let Ok(value) = settings.get::<String>(&key)
+            && let Ok(parsed) = Color::from_str(&value)
+        {
+            *color = parsed;
+        }
+    }
+
+    HighlightColors(colors)
+}
+
+#[must_use]
+pub fn read_highlight_colors_from_file() -> HighlightColors {
+    let settings = config_builder()
+        .add_source(Environment::with_prefix("MDT").separator("_"))
+        .build()
+        .unwrap_or_default();
+
+    highlight_colors_from_settings(&settings)
+}
+
+static HIGHLIGHT_COLORS_INTERNAL: LazyLock<Arc<RwLock<HighlightColors>>> =
+    LazyLock::new(|| Arc::new(RwLock::new(read_highlight_colors_from_file())));
+
+pub fn set_highlight_colors(colors: HighlightColors) {
+    let mut highlight_colors_internal = HIGHLIGHT_COLORS_INTERNAL.write().unwrap();
+    *highlight_colors_internal = colors;
+}
+
+#[must_use]
+pub fn highlight_colors() -> HighlightColors {
+    *HIGHLIGHT_COLORS_INTERNAL.read().unwrap()
+}
+
 #[derive(Clone, Copy)]
 pub struct HeadingColors {
     pub level_2: Color,
@@ -198,12 +260,7 @@ pub struct HeadingColors {
 
 #[must_use]
 pub fn read_heading_colors_from_file() -> HeadingColors {
-    let config_dir = dirs::home_dir().unwrap();
-    let config_file = config_dir.join(".config").join("mdt").join("config.toml");
-    let settings = Config::builder()
-        .add_source(File::with_name(config_file.to_str().unwrap()).required(false))
-        .build()
-        .unwrap_or_default();
+    let settings = config_builder().build().unwrap_or_default();
 
     HeadingColors {
         level_2: settings
@@ -240,4 +297,82 @@ pub fn set_heading_colors(config: HeadingColors) {
 #[must_use]
 pub fn heading_colors() -> HeadingColors {
     *HEADING_COLORS_INTERNAL.read().unwrap()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use config::FileFormat;
+
+    fn settings_from(toml: &str) -> Config {
+        Config::builder()
+            .add_source(File::from_str(toml, FileFormat::Toml))
+            .build()
+            .unwrap()
+    }
+
+    fn index_of(name: &str) -> usize {
+        HIGHLIGHT_NAMES
+            .iter()
+            .position(|n| *n == name)
+            .expect("unknown highlight name")
+    }
+
+    #[test]
+    fn defaults_match_the_built_in_palette() {
+        let colors = highlight_colors_from_settings(&settings_from(""));
+
+        for (i, default) in DEFAULT_COLOR_MAP.iter().enumerate() {
+            assert_eq!(colors[i], *default);
+        }
+    }
+
+    #[test]
+    fn a_key_overrides_a_single_capture() {
+        let colors =
+            highlight_colors_from_settings(&settings_from(r##"code_hl_keyword = "#123123""##));
+
+        assert_eq!(colors[index_of("keyword")], Color::Rgb(0x12, 0x31, 0x23));
+        assert_eq!(
+            colors[index_of("string")],
+            DEFAULT_COLOR_MAP[index_of("string")]
+        );
+    }
+
+    #[test]
+    fn dotted_captures_are_keyed_with_underscores() {
+        let colors = highlight_colors_from_settings(&settings_from(
+            r##"
+            code_hl_function_builtin = "green"
+            code_hl_punctuation_bracket = "reset"
+            code_hl_variable_parameter = "#ABCDEF"
+            "##,
+        ));
+
+        assert_eq!(colors[index_of("function.builtin")], Color::Green);
+        assert_eq!(colors[index_of("punctuation.bracket")], Color::Reset);
+        assert_eq!(
+            colors[index_of("variable.parameter")],
+            Color::Rgb(0xAB, 0xCD, 0xEF)
+        );
+    }
+
+    #[test]
+    fn unparseable_values_fall_back_to_the_default() {
+        let colors = highlight_colors_from_settings(&settings_from(
+            r#"
+            code_hl_keyword = "not-a-color"
+            code_hl_string = ""
+            "#,
+        ));
+
+        assert_eq!(
+            colors[index_of("keyword")],
+            DEFAULT_COLOR_MAP[index_of("keyword")]
+        );
+        assert_eq!(
+            colors[index_of("string")],
+            DEFAULT_COLOR_MAP[index_of("string")]
+        );
+    }
 }
