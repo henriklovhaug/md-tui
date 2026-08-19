@@ -1,30 +1,38 @@
 use std::cmp;
 
 use image::DynamicImage;
-use ratatui_image::{picker::Picker, protocol::StatefulProtocol};
+use ratatui::layout::Size;
+use ratatui_image::{FilterType, Resize, picker::Picker, sliced::SlicedProtocol};
+
+use crate::util::general::GENERAL_CONFIG;
 
 use super::{root::ComponentProps, textcomponent::TextNode};
 
 pub struct ImageComponent {
     _alt_text: String,
     y_offset: u16,
-    height: u16,
     scroll_offset: u16,
-    image: StatefulProtocol,
+    image: SlicedProtocol,
 }
 
 impl ImageComponent {
     pub fn new<T: ToString>(image: DynamicImage, height: u32, alt_text: T) -> Option<Self> {
         let picker = Picker::from_query_stdio().ok()?;
 
-        let image = picker.new_resize_protocol(image);
-
         let font = picker.font_size();
 
-        let height = cmp::min(height / u32::from(font.height), 20) as u16;
+        let max_height = cmp::min(height / u32::from(font.height), 20) as u16;
+
+        let size = Size::new(GENERAL_CONFIG.width, max_height);
+        let image = SlicedProtocol::new_with_resize(
+            &picker,
+            image,
+            size,
+            Resize::Fit(Some(FilterType::Nearest)),
+        )
+        .ok()?;
 
         Some(Self {
-            height,
             image,
             _alt_text: alt_text.to_string(),
             scroll_offset: 0,
@@ -32,8 +40,9 @@ impl ImageComponent {
         })
     }
 
-    pub fn image_mut(&mut self) -> &mut StatefulProtocol {
-        &mut self.image
+    #[must_use]
+    pub fn image(&self) -> &SlicedProtocol {
+        &self.image
     }
 
     pub fn set_scroll_offset(&mut self, offset: u16) {
@@ -52,13 +61,13 @@ impl ImageComponent {
 
     #[must_use]
     pub fn height(&self) -> u16 {
-        self.height
+        self.image.size().height
     }
 }
 
 impl ComponentProps for ImageComponent {
     fn height(&self) -> u16 {
-        self.height
+        self.image.size().height
     }
 
     fn set_y_offset(&mut self, y_offset: u16) {
