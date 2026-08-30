@@ -505,4 +505,29 @@ your markdown notes, or opening external links from someones README.
 
         assert_eq!(filtered, "Helloworld");
     }
+
+    #[test]
+    fn test_search_malformed_table_no_panic() {
+        // Two tables with different column counts separated by a single blank
+        // line are parsed as one table whose cell count (7) is not a multiple
+        // of its column count (2). `transform_table` marks such a table as
+        // malformed by giving it zero columns, and searching the file then
+        // panicked with "chunk size must be non-zero" in `selected_heights`.
+        let text = "| a | b |
+|---|---|
+| 1 | 2 |
+
+| x | y | z |
+|---|---|---|
+| 3 | 4 | 5 |
+";
+
+        let mut markdown = parse_markdown(None, text, 80);
+
+        markdown.find_and_mark("x");
+        assert_eq!(markdown.search_results_heights(), Vec::<usize>::new());
+
+        // `content_as_lines` had the same panic
+        let _ = markdown.content();
+    }
 }
