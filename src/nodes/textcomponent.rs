@@ -130,6 +130,12 @@ impl TextComponent {
         if let TextNode::Table(widths, _) = self.kind() {
             let column_count = widths.len();
 
+            // Malformed tables have no columns (see `transform_table`) and
+            // `chunks` panics on a chunk size of zero
+            if column_count == 0 {
+                return Vec::new();
+            }
+
             let moved_content = self.content.chunks(column_count).collect::<Vec<_>>();
 
             let mut lines = Vec::new();
@@ -357,6 +363,14 @@ impl TextComponent {
 
         if let TextNode::Table(widths, row_heights) = self.kind() {
             let column_count = widths.len();
+
+            // Malformed tables have no columns (see `transform_table`) and
+            // render as a placeholder, so there are no positions to select.
+            // `chunks` panics on a chunk size of zero
+            if column_count == 0 {
+                return heights;
+            }
+
             let iter = self.content.chunks(column_count).enumerate();
 
             for (i, line) in iter {
