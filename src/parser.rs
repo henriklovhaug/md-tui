@@ -945,8 +945,8 @@ mod tests {
     }
 
     #[test]
-    fn ordered_list_uses_source_start_index() {
-        let root = parse_markdown(None, "5. fifth\n6. sixth\n", 80);
+    fn ordered_list_continues_after_unindented_text() {
+        let root = parse_markdown(None, "1. first\nunindented continuation\n2. second\n", 80);
         let lines: Vec<String> = root
             .components()
             .into_iter()
@@ -954,7 +954,7 @@ mod tests {
             .flat_map(TextComponent::content_as_lines)
             .collect();
 
-        assert_eq!(lines, ["5. fifth", "6. sixth"]);
+        assert_eq!(lines, ["1. first unindented continuation", "2. second"]);
     }
 
     #[test]
