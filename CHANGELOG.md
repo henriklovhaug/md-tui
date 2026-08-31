@@ -1,3 +1,13 @@
+# Version 0.10.4
+
+- Fix parser for indented tables
+- Fix panic when file is deleted when going back in history
+- Fix panic on invalid TOML in configuration
+- Allow custom colors for code blocks
+- Fix panic when searching in a file containing a malformed table
+- Reduce how eager list indentation overriding is
+- Make help menu colors configurable
+
 # Version 0.10.3
 
 - Fix issue where normal text after a code string had spaces incorrectly

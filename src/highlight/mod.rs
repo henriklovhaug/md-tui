@@ -266,7 +266,7 @@ pub fn highlight_with_language(
 
         let mut highlighter = Highlighter::new();
         let events = highlighter
-            .highlight(config, lines, None, |_| None)
+            .highlight(config, lines, None, None, |_| None)
             .map_err(|e| e.to_string())?;
         events
             .collect::<Result<Vec<_>, _>>()
