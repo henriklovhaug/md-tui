@@ -9,12 +9,15 @@ use std::{
     time::{Duration, Instant},
 };
 
-use md_tui::event_handler::{KeyBoardAction, handle_keyboard_input};
 use md_tui::nodes::root::{Component, ComponentRoot};
 use md_tui::pages::file_explorer::{FileTree, MdFile};
 use md_tui::parser::parse_markdown;
 use md_tui::search::find_md_files_channel;
 use md_tui::util::{self, App, Boxes, Mode, destruct_terminal, general::GENERAL_CONFIG};
+use md_tui::{
+    event_handler::{KeyBoardAction, handle_keyboard_input},
+    util::colors::color_config,
+};
 
 use crossterm::{
     cursor,
@@ -27,7 +30,7 @@ use notify::{Config, PollWatcher, Watcher};
 use ratatui::{
     DefaultTerminal, Frame,
     layout::Rect,
-    style::{Color, Stylize},
+    style::Stylize,
     widgets::{Block, Clear},
 };
 use ratatui_image::{FilterType, Resize, StatefulImage};
@@ -357,7 +360,7 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
     }
 
     // Render a block at the bottom to show the current mode
-    let block = Block::default().bg(Color::Black);
+    let block = Block::default().bg(color_config().help_bg_color);
     let area = if app.help_box.expanded() {
         Rect {
             y: size.height.saturating_sub(19),

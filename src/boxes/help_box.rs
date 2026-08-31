@@ -1,7 +1,7 @@
 use ratatui::{
     buffer::Buffer,
     layout::Rect,
-    style::{Color, Style, Stylize},
+    style::Stylize,
     text::Text,
     widgets::{Row, Table, Widget},
 };
@@ -47,7 +47,9 @@ impl Widget for HelpBox {
 
 fn render_file_tree_help(expanded: bool, area: Rect, buf: &mut Buffer) {
     if !expanded {
-        let text = Text::styled("? - Help", Style::default().fg(Color::LightGreen).bold());
+        let text = Text::from("? - Help")
+            .fg(color_config().help_title_color)
+            .bold();
         text.render(area, buf);
         return;
     }
@@ -89,14 +91,17 @@ fn render_file_tree_help(expanded: bool, area: Rect, buf: &mut Buffer) {
 
     let widths = [12, 20];
 
-    let table =
-        Table::new(key_actions, widths).header(header.fg(color_config().table_header_fg_color));
+    let table = Table::new(key_actions, widths)
+        .header(header.fg(color_config().table_header_fg_color))
+        .fg(color_config().help_fg_color);
     table.render(area, buf);
 }
 
 fn render_markdown_help(expandend: bool, area: Rect, buf: &mut Buffer) {
     if !expandend {
-        let text = Text::styled("? - Help", Style::default().fg(Color::LightGreen).bold());
+        let text = Text::from("? - Help")
+            .fg(color_config().help_title_color)
+            .bold();
         text.render(area, buf);
         return;
     }
@@ -162,8 +167,9 @@ fn render_markdown_help(expandend: bool, area: Rect, buf: &mut Buffer) {
 
     let widths = [12, 25];
 
-    let table =
-        Table::new(key_actions, widths).header(header.fg(color_config().table_header_fg_color));
+    let table = Table::new(key_actions, widths)
+        .header(header.fg(color_config().table_header_fg_color))
+        .fg(color_config().help_fg_color);
 
     table.render(area, buf);
 }

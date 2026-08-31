@@ -48,6 +48,10 @@ pub struct ColorConfig {
     pub quote_note: Color,
     pub quote_caution: Color,
     pub quote_default: Color,
+
+    pub help_bg_color: Color,
+    pub help_fg_color: Color,
+    pub help_title_color: Color,
 }
 
 #[must_use]
@@ -176,6 +180,23 @@ pub fn read_color_config_from_file() -> ColorConfig {
             &settings.get::<String>("quote_default").unwrap_or_default(),
         )
         .unwrap_or(Color::White),
+
+        help_bg_color: Color::from_str(
+            &settings.get::<String>("help_bg_color").unwrap_or_default(),
+        )
+        .unwrap_or(Color::Black),
+
+        help_fg_color: Color::from_str(
+            &settings.get::<String>("help_fg_color").unwrap_or_default(),
+        )
+        .unwrap_or(Color::LightGreen),
+
+        help_title_color: Color::from_str(
+            &settings
+                .get::<String>("help_title_color")
+                .unwrap_or_default(),
+        )
+        .unwrap_or(Color::LightGreen),
     }
 }
 
