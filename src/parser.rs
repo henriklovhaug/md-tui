@@ -945,6 +945,19 @@ mod tests {
     }
 
     #[test]
+    fn ordered_list_uses_source_start_index() {
+        let root = parse_markdown(None, "5. fifth\n6. sixth\n", 80);
+        let lines: Vec<String> = root
+            .components()
+            .into_iter()
+            .filter(|component| component.kind() == TextNode::List)
+            .flat_map(TextComponent::content_as_lines)
+            .collect();
+
+        assert_eq!(lines, ["5. fifth", "6. sixth"]);
+    }
+
+    #[test]
     fn nested_details_tags_inner_components_with_both_ids() {
         let md = "<details>\n<summary>Outer</summary>\n\n<details>\n<summary>Inner</summary>\n\ninner body\n\n</details>\n\n</details>\n";
         let root = parse_markdown(None, md, 80);

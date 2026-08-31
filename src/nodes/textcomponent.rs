@@ -686,7 +686,7 @@ fn transform_list(component: &mut TextComponent, width: u16) {
 
     let mut zip_iter = indent_iter.zip(list_type_iter);
 
-    let mut o_list_counter_stack = vec![0];
+    let mut o_list_counter_stack = vec![None];
     let mut max_stack_len = 1;
     let mut indent = 0;
     let mut extra_indent = 0;
@@ -701,7 +701,7 @@ fn transform_list(component: &mut TextComponent, width: u16) {
                 indent = if let Some((meta, list_type)) = zip_iter.next() {
                     match tmp.cmp(&display_width(meta.content())) {
                         cmp::Ordering::Less => {
-                            o_list_counter_stack.push(0);
+                            o_list_counter_stack.push(None);
                             max_stack_len += 1;
                         }
                         cmp::Ordering::Greater => {
@@ -713,10 +713,15 @@ fn transform_list(component: &mut TextComponent, width: u16) {
                         let counter = o_list_counter_stack
                             .last_mut()
                             .expect("List parse error. Stack is empty");
+                        let source_index = word
+                            .content()
+                            .trim_end_matches(['.', ' '])
+                            .parse::<u64>()
+                            .unwrap_or(1);
+                        let next_index = counter.map_or(source_index, |index| index + 1);
+                        *counter = Some(next_index);
 
-                        *counter += 1;
-
-                        word.set_content(format!("{counter}. "));
+                        word.set_content(format!("{next_index}. "));
 
                         extra_indent = 1; // Ordered list is longer than unordered and needs extra space
                     } else {
