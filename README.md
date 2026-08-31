@@ -227,6 +227,11 @@ h3_fg_color = "magenta"
 h4_fg_color = "cyan"
 h5_fg_color = "yellow"
 h6_fg_color = "lightred"
+
+# Help box
+help_bg_color = "black"
+help_fg_color = "lightgreen"
+help_title_color = "lightgreen"
 ```
 
 ## Links
