@@ -206,6 +206,19 @@ impl ComponentRoot {
         }
     }
 
+    /// Return the source line for the first visible text block at `scroll`.
+    #[must_use]
+    pub fn source_line_at_scroll(&self, scroll: u16) -> usize {
+        self.components
+            .iter()
+            .filter_map(|component| match component {
+                Component::TextComponent(text) if !text.is_hidden() => Some(text),
+                Component::TextComponent(_) | Component::Image(_) => None,
+            })
+            .find(|text| text.y_offset().saturating_add(text.height()) > scroll)
+            .map_or(1, TextComponent::source_line)
+    }
+
     pub fn heading_offset(&self, heading: &str) -> Result<u16, String> {
         let mut y_offset = 0;
         for component in &self.components {

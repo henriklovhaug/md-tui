@@ -241,8 +241,9 @@ fn run_app(terminal: &mut DefaultTerminal, mut app: App, tick_rate: Duration) ->
                 }
                 KeyBoardAction::Continue => {}
                 KeyBoardAction::Edit => {
+                    let source_line = markdown.source_line_at_scroll(app.vertical_scroll);
                     terminal.draw(|f| {
-                        open_editor(f, &mut app, markdown.file_name());
+                        open_editor(f, &mut app, markdown.file_name(), source_line);
                     })?;
                 }
             }
@@ -403,7 +404,7 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
     }
 }
 
-fn open_editor(f: &mut Frame, app: &mut App, file_name: Option<&str>) {
+fn open_editor(f: &mut Frame, app: &mut App, file_name: Option<&str>, source_line: usize) {
     let editor = if let Ok(editor) = env::var("EDITOR") {
         editor
     } else {
@@ -427,6 +428,7 @@ fn open_editor(f: &mut Frame, app: &mut App, file_name: Option<&str>) {
     execute!(io::stdout(), cursor::Show).unwrap();
 
     let _ = std::process::Command::new(editor)
+        .arg(format!("+{source_line}"))
         .arg(file_name)
         .spawn()
         .expect("Failed to open editor")
