@@ -759,6 +759,7 @@ impl From<Rule> for MdParseEnum {
             | Rule::code_block_prefix
             | Rule::table_prefix
             | Rule::table_cell_content
+            | Rule::emphasis_newline
             | Rule::list_prefix
             | Rule::forbidden_sentence_prefix => Self::Paragraph,
             Rule::image => Self::Image,
@@ -809,6 +810,27 @@ mod tests {
         let md = "*Section A*\r\n\r\n*Item with trailing space *\r\n\r\n*Section B*\r\n";
         let kinds = component_kinds(md);
         assert!(!kinds.is_empty());
+    }
+
+    #[test]
+    fn unmatched_asterisk_does_not_consume_following_table() {
+        let md = "### Example metric (score = total/count*scale(n))\n\n\
+                  | group | score |\n\
+                  |---|---|\n\
+                  | alpha | 1.2 |\n\n\
+                  **Result:** retained.\n";
+        let kinds = component_kinds(md);
+
+        assert!(
+            kinds
+                .iter()
+                .any(|kind| matches!(kind, TextNode::Table(_, _))),
+            "an unmatched inline asterisk must not absorb a later table: {kinds:?}"
+        );
+        assert!(
+            kinds.iter().any(|kind| matches!(kind, TextNode::Paragraph)),
+            "content after the table must remain a separate paragraph: {kinds:?}"
+        );
     }
 
     fn has_details_summary(kinds: &[TextNode]) -> bool {
