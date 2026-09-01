@@ -720,7 +720,7 @@ impl From<Rule> for MdParseEnum {
                 Self::CodeBlockStrSpaceIndented
             }
             Rule::sentence | Rule::t_sentence | Rule::footnote_sentence => Self::Sentence,
-            Rule::table_cell => Self::TableCell,
+            Rule::table_cell | Rule::table_body_cell => Self::TableCell,
             Rule::table_separator => Self::TableSeparator,
             Rule::u_list => Self::UnorderedList,
             Rule::o_list => Self::OrderedList,
@@ -758,6 +758,7 @@ impl From<Rule> for MdParseEnum {
             | Rule::quote_prefix
             | Rule::code_block_prefix
             | Rule::table_prefix
+            | Rule::table_cell_content
             | Rule::list_prefix
             | Rule::forbidden_sentence_prefix => Self::Paragraph,
             Rule::image => Self::Image,
@@ -934,6 +935,23 @@ mod tests {
         assert_eq!(
             table_count, 2,
             "expected 2 tables inside details, got {kinds:?}"
+        );
+    }
+
+    #[test]
+    fn table_body_cell_with_single_dash_is_not_a_separator() {
+        let md = "| Item | Quantity |\n|-|-|\n| Apples | 4 |\n| Oranges | - |\n";
+        let root = parse_markdown(None, md, 80);
+        let tables: Vec<_> = root
+            .components()
+            .into_iter()
+            .filter(|component| matches!(component.kind(), TextNode::Table(_, _)))
+            .collect();
+
+        assert_eq!(tables.len(), 1);
+        assert_eq!(
+            tables[0].content_as_lines(),
+            ["Item Quantity", "Apples 4", "Oranges -"]
         );
     }
 
