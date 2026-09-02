@@ -241,7 +241,7 @@ fn run_app(terminal: &mut DefaultTerminal, mut app: App, tick_rate: Duration) ->
                 }
                 KeyBoardAction::Continue => {}
                 KeyBoardAction::Edit => {
-                    let source_line = markdown.source_line_at_scroll(app.vertical_scroll);
+                    let source_line = markdown.source_line_at_scroll(app.vertical_scroll, height);
                     terminal.draw(|f| {
                         open_editor(f, &mut app, markdown.file_name(), source_line);
                     })?;

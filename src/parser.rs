@@ -871,7 +871,7 @@ mod tests {
             .find(|component| matches!(component.kind(), TextNode::Table(_, _)))
             .expect("table")
             .y_offset();
-        assert_eq!(markdown.source_line_at_scroll(table_offset), 5);
+        assert_eq!(markdown.source_line_at_scroll(0, table_offset * 2), 5);
     }
 
     fn has_details_summary(kinds: &[TextNode]) -> bool {
