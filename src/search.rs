@@ -240,69 +240,65 @@ pub fn line_match_and_index(
 
 #[must_use]
 pub fn find_with_ref<'a>(query: &str, text: Vec<&'a Word>) -> Vec<&'a Word> {
-    let window_size = query
-        .split_whitespace()
-        .fold(0usize, |acc, _| acc + 2)
-        .saturating_sub(1);
-
-    if window_size == 0 {
-        return Vec::new();
-    }
-
-    text.windows(window_size)
-        .filter(|word| {
-            let mut words = word.iter().map(|c| c.content()).join("");
-            let case_sensitive = query.chars().any(char::is_uppercase);
-
-            words = if case_sensitive {
-                words.clone()
-            } else {
-                words.to_lowercase()
-            };
-
-            damerau_levenshtein(query, &words) == 0
-        })
-        .flatten()
-        .copied()
-        .collect::<Vec<_>>()
+    let matches = matching_words(query, text.iter().map(|word| word.content()));
+    text.into_iter()
+        .zip(matches)
+        .filter_map(|(word, is_match)| is_match.then_some(word))
+        .collect()
 }
 
 pub fn find_and_mark<'a>(query: &str, text: &'a mut Vec<&'a mut Word>) {
-    let window_size = query
-        .split_whitespace()
-        .fold(0usize, |acc, _| acc + 2)
-        .saturating_sub(1);
-
-    if window_size == 0 {
-        return;
-    }
-
-    windows_mut_for_each(text.as_mut_slice(), window_size, |window| {
-        let mut words = window.iter().map(|c| c.content()).join("");
-        let case_sensitive = query.chars().any(char::is_uppercase);
-
-        words = if case_sensitive {
-            words.clone()
-        } else {
-            words.to_lowercase()
-        };
-
-        if damerau_levenshtein(query, &words) == 0 {
-            window
-                .iter_mut()
-                .for_each(|word| word.set_kind(WordType::Selected));
-        }
-    });
+    let matches = matching_words(query, text.iter().map(|word| word.content()));
+    text.iter_mut()
+        .zip(matches)
+        .filter(|(_, is_match)| *is_match)
+        .for_each(|(word, _)| word.set_kind(WordType::Selected));
 }
 
-fn windows_mut_for_each<T>(v: &mut [T], n: usize, f: impl Fn(&mut [T])) {
-    let mut start = 0;
-    let mut end = n;
-    while end <= v.len() {
-        f(&mut v[start..end]);
-        start += 1;
-        end += 1;
+fn matching_words<'a>(query: &str, text: impl IntoIterator<Item = &'a str>) -> Vec<bool> {
+    let case_sensitive = query.chars().any(char::is_uppercase);
+    let normalize = |c: char| {
+        if case_sensitive {
+            c.to_string()
+        } else {
+            c.to_lowercase().collect()
+        }
+    };
+    let query: Vec<char> = if case_sensitive {
+        query.to_owned()
+    } else {
+        query.to_lowercase()
     }
+    .chars()
+    .collect();
+    let mut chars = Vec::new();
+    let mut char_words = Vec::new();
+    let text: Vec<&str> = text.into_iter().collect();
+
+    for (word_index, word) in text.iter().enumerate() {
+        for c in word.chars() {
+            for normalized in normalize(c).chars() {
+                chars.push(normalized);
+                char_words.push(word_index);
+            }
+        }
+    }
+
+    let mut matches = vec![false; text.len()];
+    if query.is_empty() {
+        return matches;
+    }
+
+    for (start, _) in chars
+        .windows(query.len())
+        .enumerate()
+        .filter(|(_, window)| *window == query)
+    {
+        for &word_index in &char_words[start..start + query.len()] {
+            matches[word_index] = true;
+        }
+    }
+    matches
 }
 
 fn char_windows(src: &str, win_size: usize) -> impl Iterator<Item = &'_ str> {
@@ -477,6 +473,48 @@ mod tests {
     }
 
     #[test]
+    fn test_word_by_ref_matches_before_trailing_punctuation() {
+        let text = vec![
+            Word::new("OOS".to_string(), WordType::Bold),
+            Word::new(" ".to_string(), WordType::White),
+            Word::new("compliance.".to_string(), WordType::Bold),
+        ];
+
+        let component = Component::TextComponent(TextComponent::new(TextNode::Paragraph, text));
+        let root = ComponentRoot::new(None, vec![component]);
+        let result = find_with_ref("OOS compliance", root.words());
+
+        assert_eq!(result, root.words());
+    }
+
+    #[test]
+    fn test_word_by_ref_matches_punctuation_substring() {
+        let text = vec![Word::new("g(b1)".to_string(), WordType::Normal)];
+        let component = Component::TextComponent(TextComponent::new(TextNode::Paragraph, text));
+        let root = ComponentRoot::new(None, vec![component]);
+        let result = find_with_ref("g(", root.words());
+
+        assert_eq!(result, root.words());
+    }
+
+    #[test]
+    fn test_search_substrings_in_parsed_markdown() {
+        let markdown = parse_markdown(None, "**OOS compliance.** The function g(b1).", 80);
+
+        let phrase = find_with_ref("OOS compliance", markdown.words());
+        assert_eq!(
+            phrase.iter().map(|word| word.content()).join(""),
+            "OOS compliance."
+        );
+
+        let punctuation = find_with_ref("g(", markdown.words());
+        assert_eq!(
+            punctuation.iter().map(|word| word.content()).join(""),
+            "g(b1)."
+        );
+    }
+
+    #[test]
     fn test_long_match() {
         let text = "`MD-TUI` is a TUI application for viewing markdown files directly in your
 terminal. I created it because I wasn't happy with how alternatives handled
@@ -488,8 +526,7 @@ your markdown notes, or opening external links from someones README.
         let markdown = parse_markdown(None, text, 80);
 
         let result = find_with_ref("in", markdown.words());
-        dbg!(&result);
-        assert_eq!(result.len(), 2);
+        assert_eq!(result.len(), 8);
 
         let result = find_with_ref("markdown notes,", markdown.words());
         assert_eq!(result.len(), 3);
