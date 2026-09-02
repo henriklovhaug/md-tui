@@ -785,6 +785,7 @@ impl From<Rule> for MdParseEnum {
             | Rule::code_block_prefix
             | Rule::table_prefix
             | Rule::table_cell_content
+            | Rule::emphasis_newline
             | Rule::list_prefix
             | Rule::forbidden_sentence_prefix => Self::Paragraph,
             Rule::image => Self::Image,
@@ -872,6 +873,47 @@ mod tests {
             .expect("table")
             .y_offset();
         assert_eq!(markdown.source_line_at_scroll(0, table_offset * 2), 5);
+    }
+
+    #[test]
+    fn unmatched_asterisk_does_not_consume_following_table() {
+        let md = "### Metric (t = mean/sd*sqrt(n))\n\n\
+                  | group | score |\n\
+                  |---|---|\n\
+                  | alpha | 1.2 |\n\n\
+                  **Result:** retained.\n";
+        let markdown = parse_markdown(None, md, 80);
+        let components = markdown.components();
+        let kinds: Vec<_> = components
+            .iter()
+            .map(|component| component.kind())
+            .collect();
+
+        let heading_text: String = components
+            .iter()
+            .find(|component| component.kind() == TextNode::Heading)
+            .expect("heading")
+            .content()
+            .iter()
+            .flatten()
+            .map(|word| word.content())
+            .collect();
+
+        assert!(
+            heading_text.contains("mean/sd*sqrt(n))"),
+            "the unmatched asterisk must remain literal in the heading: {heading_text:?}"
+        );
+
+        assert!(
+            kinds
+                .iter()
+                .any(|kind| matches!(kind, TextNode::Table(_, _))),
+            "an unmatched inline asterisk must not absorb a later table: {kinds:?}"
+        );
+        assert!(
+            kinds.iter().any(|kind| matches!(kind, TextNode::Paragraph)),
+            "content after the table must remain a separate paragraph: {kinds:?}"
+        );
     }
 
     fn has_details_summary(kinds: &[TextNode]) -> bool {
