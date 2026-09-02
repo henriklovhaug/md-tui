@@ -30,8 +30,8 @@ use notify::{Config, PollWatcher, Watcher};
 use ratatui::{
     DefaultTerminal, Frame,
     layout::Rect,
-    style::Stylize,
-    widgets::{Block, Clear},
+    style::{Modifier, Style, Stylize},
+    widgets::{Block, Clear, Scrollbar, ScrollbarOrientation, ScrollbarState},
 };
 use ratatui_image::{FilterType, Resize, StatefulImage};
 
@@ -357,6 +357,21 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
                 f.render_stateful_widget(image, inner_area, img.image_mut());
             }
         }
+    }
+
+    if GENERAL_CONFIG.scrollbar && markdown.height() > area.height {
+        let scrollbar_area = Rect::new(area.right().saturating_sub(1), area.y, 1, area.height);
+        let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
+            .begin_symbol(None)
+            .end_symbol(None)
+            .track_symbol(Some("│"))
+            .thumb_symbol("┃")
+            .track_style(Style::default().add_modifier(Modifier::DIM))
+            .thumb_style(Style::default().fg(color_config().help_fg_color));
+        let mut scrollbar_state = ScrollbarState::new(markdown.height().into())
+            .position(app.vertical_scroll.into())
+            .viewport_content_length(area.height.into());
+        f.render_stateful_widget(scrollbar, scrollbar_area, &mut scrollbar_state);
     }
 
     // Render a block at the bottom to show the current mode
