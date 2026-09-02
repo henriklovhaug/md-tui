@@ -814,12 +814,32 @@ mod tests {
 
     #[test]
     fn unmatched_asterisk_does_not_consume_following_table() {
-        let md = "### Example metric (score = total/count*scale(n))\n\n\
+        let md = "### Metric (t = mean/sd*sqrt(n))\n\n\
                   | group | score |\n\
                   |---|---|\n\
                   | alpha | 1.2 |\n\n\
                   **Result:** retained.\n";
-        let kinds = component_kinds(md);
+        let markdown = parse_markdown(None, md, 80);
+        let components = markdown.components();
+        let kinds: Vec<_> = components
+            .iter()
+            .map(|component| component.kind())
+            .collect();
+
+        let heading_text: String = components
+            .iter()
+            .find(|component| component.kind() == TextNode::Heading)
+            .expect("heading")
+            .content()
+            .iter()
+            .flatten()
+            .map(|word| word.content())
+            .collect();
+
+        assert!(
+            heading_text.contains("mean/sd*sqrt(n))"),
+            "the unmatched asterisk must remain literal in the heading: {heading_text:?}"
+        );
 
         assert!(
             kinds
