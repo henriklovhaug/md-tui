@@ -12,6 +12,7 @@ use std::{
 use md_tui::nodes::root::{Component, ComponentRoot};
 use md_tui::pages::file_explorer::{FileTree, MdFile};
 use md_tui::parser::parse_markdown;
+use md_tui::resume::ResumeCache;
 use md_tui::search::find_md_files_channel;
 use md_tui::util::{self, App, Boxes, Mode, destruct_terminal, general::GENERAL_CONFIG};
 use md_tui::{
@@ -78,6 +79,11 @@ fn run_app(terminal: &mut DefaultTerminal, mut app: App, tick_rate: Duration) ->
     thread::spawn(move || find_md_files_channel(f_tx.clone()));
 
     let mut last_tick = Instant::now();
+    let mut last_position_save = Instant::now();
+    let resume_cache = ResumeCache::new(
+        GENERAL_CONFIG.remember_position,
+        GENERAL_CONFIG.position_cache_ttl_minutes,
+    );
 
     let (tx, rx) = mpsc::channel();
 
@@ -110,6 +116,8 @@ fn run_app(terminal: &mut DefaultTerminal, mut app: App, tick_rate: Duration) ->
         markdown = parse_markdown(None, &stdin_buf, app.width() - 2);
         app.mode = Mode::View;
     }
+
+    restore_position(&resume_cache, &markdown, &mut app, terminal.size()?.height);
 
     let mut file_tree = FileTree::default();
 
@@ -229,6 +237,9 @@ fn run_app(terminal: &mut DefaultTerminal, mut app: App, tick_rate: Duration) ->
             if key.kind != event::KeyEventKind::Press {
                 continue;
             }
+            let previous_view = app.mode == Mode::View;
+            let previous_document = markdown.file_name().map(str::to_owned);
+            let previous_source_line = markdown.source_line_at_scroll(app.vertical_scroll, height);
             match handle_keyboard_input(
                 key.code,
                 &mut app,
@@ -238,10 +249,25 @@ fn run_app(terminal: &mut DefaultTerminal, mut app: App, tick_rate: Duration) ->
                 &mut watcher,
             ) {
                 KeyBoardAction::Exit => {
+                    if previous_view && let Some(path) = previous_document.as_deref() {
+                        let _ = resume_cache.save(path, previous_source_line);
+                    }
                     return Ok(());
                 }
-                KeyBoardAction::Continue => {}
+                KeyBoardAction::Continue => {
+                    let document_changed = app.mode == Mode::View
+                        && (!previous_view || markdown.file_name() != previous_document.as_deref());
+                    if document_changed {
+                        if previous_view && let Some(path) = previous_document.as_deref() {
+                            let _ = resume_cache.save(path, previous_source_line);
+                        }
+                        restore_position(&resume_cache, &markdown, &mut app, height);
+                    }
+                }
                 KeyBoardAction::Edit => {
+                    if let Some(path) = markdown.file_name() {
+                        let _ = resume_cache.save(path, previous_source_line);
+                    }
                     let source_line = markdown.source_line_at_scroll(app.vertical_scroll, height);
                     terminal.draw(|f| {
                         open_editor(f, &mut app, markdown.file_name(), source_line);
@@ -252,6 +278,26 @@ fn run_app(terminal: &mut DefaultTerminal, mut app: App, tick_rate: Duration) ->
         if last_tick.elapsed() >= tick_rate {
             last_tick = Instant::now();
         }
+        if last_position_save.elapsed() >= Duration::from_secs(5) {
+            if app.mode == Mode::View
+                && let Some(path) = markdown.file_name()
+            {
+                let source_line = markdown.source_line_at_scroll(app.vertical_scroll, height);
+                let _ = resume_cache.save(path, source_line);
+            }
+            last_position_save = Instant::now();
+        }
+    }
+}
+
+fn restore_position(
+    cache: &ResumeCache,
+    markdown: &ComponentRoot,
+    app: &mut App,
+    viewport_height: u16,
+) {
+    if let Some(source_line) = markdown.file_name().and_then(|path| cache.load(path)) {
+        app.vertical_scroll = markdown.scroll_for_source_line(source_line, viewport_height);
     }
 }
 

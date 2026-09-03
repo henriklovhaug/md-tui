@@ -873,6 +873,7 @@ mod tests {
             .expect("table")
             .y_offset();
         assert_eq!(markdown.source_line_at_scroll(0, table_offset * 2), 5);
+        assert_eq!(markdown.scroll_for_source_line(5, 0), table_offset);
     }
 
     #[test]

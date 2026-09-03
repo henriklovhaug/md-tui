@@ -220,6 +220,34 @@ impl ComponentRoot {
             .map_or(1, TextComponent::source_line)
     }
 
+    /// Return a scroll offset that places the source block at the viewport midpoint.
+    #[must_use]
+    pub fn scroll_for_source_line(&self, source_line: usize, viewport_height: u16) -> u16 {
+        let mut y_offset: u16 = 0;
+        let mut matching_offset: u16 = 0;
+
+        for component in &self.components {
+            match component {
+                Component::TextComponent(text) if !text.is_hidden() => {
+                    if text.source_line() <= source_line {
+                        matching_offset = y_offset;
+                    } else {
+                        break;
+                    }
+                    y_offset = y_offset.saturating_add(text.height());
+                }
+                Component::TextComponent(_) => {}
+                Component::Image(image) => {
+                    y_offset = y_offset.saturating_add(image.height());
+                }
+            }
+        }
+
+        matching_offset
+            .saturating_sub(viewport_height / 2)
+            .min(self.height().saturating_sub(viewport_height / 2))
+    }
+
     pub fn heading_offset(&self, heading: &str) -> Result<u16, String> {
         let mut y_offset = 0;
         for component in &self.components {
