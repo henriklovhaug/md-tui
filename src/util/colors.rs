@@ -26,6 +26,7 @@ pub struct ColorConfig {
     pub link_color: Color,
     pub link_selected_fg_color: Color,
     pub link_selected_bg_color: Color,
+    pub scrollbar_color: Color,
 
     // Block styles
     pub code_block_bg_color: Color,
@@ -112,6 +113,12 @@ pub fn read_color_config_from_file() -> ColorConfig {
                 .unwrap_or_default(),
         )
         .unwrap_or(Color::DarkGray),
+        scrollbar_color: Color::from_str(
+            &settings
+                .get::<String>("scrollbar_color")
+                .unwrap_or_default(),
+        )
+        .unwrap_or(Color::LightGreen),
         table_header_fg_color: Color::from_str(
             &settings
                 .get::<String>("table_header_fg_color")
