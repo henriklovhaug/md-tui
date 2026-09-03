@@ -520,6 +520,16 @@ fn keyboard_mode_view(
             }
 
             Action::SearchNext => {
+                if app.annotation_selected {
+                    let max_idx = markdown.num_annotations().saturating_sub(1);
+                    app.annotation_select_index =
+                        cmp::min(app.annotation_select_index + 1, max_idx);
+                    if let Ok(scroll) = markdown.select_annotation(app.annotation_select_index) {
+                        app.vertical_scroll = scroll.saturating_sub(height / 3);
+                    }
+                    return KeyBoardAction::Continue;
+                }
+
                 let heights = markdown.search_results_heights();
 
                 let next = heights
@@ -535,6 +545,14 @@ fn keyboard_mode_view(
             }
 
             Action::SearchPrevious => {
+                if app.annotation_selected {
+                    app.annotation_select_index = app.annotation_select_index.saturating_sub(1);
+                    if let Ok(scroll) = markdown.select_annotation(app.annotation_select_index) {
+                        app.vertical_scroll = scroll.saturating_sub(height / 3);
+                    }
+                    return KeyBoardAction::Continue;
+                }
+
                 let heights = markdown.search_results_heights();
 
                 let next = heights
