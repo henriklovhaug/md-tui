@@ -302,12 +302,14 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
     };
 
     let header_height = u16::from(GENERAL_CONFIG.document_header && markdown.file_name().is_some());
+    let annotation_status_height = u16::from(app.annotation_selected && !GENERAL_CONFIG.help_menu);
     let area = Rect {
         width: cmp::min(app.width() - 3, size.width - 1),
         height: if GENERAL_CONFIG.help_menu {
             size.height.saturating_sub(5 + header_height)
         } else {
-            size.height.saturating_sub(header_height)
+            size.height
+                .saturating_sub(header_height + annotation_status_height)
         },
         x,
         y: header_height,
@@ -423,6 +425,28 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
     if GENERAL_CONFIG.help_menu {
         f.render_widget(Clear, area);
         f.render_widget(block, area);
+    }
+
+    if app.annotation_selected {
+        let status_y = if GENERAL_CONFIG.help_menu {
+            if app.help_box.expanded() {
+                size.height.saturating_sub(19)
+            } else {
+                size.height.saturating_sub(4)
+            }
+        } else {
+            size.height.saturating_sub(1)
+        };
+        let status_area = Rect::new(x, status_y, area.width, 1);
+        let status = Paragraph::new(
+            " ANNOTATION MODE  j/n/\u{2193} next  k/N/\u{2191} previous  Enter comment  Esc/q normal",
+        )
+        .style(
+            Style::default()
+                .fg(color_config().help_fg_color)
+                .bg(color_config().help_bg_color),
+        );
+        f.render_widget(status, status_area);
     }
 
     let area = if app.help_box.expanded() {

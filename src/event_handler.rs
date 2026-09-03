@@ -28,7 +28,7 @@ pub fn handle_keyboard_input(
     height: u16,
     watcher: &mut PollWatcher,
 ) -> KeyBoardAction {
-    if key == KeyCode::Char('q') && app.boxes == Boxes::None {
+    if key == KeyCode::Char('q') && app.boxes == Boxes::None && !app.annotation_selected {
         return KeyBoardAction::Exit;
     }
     match app.mode {
@@ -82,7 +82,11 @@ pub fn keyboard_mode_file_tree(
             }
             _ => {}
         },
-        Boxes::None => match key_to_action(key) {
+        Boxes::None => match if key == KeyCode::Char('q') && app.annotation_selected {
+            Action::Escape
+        } else {
+            key_to_action(key)
+        } {
             Action::Down => {
                 file_tree.next(height);
             }

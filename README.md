@@ -251,7 +251,7 @@ MD-TUI renders CriticMarkup highlight/comment pairs without their delimiters:
 
 Press `c` to select an annotation, use `j`/`k`, the arrow keys, or `n`/`N` to
 move between annotations, and press Enter to read its comment. Enter, Escape,
-or `q` closes the comment popup.
+or `q` closes the comment popup. Escape or `q` exits annotation-selection mode.
 
 ## Links
 
