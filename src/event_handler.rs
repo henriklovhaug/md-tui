@@ -179,9 +179,7 @@ pub fn keyboard_mode_file_tree(
             _ => {}
         },
         Boxes::LinkPreview => {
-            if matches!(key, KeyCode::Enter | KeyCode::Esc | KeyCode::Char('q')) {
-                app.boxes = Boxes::None;
-            }
+            close_link_preview(key, app);
         }
     }
 
@@ -722,17 +720,7 @@ fn keyboard_mode_view(
             }
             _ => {}
         },
-        Boxes::LinkPreview => match key {
-            KeyCode::Esc | KeyCode::Char('q') if app.annotation_selected => {
-                app.boxes = Boxes::None;
-                app.annotation_selected = false;
-                markdown.deselect();
-            }
-            KeyCode::Enter | KeyCode::Esc | KeyCode::Char('q') => {
-                app.boxes = Boxes::None;
-            }
-            _ => {}
-        },
+        Boxes::LinkPreview => close_link_preview(key, app),
     }
     KeyBoardAction::Continue
 }
@@ -742,6 +730,12 @@ fn view_action(key: KeyCode, annotation_selected: bool) -> Action {
         Action::Escape
     } else {
         key_to_action(key)
+    }
+}
+
+fn close_link_preview(key: KeyCode, app: &mut App) {
+    if matches!(key, KeyCode::Enter | KeyCode::Esc | KeyCode::Char('q')) {
+        app.boxes = Boxes::None;
     }
 }
 
@@ -759,5 +753,17 @@ mod tests {
             view_action(KeyCode::Char('q'), false),
             Action::None
         ));
+    }
+
+    #[test]
+    fn comment_close_keys_keep_annotation_mode_active() {
+        for key in [KeyCode::Enter, KeyCode::Esc, KeyCode::Char('q')] {
+            let mut app = App::default();
+            app.boxes = Boxes::LinkPreview;
+            app.annotation_selected = true;
+            close_link_preview(key, &mut app);
+            assert_eq!(app.boxes, Boxes::None);
+            assert!(app.annotation_selected);
+        }
     }
 }
