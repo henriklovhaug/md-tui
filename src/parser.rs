@@ -69,12 +69,18 @@ pub fn parse_markdown(name: Option<&str>, content: &str, width: u16) -> Componen
 }
 
 fn parse_text(pair: Pair<'_, Rule>) -> ParseNode {
+    let source_line = pair.as_span().start_pos().line_col().0
+        + pair
+            .as_str()
+            .lines()
+            .take_while(|line| line.trim().is_empty())
+            .count();
     let content = if pair.as_rule() == Rule::code_line {
         pair.as_str().replace('\t', "    ").replace('\r', "")
     } else {
         pair.as_str().replace('\n', " ")
     };
-    let mut component = ParseNode::new(pair.as_rule().into(), content);
+    let mut component = ParseNode::new_at_line(pair.as_rule().into(), content, source_line);
     let children = parse_node_children(pair.into_inner());
     component.add_children(children);
     component
@@ -102,10 +108,16 @@ fn parse_components(parse_node: ParseNode) -> Vec<Component> {
     if parse_node.kind() == MdParseEnum::Details {
         return parse_details(parse_node);
     }
-    vec![parse_component(parse_node)]
+    let source_line = parse_node.source_line();
+    let mut component = parse_component(parse_node);
+    if let Component::TextComponent(text) = &mut component {
+        text.set_source_line(source_line);
+    }
+    vec![component]
 }
 
 fn parse_details(parse_node: ParseNode) -> Vec<Component> {
+    let source_line = parse_node.source_line();
     let mut header_text = String::from("Details");
     let mut body_components: Vec<Component> = Vec::new();
     let mut open_attr_present = false;
@@ -144,14 +156,16 @@ fn parse_details(parse_node: ParseNode) -> Vec<Component> {
     let folded = !open_attr_present;
 
     let mut out = Vec::with_capacity(1 + body_len);
-    out.push(Component::TextComponent(TextComponent::new(
+    let mut summary = TextComponent::new(
         TextNode::DetailsSummary {
             id,
             folded,
             body_len,
         },
         vec![Word::new(header_text, WordType::Normal)],
-    )));
+    );
+    summary.set_source_line(source_line);
+    out.push(Component::TextComponent(summary));
     out.extend(body_components);
     out
 }
@@ -603,15 +617,22 @@ pub struct ParseNode {
     kind: MdParseEnum,
     content: String,
     children: Vec<ParseNode>,
+    source_line: usize,
 }
 
 impl ParseNode {
     #[must_use]
     pub fn new(kind: MdParseEnum, content: String) -> Self {
+        Self::new_at_line(kind, content, 1)
+    }
+
+    #[must_use]
+    pub fn new_at_line(kind: MdParseEnum, content: String, source_line: usize) -> Self {
         Self {
             kind,
             content,
             children: Vec::new(),
+            source_line,
         }
     }
 
@@ -623,6 +644,11 @@ impl ParseNode {
     #[must_use]
     pub fn content(&self) -> &str {
         &self.content
+    }
+
+    #[must_use]
+    pub fn source_line(&self) -> usize {
+        self.source_line
     }
 
     pub fn add_children(&mut self, children: Vec<ParseNode>) {
@@ -810,6 +836,43 @@ mod tests {
         let md = "*Section A*\r\n\r\n*Item with trailing space *\r\n\r\n*Section B*\r\n";
         let kinds = component_kinds(md);
         assert!(!kinds.is_empty());
+    }
+
+    #[test]
+    fn components_record_their_source_lines() {
+        let mut markdown = parse_markdown(
+            None,
+            "# Heading\n\nFirst paragraph.\n\n| key | value |\n|---|---|\n| a | 1 |\n",
+            80,
+        );
+        let components = markdown.components();
+
+        let heading = components
+            .iter()
+            .find(|component| component.kind() == TextNode::Heading)
+            .expect("heading");
+        let paragraph = components
+            .iter()
+            .find(|component| component.kind() == TextNode::Paragraph)
+            .expect("paragraph");
+        let table = components
+            .iter()
+            .find(|component| matches!(component.kind(), TextNode::Table(_, _)))
+            .expect("table");
+
+        assert_eq!(heading.source_line(), 1);
+        assert_eq!(paragraph.source_line(), 3);
+        assert_eq!(table.source_line(), 5);
+
+        drop(components);
+        markdown.set_scroll(0);
+        let table_offset = markdown
+            .components()
+            .iter()
+            .find(|component| matches!(component.kind(), TextNode::Table(_, _)))
+            .expect("table")
+            .y_offset();
+        assert_eq!(markdown.source_line_at_scroll(0, table_offset * 2), 5);
     }
 
     #[test]
