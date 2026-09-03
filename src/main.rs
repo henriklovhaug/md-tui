@@ -378,7 +378,9 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
     }
 
     if GENERAL_CONFIG.scrollbar && markdown.height() > area.height {
-        let scrollbar_area = Rect::new(area.right().saturating_sub(1), area.y, 1, area.height);
+        // Draw beside the document viewport. Drawing at `area.right() - 1`
+        // overwrites content that legitimately occupies its final column.
+        let scrollbar_area = Rect::new(area.right(), area.y, 1, area.height);
         let scrollbar_color = color_config().scrollbar_color;
         let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
             .begin_symbol(None)
@@ -497,6 +499,32 @@ fn open_editor(f: &mut Frame, app: &mut App, file_name: Option<&str>, source_lin
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ratatui::widgets::Widget;
+
+    #[test]
+    fn scrollbar_does_not_overwrite_the_document_last_column() {
+        let buffer_area = Rect::new(0, 0, 6, 2);
+        let document_area = Rect::new(0, 0, 5, 2);
+        let scrollbar_area = Rect::new(document_area.right(), 0, 1, 2);
+        let mut buffer = ratatui::buffer::Buffer::empty(buffer_area);
+
+        Paragraph::new("ABCDE").render(document_area, &mut buffer);
+        let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
+            .begin_symbol(None)
+            .end_symbol(None)
+            .track_symbol(Some("│"))
+            .thumb_symbol("┃");
+        let mut state = scrollbar_state(20, 4, 2, 0);
+        ratatui::widgets::StatefulWidget::render(
+            scrollbar,
+            scrollbar_area,
+            &mut buffer,
+            &mut state,
+        );
+
+        assert_eq!(buffer[(4, 0)].symbol(), "E");
+        assert!(matches!(buffer[(5, 0)].symbol(), "│" | "┃"));
+    }
 
     #[test]
     fn scrollbar_reaches_its_final_position_at_document_end() {
