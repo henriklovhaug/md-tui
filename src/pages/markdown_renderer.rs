@@ -80,7 +80,11 @@ impl Widget for TextComponent {
             .cloned()
             .unwrap_or_else(|| Word::new(String::new(), WordType::Normal));
 
-        let area = Rect { height, y, ..area };
+        let area = Rect {
+            height,
+            y: area.y.saturating_add(y),
+            ..area
+        };
 
         match kind {
             TextNode::Paragraph => render_paragraph(area, buf, self, clips),
