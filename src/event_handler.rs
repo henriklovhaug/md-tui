@@ -28,7 +28,7 @@ pub fn handle_keyboard_input(
     height: u16,
     watcher: &mut PollWatcher,
 ) -> KeyBoardAction {
-    if key == KeyCode::Char('q') && app.boxes != Boxes::Search {
+    if key == KeyCode::Char('q') && app.boxes == Boxes::None {
         return KeyBoardAction::Exit;
     }
     match app.mode {
@@ -179,7 +179,7 @@ pub fn keyboard_mode_file_tree(
             _ => {}
         },
         Boxes::LinkPreview => {
-            if key == KeyCode::Esc {
+            if matches!(key, KeyCode::Enter | KeyCode::Esc | KeyCode::Char('q')) {
                 app.boxes = Boxes::None;
             }
         }
@@ -705,7 +705,7 @@ fn keyboard_mode_view(
             _ => {}
         },
         Boxes::LinkPreview => {
-            if key == KeyCode::Esc {
+            if matches!(key, KeyCode::Enter | KeyCode::Esc | KeyCode::Char('q')) {
                 app.boxes = Boxes::None;
             }
         }

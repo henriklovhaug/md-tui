@@ -336,7 +336,10 @@ fn render_quote(area: Rect, buf: &mut Buffer, component: TextComponent, clip: Cl
 }
 
 fn style_heading(word: &Word, indent: u8) -> Span<'_> {
-    if word.kind() == WordType::Code {
+    if matches!(
+        word.kind(),
+        WordType::Code | WordType::CriticHighlight | WordType::Selected
+    ) {
         return style_word_content(word, word.content());
     }
     match indent {
@@ -669,4 +672,25 @@ fn render_horizontal_separator(area: Rect, buf: &mut Buffer) {
     )]));
 
     paragraph.render(area, buf);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn critic_markup_in_a_heading_keeps_annotation_styling() {
+        let passive = Word::new("Result".to_string(), WordType::CriticHighlight);
+        assert_eq!(
+            style_heading(&passive, 2).style,
+            style_word_content(&passive, passive.content()).style
+        );
+
+        let mut selected = passive;
+        selected.set_kind(WordType::Selected);
+        assert_eq!(
+            style_heading(&selected, 2).style,
+            style_word_content(&selected, selected.content()).style
+        );
+    }
 }
