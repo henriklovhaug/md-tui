@@ -82,11 +82,7 @@ pub fn keyboard_mode_file_tree(
             }
             _ => {}
         },
-        Boxes::None => match if key == KeyCode::Char('q') && app.annotation_selected {
-            Action::Escape
-        } else {
-            key_to_action(key)
-        } {
+        Boxes::None => match key_to_action(key) {
             Action::Down => {
                 file_tree.next(height);
             }
@@ -248,7 +244,7 @@ fn keyboard_mode_view(
             }
             _ => {}
         },
-        Boxes::None => match key_to_action(key) {
+        Boxes::None => match view_action(key, app.annotation_selected) {
             Action::Down => {
                 if app.selected {
                     app.select_index = cmp::min(app.select_index + 1, markdown.num_links() - 1);
@@ -739,4 +735,29 @@ fn keyboard_mode_view(
         },
     }
     KeyBoardAction::Continue
+}
+
+fn view_action(key: KeyCode, annotation_selected: bool) -> Action {
+    if key == KeyCode::Char('q') && annotation_selected {
+        Action::Escape
+    } else {
+        key_to_action(key)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn q_maps_to_escape_only_in_annotation_mode() {
+        assert!(matches!(
+            view_action(KeyCode::Char('q'), true),
+            Action::Escape
+        ));
+        assert!(matches!(
+            view_action(KeyCode::Char('q'), false),
+            Action::None
+        ));
+    }
 }
