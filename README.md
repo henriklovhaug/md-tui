@@ -168,7 +168,7 @@ gitignore = false
 alignment = "left" # "center" | "right"
 help_menu = true # false hides it
 document_header = false # true shows the current document path
-scrollbar = false # true shows the document position indicator
+scrollbar = true # false hides the document position indicator
 
 # Inline styling
 bold_color = "reset"
@@ -179,6 +179,7 @@ italic_color = "reset"
 link_color = "blue"
 link_selected_bg_color = "darkgrey"
 link_selected_fg_color = "green"
+scrollbar_color = "lightgreen"
 strikethrough_color = "reset"
 
 # Block styling

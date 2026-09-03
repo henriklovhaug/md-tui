@@ -40,6 +40,6 @@ pub static GENERAL_CONFIG: LazyLock<GeneralConfig> = LazyLock::new(|| {
             .unwrap_or(Centering::Left),
         help_menu: settings.get::<bool>("help_menu").unwrap_or(true),
         document_header: settings.get::<bool>("document_header").unwrap_or(false),
-        scrollbar: settings.get::<bool>("scrollbar").unwrap_or(false),
+        scrollbar: settings.get::<bool>("scrollbar").unwrap_or(true),
     }
 });
