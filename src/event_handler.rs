@@ -726,11 +726,17 @@ fn keyboard_mode_view(
             }
             _ => {}
         },
-        Boxes::LinkPreview => {
-            if matches!(key, KeyCode::Enter | KeyCode::Esc | KeyCode::Char('q')) {
+        Boxes::LinkPreview => match key {
+            KeyCode::Esc | KeyCode::Char('q') if app.annotation_selected => {
+                app.boxes = Boxes::None;
+                app.annotation_selected = false;
+                markdown.deselect();
+            }
+            KeyCode::Enter | KeyCode::Esc | KeyCode::Char('q') => {
                 app.boxes = Boxes::None;
             }
-        }
+            _ => {}
+        },
     }
     KeyBoardAction::Continue
 }
