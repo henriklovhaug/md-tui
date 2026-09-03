@@ -50,6 +50,7 @@ pub struct TextComponent {
     focused_index: usize,
     owning_details_ids: Vec<u32>,
     hidden: bool,
+    source_line: usize,
 }
 
 impl TextComponent {
@@ -74,6 +75,7 @@ impl TextComponent {
             focused_index: 0,
             owning_details_ids: Vec::new(),
             hidden: false,
+            source_line: 1,
         }
     }
 
@@ -112,6 +114,7 @@ impl TextComponent {
             focused_index: 0,
             owning_details_ids: Vec::new(),
             hidden: false,
+            source_line: 1,
         }
     }
 
@@ -123,6 +126,15 @@ impl TextComponent {
     #[must_use]
     pub fn content(&self) -> &Vec<Vec<Word>> {
         &self.content
+    }
+
+    #[must_use]
+    pub fn source_line(&self) -> usize {
+        self.source_line
+    }
+
+    pub fn set_source_line(&mut self, source_line: usize) {
+        self.source_line = source_line;
     }
 
     #[must_use]

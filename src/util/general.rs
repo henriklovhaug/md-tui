@@ -9,6 +9,7 @@ pub struct GeneralConfig {
     pub gitignore: bool,
     pub centering: Centering,
     pub help_menu: bool,
+    pub document_header: bool,
     pub scrollbar: bool,
 }
 
@@ -38,6 +39,7 @@ pub static GENERAL_CONFIG: LazyLock<GeneralConfig> = LazyLock::new(|| {
             .get::<Centering>("alignment")
             .unwrap_or(Centering::Left),
         help_menu: settings.get::<bool>("help_menu").unwrap_or(true),
+        document_header: settings.get::<bool>("document_header").unwrap_or(false),
         scrollbar: settings.get::<bool>("scrollbar").unwrap_or(false),
     }
 });

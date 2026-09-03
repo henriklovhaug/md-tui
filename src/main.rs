@@ -31,7 +31,8 @@ use ratatui::{
     DefaultTerminal, Frame,
     layout::Rect,
     style::{Modifier, Style, Stylize},
-    widgets::{Block, Clear, Scrollbar, ScrollbarOrientation, ScrollbarState},
+    text::Line,
+    widgets::{Block, Clear, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState},
 };
 use ratatui_image::{FilterType, Resize, StatefulImage};
 
@@ -241,8 +242,9 @@ fn run_app(terminal: &mut DefaultTerminal, mut app: App, tick_rate: Duration) ->
                 }
                 KeyBoardAction::Continue => {}
                 KeyBoardAction::Edit => {
+                    let source_line = markdown.source_line_at_scroll(app.vertical_scroll, height);
                     terminal.draw(|f| {
-                        open_editor(f, &mut app, markdown.file_name());
+                        open_editor(f, &mut app, markdown.file_name(), source_line);
                     })?;
                 }
             }
@@ -299,16 +301,31 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
         }
     };
 
+    let header_height = u16::from(GENERAL_CONFIG.document_header && markdown.file_name().is_some());
     let area = Rect {
         width: cmp::min(app.width() - 3, size.width - 1),
         height: if GENERAL_CONFIG.help_menu {
-            size.height.saturating_sub(5)
+            size.height.saturating_sub(5 + header_height)
         } else {
-            size.height
+            size.height.saturating_sub(header_height)
         },
         x,
-        ..size
+        y: header_height,
     };
+
+    if let Some(file_name) = markdown
+        .file_name()
+        .filter(|_| GENERAL_CONFIG.document_header)
+    {
+        let header_area = Rect::new(x, 0, area.width, 1);
+        let header = Paragraph::new(Line::from(format!(" {file_name}"))).style(
+            Style::default()
+                .fg(color_config().help_fg_color)
+                .bg(color_config().help_bg_color)
+                .add_modifier(Modifier::DIM),
+        );
+        f.render_widget(header, header_area);
+    }
 
     for child in markdown.children_mut() {
         match child {
@@ -349,7 +366,8 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
 
                 let inner_area = Rect::new(
                     area.x,
-                    img.y_offset().saturating_sub(img.scroll_offset()),
+                    area.y
+                        .saturating_add(img.y_offset().saturating_sub(img.scroll_offset())),
                     area.width,
                     height,
                 );
@@ -418,7 +436,7 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
     }
 }
 
-fn open_editor(f: &mut Frame, app: &mut App, file_name: Option<&str>) {
+fn open_editor(f: &mut Frame, app: &mut App, file_name: Option<&str>, source_line: usize) {
     let editor = if let Ok(editor) = env::var("EDITOR") {
         editor
     } else {
@@ -442,6 +460,7 @@ fn open_editor(f: &mut Frame, app: &mut App, file_name: Option<&str>) {
     execute!(io::stdout(), cursor::Show).unwrap();
 
     let _ = std::process::Command::new(editor)
+        .arg(format!("+{source_line}"))
         .arg(file_name)
         .spawn()
         .expect("Failed to open editor")

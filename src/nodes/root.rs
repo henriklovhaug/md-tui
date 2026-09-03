@@ -206,6 +206,20 @@ impl ComponentRoot {
         }
     }
 
+    /// Return the source line for the text block at the viewport midpoint.
+    #[must_use]
+    pub fn source_line_at_scroll(&self, scroll: u16, viewport_height: u16) -> usize {
+        let midpoint = scroll.saturating_add(viewport_height / 2);
+        self.components
+            .iter()
+            .filter_map(|component| match component {
+                Component::TextComponent(text) if !text.is_hidden() => Some(text),
+                Component::TextComponent(_) | Component::Image(_) => None,
+            })
+            .find(|text| text.y_offset().saturating_add(text.height()) > midpoint)
+            .map_or(1, TextComponent::source_line)
+    }
+
     pub fn heading_offset(&self, heading: &str) -> Result<u16, String> {
         let mut y_offset = 0;
         for component in &self.components {

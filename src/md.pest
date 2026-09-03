@@ -57,6 +57,13 @@ forbidden_sentence_prefix = {
     NEWLINE ~ WHITESPACE_S* ~ (image | task_prefix | quote_prefix | code_block_prefix | table_prefix | list_prefix | heading_prefix | details_open_tag | details_close_tag)
 }
 
+// Emphasis may span a soft line break, but not a blank line or the start of
+// another block. Without this boundary, an unmatched `*` can consume tables
+// and headings until a much later asterisk happens to close it.
+emphasis_newline = _{
+    NEWLINE ~ !(WHITESPACE_S* ~ (NEWLINE | image | task_prefix | code_block_prefix | table_prefix | list_prefix | heading_prefix | details_open_tag | details_close_tag))
+}
+
 // Lines
 alt_text    = { WHITESPACE_S* ~ alt_word+ }
 bold        = { NEWLINE? ~ WHITESPACE_S* ~ !"\\" ~ "**" ~ (bold_word | (NEWLINE ~ quote_prefix?))+ ~ "**" }
@@ -83,13 +90,13 @@ strikethrough         =  { NEWLINE? ~ WHITESPACE_S* ~ !"\\" ~ "~~" ~ !"~" ~ (str
 t_normal              = _{ t_word+ }
 
 italic_var_1 = {
-    (NEWLINE? ~ WHITESPACE_S* ~ !"\\" ~ "*" ~ (italic_word_var_1 | (NEWLINE ~ quote_prefix?))+ ~ "*")
-  | ((NEWLINE | WHITESPACE_S) ~ WHITESPACE_S* ~ !"\\" ~ "_" ~ (italic_word_var_1 | (NEWLINE ~ quote_prefix?))+ ~ "_")
+    (NEWLINE? ~ WHITESPACE_S* ~ !"\\" ~ "*" ~ (italic_word_var_1 | (emphasis_newline ~ quote_prefix?))+ ~ "*")
+  | ((NEWLINE | WHITESPACE_S) ~ WHITESPACE_S* ~ !"\\" ~ "_" ~ (italic_word_var_1 | (emphasis_newline ~ quote_prefix?))+ ~ "_")
 }
 
 italic_var_2 = {
-    (NEWLINE? ~ WHITESPACE_S* ~ !"\\" ~ "*" ~ (italic_word_var_2 | (NEWLINE ~ quote_prefix?))+ ~ "*")
-  | ((NEWLINE | WHITESPACE_S) ~ WHITESPACE_S* ~ !"\\" ~ "*" ~ (italic_word_var_2 | (NEWLINE ~ quote_prefix?))+ ~ "*")
+    (NEWLINE? ~ WHITESPACE_S* ~ !"\\" ~ "*" ~ (italic_word_var_2 | (emphasis_newline ~ quote_prefix?))+ ~ "*")
+  | ((NEWLINE | WHITESPACE_S) ~ WHITESPACE_S* ~ !"\\" ~ "*" ~ (italic_word_var_2 | (emphasis_newline ~ quote_prefix?))+ ~ "*")
 }
 
 sentence          = _{ (latex | footnote_ref_container | code | link | bold_italic | italic_var_1 | italic_var_2 | bold | strikethrough | normal+)+ }

@@ -167,6 +167,7 @@ width = 100 # Set to 0 for full terminal width
 gitignore = false
 alignment = "left" # "center" | "right"
 help_menu = true # false hides it
+document_header = false # true shows the current document path
 scrollbar = false # true shows the document position indicator
 
 # Inline styling
