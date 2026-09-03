@@ -52,7 +52,9 @@ impl From<MdParseEnum> for WordType {
             MdParseEnum::FootnoteRef => WordType::FootnoteInline,
             MdParseEnum::Code => WordType::Code,
             MdParseEnum::CriticComment => WordType::CriticComment,
-            MdParseEnum::CriticHighlight => WordType::CriticHighlight,
+            MdParseEnum::CriticHighlight | MdParseEnum::CriticCodeHighlight => {
+                WordType::CriticHighlight
+            }
             MdParseEnum::Bold => WordType::Bold,
             MdParseEnum::Italic => WordType::Italic,
             MdParseEnum::Strikethrough => WordType::Strikethrough,

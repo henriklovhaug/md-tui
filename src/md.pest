@@ -91,10 +91,15 @@ t_normal              = _{ t_word+ }
 
 // CriticMarkup highlighted text followed by its attached comment.
 critic_highlight = @{ (!"==}" ~ ANY)+ }
+critic_code_highlight = @{ (!"`==}" ~ ANY)+ }
 critic_comment   = @{ (!"<<}" ~ ANY)* }
 critic_prefix    = @{ NEWLINE? ~ WHITESPACE_S+ }
 critic_boundary  = @{ "" }
-critic_markup    = { critic_prefix? ~ "{==" ~ critic_highlight ~ "==}" ~ "{>>" ~ critic_comment ~ "<<}" ~ critic_boundary }
+critic_markup    = {
+    critic_prefix?
+    ~ (("`{==" ~ critic_code_highlight ~ "`==}") | ("{==" ~ critic_highlight ~ "==}"))
+    ~ "{>>" ~ critic_comment ~ "<<}" ~ critic_boundary
+}
 
 italic_var_1 = {
     (NEWLINE? ~ WHITESPACE_S* ~ !"\\" ~ "*" ~ (italic_word_var_1 | (emphasis_newline ~ quote_prefix?))+ ~ "*")

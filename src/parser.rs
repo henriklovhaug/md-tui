@@ -682,6 +682,7 @@ pub enum MdParseEnum {
     CodeStr,
     CriticComment,
     CriticBoundary,
+    CriticCodeHighlight,
     CriticHighlight,
     CriticMarkup,
     CriticPrefix,
@@ -741,6 +742,7 @@ impl From<Rule> for MdParseEnum {
             Rule::code => Self::CodeStr,
             Rule::critic_comment => Self::CriticComment,
             Rule::critic_boundary => Self::CriticBoundary,
+            Rule::critic_code_highlight => Self::CriticCodeHighlight,
             Rule::critic_highlight => Self::CriticHighlight,
             Rule::critic_markup => Self::CriticMarkup,
             Rule::critic_prefix => Self::CriticPrefix,
@@ -905,6 +907,29 @@ mod tests {
         let (quote, comment) = root.selected_annotation().expect("selected annotation");
         assert_eq!(quote, "second");
         assert_eq!(comment, "two");
+    }
+
+    #[test]
+    fn critic_markup_selected_inside_inline_code_is_recognized() {
+        let mut root = parse_markdown(
+            None,
+            "The `{==coefficient`==}{>>Interpret this term.<<} is absorbed.\n",
+            80,
+        );
+
+        assert_eq!(root.num_annotations(), 1);
+        root.select_annotation(0).expect("select annotation");
+        let (quote, comment) = root.selected_annotation().expect("selected annotation");
+        assert_eq!(quote, "coefficient");
+        assert_eq!(comment, "Interpret this term.");
+        let rendered = root
+            .components()
+            .into_iter()
+            .flat_map(TextComponent::content_as_lines)
+            .collect::<Vec<_>>()
+            .join("\n");
+        assert!(rendered.contains("The coefficient is absorbed."));
+        assert!(!rendered.contains("{=="));
     }
 
     #[test]
