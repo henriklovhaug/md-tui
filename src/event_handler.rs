@@ -264,6 +264,17 @@ fn keyboard_mode_view(
                         } else {
                             app.vertical_scroll
                         };
+                } else if app.annotation_selected {
+                    let max_idx = markdown.num_annotations().saturating_sub(1);
+                    app.annotation_select_index =
+                        cmp::min(app.annotation_select_index + 1, max_idx);
+                    app.vertical_scroll = if let Ok(scroll) =
+                        markdown.select_annotation(app.annotation_select_index)
+                    {
+                        scroll.saturating_sub(height / 3)
+                    } else {
+                        app.vertical_scroll
+                    };
                 } else {
                     app.vertical_scroll = cmp::min(
                         app.vertical_scroll + 1,
@@ -289,6 +300,15 @@ fn keyboard_mode_view(
                         } else {
                             app.vertical_scroll
                         };
+                } else if app.annotation_selected {
+                    app.annotation_select_index = app.annotation_select_index.saturating_sub(1);
+                    app.vertical_scroll = if let Ok(scroll) =
+                        markdown.select_annotation(app.annotation_select_index)
+                    {
+                        scroll.saturating_sub(height / 3)
+                    } else {
+                        app.vertical_scroll
+                    };
                 } else {
                     app.vertical_scroll = app.vertical_scroll.saturating_sub(1);
                 }
@@ -371,6 +391,7 @@ fn keyboard_mode_view(
                     };
                     app.selected = true;
                     app.details_selected = false;
+                    app.annotation_selected = false;
                     markdown.deselect_details();
                 } else {
                     // Something weird must have happened at this point
@@ -399,6 +420,7 @@ fn keyboard_mode_view(
                 app.select_index = index;
                 app.selected = true;
                 app.details_selected = false;
+                app.annotation_selected = false;
                 markdown.deselect_details();
                 app.vertical_scroll = if let Ok(scroll) = markdown.select(app.select_index) {
                     scroll.saturating_sub(height / 3)
@@ -422,6 +444,7 @@ fn keyboard_mode_view(
                 // Clear any link selection first — the two modes are
                 // mutually exclusive.
                 app.selected = false;
+                app.annotation_selected = false;
                 markdown.deselect();
 
                 let next_idx = if app.details_selected {
@@ -440,6 +463,39 @@ fn keyboard_mode_view(
                 app.details_select_index = next_idx;
                 app.details_selected = true;
                 app.vertical_scroll = if let Ok(scroll) = markdown.select_details(next_idx) {
+                    scroll.saturating_sub(height / 3)
+                } else {
+                    app.vertical_scroll
+                };
+            }
+
+            Action::SelectAnnotation => {
+                let annotations = markdown.annotation_index_and_height();
+                if annotations.is_empty() {
+                    app.message_box
+                        .set_message("No CriticMarkup annotations found".to_string());
+                    app.boxes = Boxes::Error;
+                    return KeyBoardAction::Continue;
+                }
+
+                app.selected = false;
+                app.details_selected = false;
+                markdown.deselect();
+                markdown.deselect_details();
+
+                let next_idx = if app.annotation_selected {
+                    cmp::min(app.annotation_select_index + 1, annotations.len() - 1)
+                } else {
+                    annotations
+                        .iter()
+                        .find(|(_, y)| *y >= app.vertical_scroll)
+                        .map(|(index, _)| *index)
+                        .unwrap_or_else(|| annotations.last().map_or(0, |(index, _)| *index))
+                };
+
+                app.annotation_select_index = next_idx;
+                app.annotation_selected = true;
+                app.vertical_scroll = if let Ok(scroll) = markdown.select_annotation(next_idx) {
                     scroll.saturating_sub(height / 3)
                 } else {
                     app.vertical_scroll
@@ -501,9 +557,26 @@ fn keyboard_mode_view(
                 markdown.deselect();
                 app.details_selected = false;
                 markdown.deselect_details();
+                app.annotation_selected = false;
             }
 
             Action::Enter => {
+                if app.annotation_selected {
+                    match markdown.selected_annotation() {
+                        Ok((quote, comment)) => {
+                            app.link_box.set_message(format!(
+                                "Comment on \u{201c}{quote}\u{201d}:\n\n{comment}"
+                            ));
+                            app.boxes = Boxes::LinkPreview;
+                        }
+                        Err(message) => {
+                            app.message_box.set_message(message);
+                            app.boxes = Boxes::Error;
+                        }
+                    }
+                    return KeyBoardAction::Continue;
+                }
+
                 // A focused `<details>` summary toggles its fold state
                 // and stays in selection mode so the user can chain
                 // multiple toggles without re-pressing `D`.

@@ -109,7 +109,10 @@ impl Widget for TextComponent {
 
 fn style_word_content<'a>(word: &Word, content: impl Into<Cow<'a, str>>) -> Span<'a> {
     match word.kind() {
-        WordType::MetaInfo(_) | WordType::LinkData | WordType::FootnoteData => unreachable!(),
+        WordType::MetaInfo(_)
+        | WordType::LinkData
+        | WordType::FootnoteData
+        | WordType::CriticComment => unreachable!(),
         WordType::Selected => Span::styled(
             content,
             Style::default()
@@ -117,6 +120,12 @@ fn style_word_content<'a>(word: &Word, content: impl Into<Cow<'a, str>>) -> Span
                 .bg(color_config().link_selected_bg_color),
         ),
         WordType::Normal => Span::raw(content),
+        WordType::CriticHighlight => Span::styled(
+            content,
+            Style::default()
+                .fg(color_config().critic_highlight_fg_color)
+                .bg(color_config().critic_highlight_bg_color),
+        ),
         WordType::Code => Span::styled(content, Style::default().fg(color_config().code_fg_color))
             .bg(color_config().code_bg_color),
         WordType::Link | WordType::FootnoteInline => {

@@ -12,15 +12,15 @@ i_char_var_2     = _{ (!(NEWLINE | comment | WHITESPACE_S | "*") ~ ANY)+ }
 indent           =  { WHITESPACE_S* }
 latex_char       = _{ (!(NEWLINE | WHITESPACE_S | "$") ~ ANY)+ }
 link_char        = _{ (!(NEWLINE | WHITESPACE_S | "[" | "]" | "(" | ")") ~ ANY)+ }
-p_char           = _{ (!(NEWLINE | comment | footnote_ref_container | code | bold_italic | italic_var_1 | italic_var_2 | bold | strikethrough | latex | WHITESPACE_S | link) ~ ANY)+ }
+p_char           = _{ (!(NEWLINE | comment | critic_markup | footnote_ref_container | code | bold_italic | italic_var_1 | italic_var_2 | bold | strikethrough | latex | WHITESPACE_S | link) ~ ANY)+ }
 s_char           = _{ (!(NEWLINE | comment | WHITESPACE_S | "~~") ~ ANY)+ }
-t_char           = _{ (!(NEWLINE | comment | code | bold_italic | italic_var_1 | bold | strikethrough | latex | WHITESPACE_S | "|") ~ ANY)+ }
+t_char           = _{ (!(NEWLINE | comment | critic_markup | code | bold_italic | italic_var_1 | bold | strikethrough | latex | WHITESPACE_S | "|") ~ ANY)+ }
 wiki_link_char   = _{ (!(NEWLINE | WHITESPACE_S | "|" | "[[" | "]]") ~ ANY)+ }
 inline_link_char = _{ (!(NEWLINE | WHITESPACE_S | "<" | ">") ~ ANY)+ }
 
 // Words
 word                   =  {
-    !(forbidden_sentence_prefix | footnote_ref_container | latex | bold_italic | bold | italic_var_1 | strikethrough | code | link) ~ NEWLINE? ~ WHITESPACE_S* ~ p_char+
+    !(forbidden_sentence_prefix | critic_markup | footnote_ref_container | latex | bold_italic | bold | italic_var_1 | strikethrough | code | link) ~ NEWLINE? ~ WHITESPACE_S* ~ p_char+
 }
 t_word                 =  {
     !(forbidden_sentence_prefix | latex | bold_italic | bold | italic_var_1 | italic_var_2 | strikethrough | code | link) ~ NEWLINE? ~ WHITESPACE_S* ~ t_char+
@@ -89,6 +89,13 @@ programming_language  =  { (!NEWLINE ~ ANY)+ }
 strikethrough         =  { NEWLINE? ~ WHITESPACE_S* ~ !"\\" ~ "~~" ~ !"~" ~ (strikethrough_word | (NEWLINE ~ quote_prefix?))+ ~ "~~" }
 t_normal              = _{ t_word+ }
 
+// CriticMarkup highlighted text followed by its attached comment.
+critic_highlight = @{ (!"==}" ~ ANY)+ }
+critic_comment   = @{ (!"<<}" ~ ANY)* }
+critic_prefix    = @{ NEWLINE? ~ WHITESPACE_S+ }
+critic_boundary  = @{ "" }
+critic_markup    = { critic_prefix? ~ "{==" ~ critic_highlight ~ "==}" ~ "{>>" ~ critic_comment ~ "<<}" ~ critic_boundary }
+
 italic_var_1 = {
     (NEWLINE? ~ WHITESPACE_S* ~ !"\\" ~ "*" ~ (italic_word_var_1 | (emphasis_newline ~ quote_prefix?))+ ~ "*")
   | ((NEWLINE | WHITESPACE_S) ~ WHITESPACE_S* ~ !"\\" ~ "_" ~ (italic_word_var_1 | (emphasis_newline ~ quote_prefix?))+ ~ "_")
@@ -99,9 +106,9 @@ italic_var_2 = {
   | ((NEWLINE | WHITESPACE_S) ~ WHITESPACE_S* ~ !"\\" ~ "*" ~ (italic_word_var_2 | (emphasis_newline ~ quote_prefix?))+ ~ "*")
 }
 
-sentence          = _{ (latex | footnote_ref_container | code | link | bold_italic | italic_var_1 | italic_var_2 | bold | strikethrough | normal+)+ }
-t_sentence        = _{ (!"|" ~ (latex | footnote_ref_container | code | link | bold_italic | italic_var_1 | italic_var_2 | bold | strikethrough | t_normal))+ }
-footnote_sentence = _{ ((":" | (NEWLINE ~ "  ")) ~ WHITESPACE_S* ~ (latex | code | link | bold_italic | italic_var_1 | italic_var_2 | bold | strikethrough | normal+))+ }
+sentence          = _{ (critic_markup | latex | footnote_ref_container | code | link | bold_italic | italic_var_1 | italic_var_2 | bold | strikethrough | normal+)+ }
+t_sentence        = _{ (!"|" ~ (critic_markup | latex | footnote_ref_container | code | link | bold_italic | italic_var_1 | italic_var_2 | bold | strikethrough | t_normal))+ }
+footnote_sentence = _{ ((":" | (NEWLINE ~ "  ")) ~ WHITESPACE_S* ~ (critic_markup | latex | code | link | bold_italic | italic_var_1 | italic_var_2 | bold | strikethrough | normal+))+ }
 
 table_cell      = { !table_separator ~ table_cell_content }
 table_body_cell = { table_cell_content }
@@ -112,12 +119,12 @@ u_list = { indent ~ ("-" | "*") ~ WHITESPACE_S ~ sentence+ }
 o_list = { indent ~ o_list_counter ~ sentence+ }
 
 // Headings
-h1 = { "# " ~ (h_word | (!NEWLINE ~ code) | WHITESPACE_S)+ }
-h2 = { "## " ~ (h_word | (!NEWLINE ~ code) | WHITESPACE_S)+ }
-h3 = { "### " ~ (h_word | (!NEWLINE ~ code) | WHITESPACE_S)+ }
-h4 = { "#### " ~ (h_word | (!NEWLINE ~ code) | WHITESPACE_S)+ }
-h5 = { "##### " ~ (h_word | (!NEWLINE ~ code) | WHITESPACE_S)+ }
-h6 = { "###### " ~ (h_word | (!NEWLINE ~ code) | WHITESPACE_S)+ }
+h1 = { "# " ~ (critic_markup | h_word | (!NEWLINE ~ code) | WHITESPACE_S)+ }
+h2 = { "## " ~ (critic_markup | h_word | (!NEWLINE ~ code) | WHITESPACE_S)+ }
+h3 = { "### " ~ (critic_markup | h_word | (!NEWLINE ~ code) | WHITESPACE_S)+ }
+h4 = { "#### " ~ (critic_markup | h_word | (!NEWLINE ~ code) | WHITESPACE_S)+ }
+h5 = { "##### " ~ (critic_markup | h_word | (!NEWLINE ~ code) | WHITESPACE_S)+ }
+h6 = { "###### " ~ (critic_markup | h_word | (!NEWLINE ~ code) | WHITESPACE_S)+ }
 
 // Quote markings
 important = { ^"[!important]" }
