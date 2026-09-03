@@ -147,6 +147,8 @@ select_link = 's'
 select_link_alt = 'S'
 # Enter select-details mode. Press <Enter> on a selected <details> to fold/unfold it.
 select_details = 'D'
+# Select CriticMarkup annotations. Press <Enter> to read the selected comment.
+select_annotation = 'c'
 edit = 'e'
 hover = 'K'
 back = 'b'
@@ -180,6 +182,8 @@ link_color = "blue"
 link_selected_bg_color = "darkgrey"
 link_selected_fg_color = "green"
 scrollbar_color = "lightgreen"
+critic_highlight_bg_color = "darkgrey"
+critic_highlight_fg_color = "reset"
 strikethrough_color = "reset"
 
 # Block styling
@@ -236,6 +240,19 @@ help_bg_color = "black"
 help_fg_color = "lightgreen"
 help_title_color = "lightgreen"
 ```
+
+## CriticMarkup comments
+
+MD-TUI renders CriticMarkup highlight/comment pairs without their delimiters:
+
+```markdown
+{==Text under review==}{>>Comment about that text.<<}
+```
+
+Press `c` to select an annotation, use `j`/`k`, the arrow keys, or `n`/`N` to
+move between annotations, and press Enter to read its comment. Enter, Escape,
+or `q` closes the comment popup and stays in annotation mode. With the popup
+closed, Escape or `q` exits annotation mode.
 
 ## Links
 

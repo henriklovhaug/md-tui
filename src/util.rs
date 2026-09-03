@@ -50,6 +50,8 @@ pub struct App {
     pub select_index: usize,
     pub details_selected: bool,
     pub details_select_index: usize,
+    pub annotation_selected: bool,
+    pub annotation_select_index: usize,
     pub mode: Mode,
     pub boxes: Boxes,
     pub history: JumpHistory,
@@ -66,6 +68,8 @@ impl App {
         self.select_index = 0;
         self.details_selected = false;
         self.details_select_index = 0;
+        self.annotation_selected = false;
+        self.annotation_select_index = 0;
         self.boxes = Boxes::None;
         self.help_box.close();
     }

@@ -24,6 +24,8 @@ pub enum WordType {
     BoldItalic,
     Code,
     CodeBlock(Color),
+    CriticComment,
+    CriticHighlight,
     Footnote,
     FootnoteData,
     FootnoteInline,
@@ -49,6 +51,10 @@ impl From<MdParseEnum> for WordType {
             | MdParseEnum::HorizontalSeparator => WordType::MetaInfo(MetaData::Other),
             MdParseEnum::FootnoteRef => WordType::FootnoteInline,
             MdParseEnum::Code => WordType::Code,
+            MdParseEnum::CriticComment => WordType::CriticComment,
+            MdParseEnum::CriticHighlight | MdParseEnum::CriticCodeHighlight => {
+                WordType::CriticHighlight
+            }
             MdParseEnum::Bold => WordType::Bold,
             MdParseEnum::Italic => WordType::Italic,
             MdParseEnum::Strikethrough => WordType::Strikethrough,
@@ -59,6 +65,8 @@ impl From<MdParseEnum> for WordType {
             | MdParseEnum::AltText
             | MdParseEnum::Quote
             | MdParseEnum::Sentence
+            | MdParseEnum::CriticBoundary
+            | MdParseEnum::CriticPrefix
             | MdParseEnum::Word => WordType::Normal,
             MdParseEnum::LinkData => WordType::LinkData,
             MdParseEnum::Imortant => WordType::MetaInfo(MetaData::Important),
@@ -71,6 +79,7 @@ impl From<MdParseEnum> for WordType {
             | MdParseEnum::BoldStr
             | MdParseEnum::CodeBlock
             | MdParseEnum::CodeStr
+            | MdParseEnum::CriticMarkup
             | MdParseEnum::Details
             | MdParseEnum::DetailsBody
             | MdParseEnum::DetailsOpenAttr
@@ -149,7 +158,10 @@ impl Word {
     pub fn is_renderable(&self) -> bool {
         !matches!(
             self.kind(),
-            WordType::MetaInfo(_) | WordType::LinkData | WordType::FootnoteData
+            WordType::MetaInfo(_)
+                | WordType::LinkData
+                | WordType::FootnoteData
+                | WordType::CriticComment
         )
     }
 

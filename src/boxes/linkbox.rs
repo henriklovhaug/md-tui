@@ -34,7 +34,11 @@ impl Default for LinkBox {
 impl Widget for LinkBox {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let paragraph = Paragraph::new(self.message)
-            .block(Block::default().borders(Borders::ALL))
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .title(" Enter/Esc/q: close "),
+            )
             .wrap(Wrap { trim: true })
             .alignment(Alignment::Center);
         paragraph.render(area, buf);

@@ -27,6 +27,8 @@ pub struct ColorConfig {
     pub link_selected_fg_color: Color,
     pub link_selected_bg_color: Color,
     pub scrollbar_color: Color,
+    pub critic_highlight_fg_color: Color,
+    pub critic_highlight_bg_color: Color,
 
     // Block styles
     pub code_block_bg_color: Color,
@@ -119,6 +121,18 @@ pub fn read_color_config_from_file() -> ColorConfig {
                 .unwrap_or_default(),
         )
         .unwrap_or(Color::LightGreen),
+        critic_highlight_fg_color: Color::from_str(
+            &settings
+                .get::<String>("critic_highlight_fg_color")
+                .unwrap_or_default(),
+        )
+        .unwrap_or(Color::Reset),
+        critic_highlight_bg_color: Color::from_str(
+            &settings
+                .get::<String>("critic_highlight_bg_color")
+                .unwrap_or_default(),
+        )
+        .unwrap_or(Color::DarkGray),
         table_header_fg_color: Color::from_str(
             &settings
                 .get::<String>("table_header_fg_color")
