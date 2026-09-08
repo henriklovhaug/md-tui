@@ -58,7 +58,13 @@ impl TextComponent {
     pub fn new(kind: TextNode, content: Vec<Word>) -> Self {
         let meta_info: Vec<Word> = content
             .iter()
-            .filter(|c| !c.is_renderable() || c.kind() == WordType::FootnoteInline)
+            .filter(|c| {
+                !c.is_renderable()
+                    || matches!(
+                        c.kind(),
+                        WordType::FootnoteInline | WordType::CriticHighlight
+                    )
+            })
             .cloned()
             .collect();
 
@@ -94,7 +100,7 @@ impl TextComponent {
             content
                 .iter()
                 .flatten()
-                .filter(|c| !c.is_renderable())
+                .filter(|c| !c.is_renderable() || c.kind() == WordType::CriticHighlight)
                 .cloned(),
         );
 
@@ -332,6 +338,90 @@ impl TextComponent {
             }
         }
         selection
+    }
+
+    pub fn visually_select_annotation(&mut self, index: usize) -> Result<(), String> {
+        self.focused = true;
+        self.focused_index = index;
+
+        if index >= self.num_annotations() {
+            return Err(format!(
+                "Annotation index out of bounds: {} >= {}",
+                index,
+                self.num_annotations()
+            ));
+        }
+
+        self.annotation_words_mut()
+            .get_mut(index)
+            .ok_or("annotation index out of bounds")?
+            .iter_mut()
+            .for_each(|word| word.set_kind(WordType::Selected));
+        Ok(())
+    }
+
+    fn annotation_words_mut(&mut self) -> Vec<Vec<&mut Word>> {
+        let mut annotations = Vec::new();
+        for word in self.content.iter_mut().flatten() {
+            if word.kind() == WordType::CriticHighlight {
+                if word.starts_annotation() || annotations.is_empty() {
+                    annotations.push(Vec::new());
+                }
+                annotations.last_mut().expect("annotation group").push(word);
+            }
+        }
+        annotations
+    }
+
+    #[must_use]
+    pub fn num_annotations(&self) -> usize {
+        if self.hidden {
+            return 0;
+        }
+        self.meta_info
+            .iter()
+            .filter(|word| word.kind() == WordType::CriticComment)
+            .count()
+    }
+
+    #[must_use]
+    pub fn annotation_heights(&self) -> Vec<u16> {
+        if self.hidden {
+            return Vec::new();
+        }
+
+        let mut heights = Vec::new();
+        for (row, words) in self.content.iter().enumerate() {
+            for word in words {
+                let highlighted =
+                    matches!(word.kind(), WordType::CriticHighlight | WordType::Selected)
+                        && (word.kind() != WordType::Selected
+                            || word.previous_type() == WordType::CriticHighlight);
+                if highlighted && word.starts_annotation() {
+                    heights.push(self.y_offset().saturating_add(row as u16));
+                }
+            }
+        }
+        heights
+    }
+
+    pub fn selected_annotation(&self) -> Result<(String, &str), String> {
+        let quote = self
+            .meta_info
+            .iter()
+            .filter(|word| word.kind() == WordType::CriticHighlight)
+            .nth(self.focused_index)
+            .ok_or("annotation quote not found")?
+            .content()
+            .to_owned();
+        let comment = self
+            .meta_info
+            .iter()
+            .filter(|word| word.kind() == WordType::CriticComment)
+            .nth(self.focused_index)
+            .ok_or("annotation comment not found")?
+            .content();
+        Ok((quote, comment))
     }
 
     #[must_use]

@@ -425,6 +425,19 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
         f.render_widget(block, area);
     }
 
+    if app.annotation_selected && app.help_box.expanded() {
+        let status_area = Rect::new(x, size.height.saturating_sub(19), area.width, 1);
+        let status = Paragraph::new(
+            " ANNOTATION MODE  j/n/\u{2193} next  k/N/\u{2191} previous  Enter comment  Esc/q normal",
+        )
+        .style(
+            Style::default()
+                .fg(color_config().help_fg_color)
+                .bg(color_config().help_bg_color),
+        );
+        f.render_widget(status, status_area);
+    }
+
     let area = if app.help_box.expanded() {
         Rect {
             x: x + 2,
