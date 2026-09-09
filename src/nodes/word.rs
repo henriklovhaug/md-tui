@@ -152,12 +152,4 @@ impl Word {
             WordType::MetaInfo(_) | WordType::LinkData | WordType::FootnoteData
         )
     }
-
-    pub fn split_off(&mut self, at: usize) -> Word {
-        Word {
-            content: self.content.split_off(at),
-            word_type: self.word_type,
-            previous_type: self.previous_type,
-        }
-    }
 }
