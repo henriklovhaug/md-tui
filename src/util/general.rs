@@ -11,6 +11,7 @@ pub struct GeneralConfig {
     pub help_menu: bool,
     pub document_header: bool,
     pub scrollbar: bool,
+    pub image_max_height: u16,
     pub remember_position: bool,
     pub position_cache_ttl_minutes: u64,
 }
@@ -43,6 +44,7 @@ pub static GENERAL_CONFIG: LazyLock<GeneralConfig> = LazyLock::new(|| {
         help_menu: settings.get::<bool>("help_menu").unwrap_or(true),
         document_header: settings.get::<bool>("document_header").unwrap_or(false),
         scrollbar: settings.get::<bool>("scrollbar").unwrap_or(true),
+        image_max_height: settings.get::<u16>("image_max_height").unwrap_or(20).max(1),
         remember_position: settings.get::<bool>("remember_position").unwrap_or(true),
         position_cache_ttl_minutes: settings
             .get::<u64>("position_cache_ttl_minutes")

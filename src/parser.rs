@@ -61,7 +61,7 @@ pub fn parse_markdown(name: Option<&str>, content: &str, width: u16) -> Componen
 
     let parse_root = ParseRoot::new(name.map(str::to_string), children);
 
-    let mut root = node_to_component(parse_root).add_missing_components();
+    let mut root = node_to_component(parse_root, width).add_missing_components();
 
     root.transform(width);
     root.recompute_visibility();
@@ -94,29 +94,29 @@ fn parse_node_children(pair: Pairs<'_, Rule>) -> Vec<ParseNode> {
     children
 }
 
-fn node_to_component(root: ParseRoot) -> ComponentRoot {
+fn node_to_component(root: ParseRoot, width: u16) -> ComponentRoot {
     let mut children = Vec::new();
     let name = root.file_name().clone();
     for component in root.children_owned() {
-        children.extend(parse_components(component));
+        children.extend(parse_components(component, width));
     }
 
     ComponentRoot::new(name, children)
 }
 
-fn parse_components(parse_node: ParseNode) -> Vec<Component> {
+fn parse_components(parse_node: ParseNode, width: u16) -> Vec<Component> {
     if parse_node.kind() == MdParseEnum::Details {
-        return parse_details(parse_node);
+        return parse_details(parse_node, width);
     }
     let source_line = parse_node.source_line();
-    let mut component = parse_component(parse_node);
+    let mut component = parse_component(parse_node, width);
     if let Component::TextComponent(text) = &mut component {
         text.set_source_line(source_line);
     }
     vec![component]
 }
 
-fn parse_details(parse_node: ParseNode) -> Vec<Component> {
+fn parse_details(parse_node: ParseNode, width: u16) -> Vec<Component> {
     let source_line = parse_node.source_line();
     let mut header_text = String::from("Details");
     let mut body_components: Vec<Component> = Vec::new();
@@ -140,11 +140,11 @@ fn parse_details(parse_node: ParseNode) -> Vec<Component> {
             }
             MdParseEnum::DetailsBody => {
                 for body_child in child.children_owned() {
-                    body_components.extend(parse_components(body_child));
+                    body_components.extend(parse_components(body_child, width));
                 }
             }
             _ => {
-                body_components.extend(parse_components(child));
+                body_components.extend(parse_components(child, width));
             }
         }
     }
@@ -174,7 +174,7 @@ fn is_url(url: &str) -> bool {
     url.starts_with("http://") || url.starts_with("https://")
 }
 
-fn parse_component(parse_node: ParseNode) -> Component {
+fn parse_component(parse_node: ParseNode, width: u16) -> Component {
     match parse_node.kind() {
         MdParseEnum::Image => {
             let leaf_nodes = get_leaf_nodes(parse_node);
@@ -207,18 +207,8 @@ fn parse_component(parse_node: ParseNode) -> Component {
             }
 
             if let Some(img) = image.as_ref() {
-                let height = img.height();
-
-                let comp = ImageComponent::new(img.to_owned(), height, alt_text.clone());
-
-                if let Some(comp) = comp {
-                    Component::Image(comp)
-                } else {
-                    let word = [Word::new(format!("[{alt_text}]"), WordType::Normal)];
-
-                    let comp = TextComponent::new(TextNode::Paragraph, word.into());
-                    Component::TextComponent(comp)
-                }
+                let comp = ImageComponent::new(img.to_owned(), width, alt_text.clone());
+                Component::Image(comp)
             } else {
                 let word = [
                     Word::new("Image".to_string(), WordType::Normal),
