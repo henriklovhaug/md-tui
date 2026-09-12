@@ -63,8 +63,8 @@ for configuration options.
 | ---------------- | ----------------------------------------------------------------- |
 | `j` or `<Down>`  | Scroll down                                                       |
 | `k` or `<Up>`    | Scroll up                                                         |
-| `h`              | Go down half a page                                               |
-| `l`              | Go up half a page                                                 |
+| `h`              | Go up half a page                                                 |
+| `l`              | Go down half a page                                               |
 | `d` or `<Left>`  | Scroll one page down                                              |
 | `u` or `<Right>` | Scroll one page up                                                |
 | `f` or `/`       | Search                                                            |
