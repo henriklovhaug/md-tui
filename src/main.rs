@@ -22,7 +22,7 @@ use md_tui::{
 
 use crossterm::{
     cursor,
-    event::{self, DisableMouseCapture, EnableMouseCapture, Event},
+    event::{self, Event},
     execute,
     terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
@@ -524,7 +524,7 @@ fn open_editor(f: &mut Frame, app: &mut App, file_name: Option<&str>, source_lin
     };
 
     disable_raw_mode().unwrap();
-    execute!(io::stdout(), LeaveAlternateScreen, DisableMouseCapture).unwrap();
+    execute!(io::stdout(), LeaveAlternateScreen).unwrap();
     execute!(io::stdout(), cursor::Show).unwrap();
 
     let _ = std::process::Command::new(editor)
@@ -536,7 +536,7 @@ fn open_editor(f: &mut Frame, app: &mut App, file_name: Option<&str>, source_lin
 
     enable_raw_mode().expect("Failed to enable raw mode");
     let mut stdout = io::stdout();
-    execute!(stdout, EnterAlternateScreen, EnableMouseCapture).unwrap();
+    execute!(stdout, EnterAlternateScreen).unwrap();
 
     app.boxes = Boxes::None;
     f.render_widget(Clear, f.area());
