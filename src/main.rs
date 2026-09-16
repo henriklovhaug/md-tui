@@ -35,7 +35,7 @@ use ratatui::{
     text::Line,
     widgets::{Block, Clear, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState},
 };
-use ratatui_image::{FilterType, Resize, StatefulImage};
+use ratatui_image::sliced::{SignedPosition, SlicedImage};
 
 const EMPTY_FILE: &str = "";
 
@@ -394,31 +394,12 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
                     continue;
                 }
 
-                let image = StatefulImage::default().resize(Resize::Fit(Some(FilterType::Nearest)));
-
-                // Resize height based on clipping top
-                let height = cmp::min(
-                    img.height(),
-                    (img.y_offset() + img.height()).saturating_sub(img.scroll_offset()),
-                );
-
-                // Resize height based on clipping bottom
-                let height = cmp::min(
-                    height,
-                    area.height
-                        .saturating_add(img.scroll_offset())
-                        .saturating_sub(img.y_offset()),
-                );
-
-                let inner_area = Rect::new(
-                    area.x,
-                    area.y
-                        .saturating_add(img.y_offset().saturating_sub(img.scroll_offset())),
-                    area.width,
-                    height,
-                );
-
-                f.render_stateful_widget(image, inner_area, img.image_mut());
+                let y = i32::from(img.y_offset()) - i32::from(img.scroll_offset());
+                let y = y.clamp(i32::from(i16::MIN), i32::from(i16::MAX)) as i16;
+                if let Some(image) = img.image() {
+                    let position = SignedPosition::from((0, y));
+                    f.render_widget(SlicedImage::new(image, position), area);
+                }
             }
         }
     }
