@@ -24,6 +24,8 @@ pub enum WordType {
     BoldItalic,
     Code,
     CodeBlock(Color),
+    CriticComment,
+    CriticHighlight,
     Footnote,
     FootnoteData,
     FootnoteInline,
@@ -49,6 +51,10 @@ impl From<MdParseEnum> for WordType {
             | MdParseEnum::HorizontalSeparator => WordType::MetaInfo(MetaData::Other),
             MdParseEnum::FootnoteRef => WordType::FootnoteInline,
             MdParseEnum::Code => WordType::Code,
+            MdParseEnum::CriticComment => WordType::CriticComment,
+            MdParseEnum::CriticHighlight | MdParseEnum::CriticCodeHighlight => {
+                WordType::CriticHighlight
+            }
             MdParseEnum::Bold => WordType::Bold,
             MdParseEnum::Italic => WordType::Italic,
             MdParseEnum::Strikethrough => WordType::Strikethrough,
@@ -59,6 +65,7 @@ impl From<MdParseEnum> for WordType {
             | MdParseEnum::AltText
             | MdParseEnum::Quote
             | MdParseEnum::Sentence
+            | MdParseEnum::CriticPrefix
             | MdParseEnum::Word => WordType::Normal,
             MdParseEnum::LinkData => WordType::LinkData,
             MdParseEnum::Imortant => WordType::MetaInfo(MetaData::Important),
@@ -71,6 +78,7 @@ impl From<MdParseEnum> for WordType {
             | MdParseEnum::BoldStr
             | MdParseEnum::CodeBlock
             | MdParseEnum::CodeStr
+            | MdParseEnum::CriticMarkup
             | MdParseEnum::Details
             | MdParseEnum::DetailsBody
             | MdParseEnum::DetailsOpenAttr
@@ -100,12 +108,14 @@ pub struct Word {
     content: String,
     word_type: WordType,
     previous_type: Option<WordType>,
+    annotation_start: bool,
 }
 
 impl Word {
     #[must_use]
     pub fn new(content: String, word_type: WordType) -> Self {
         Self {
+            annotation_start: word_type == WordType::CriticHighlight,
             word_type,
             previous_type: None,
             content,
@@ -135,6 +145,11 @@ impl Word {
         self.word_type
     }
 
+    #[must_use]
+    pub fn starts_annotation(&self) -> bool {
+        self.annotation_start
+    }
+
     pub fn set_kind(&mut self, kind: WordType) {
         self.previous_type = Some(self.word_type);
         self.word_type = kind;
@@ -149,7 +164,10 @@ impl Word {
     pub fn is_renderable(&self) -> bool {
         !matches!(
             self.kind(),
-            WordType::MetaInfo(_) | WordType::LinkData | WordType::FootnoteData
+            WordType::MetaInfo(_)
+                | WordType::LinkData
+                | WordType::FootnoteData
+                | WordType::CriticComment
         )
     }
 
@@ -158,6 +176,7 @@ impl Word {
             content: self.content.split_off(at),
             word_type: self.word_type,
             previous_type: self.previous_type,
+            annotation_start: false,
         }
     }
 }
