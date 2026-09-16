@@ -147,6 +147,7 @@ select_link = 's'
 select_link_alt = 'S'
 # Enter select-details mode. Press <Enter> on a selected <details> to fold/unfold it.
 select_details = 'D'
+theme = 'T' # open the theme chooser
 edit = 'e'
 hover = 'K'
 back = 'b'
@@ -155,6 +156,15 @@ sort = 'o'
 ```
 
 ### Colors and Misc
+
+Press `T` in the file tree or document view to choose a color theme. `Custom`
+uses the colors in `~/.config/mdt/config.toml`; `Match terminal` resets colors
+to the terminal's palette. `Light`, `Dark`, `Warm light`, and `High contrast`
+provide accent palettes (they do not change the terminal background).
+In the chooser, use `j`/`k` or arrow keys and Enter to apply, `s` to save the
+current palette under a name, and `x` to delete a saved palette (with confirmation).
+Edit custom colors in `config.toml` or saved palettes in
+`~/.config/mdt/themes/<name>.json`. The selected theme is remembered across runs.
 
 Setting color to `""` will not remove it, but leave it as its default. To remove
 colors, set it to `reset`.

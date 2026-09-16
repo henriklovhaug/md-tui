@@ -86,6 +86,10 @@ fn render_file_tree_help(expanded: bool, area: Rect, buf: &mut Buffer) {
             "Search".to_string(),
         ]),
         Row::new(vec!["\u{21b5}", "Open file"]),
+        Row::new(vec![
+            format!("{}", KEY_CONFIG.theme),
+            "Choose theme".to_string(),
+        ]),
         Row::new(vec!["q", "Quit"]),
     ];
 
@@ -156,6 +160,10 @@ fn render_markdown_help(expandend: bool, area: Rect, buf: &mut Buffer) {
         Row::new(vec![
             format!("{}", KEY_CONFIG.select_link),
             "Enter select mode".to_string(),
+        ]),
+        Row::new(vec![
+            format!("{}", KEY_CONFIG.theme),
+            "Choose theme".to_string(),
         ]),
         Row::new(vec!["\u{21b5}", "Open link/file"]),
         Row::new(vec![

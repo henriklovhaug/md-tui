@@ -27,13 +27,14 @@ use crossterm::{
     terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
 
+use md_tui::util::themes::{ThemeChooser, ThemeMode};
 use notify::{Config, PollWatcher, Watcher};
 use ratatui::{
     DefaultTerminal, Frame,
     layout::Rect,
     style::{Modifier, Style, Stylize},
-    text::Line,
-    widgets::{Block, Clear, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState},
+    text::{Line, Span, Text},
+    widgets::{Block, Borders, Clear, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState},
 };
 use ratatui_image::sliced::{SignedPosition, SlicedImage};
 
@@ -225,6 +226,9 @@ fn run_app(terminal: &mut DefaultTerminal, mut app: App, tick_rate: Duration) ->
                 f.render_widget(Clear, link_area);
                 f.render_widget(app.link_box.clone(), link_area);
             }
+            if app.theme.open {
+                render_theme_chooser(f, &app.theme);
+            }
         })?;
 
         let timeout = tick_rate
@@ -273,6 +277,18 @@ fn run_app(terminal: &mut DefaultTerminal, mut app: App, tick_rate: Duration) ->
                         open_editor(f, &mut app, markdown.file_name(), source_line);
                     })?;
                 }
+                KeyBoardAction::ThemeChanged => {
+                    let text = markdown
+                        .file_name()
+                        .and_then(|path| read_to_string(path).ok())
+                        .unwrap_or_else(|| stdin_buf.clone());
+                    let name = markdown.file_name().map(str::to_owned);
+                    if app.mode == Mode::View {
+                        markdown = parse_markdown(name.as_deref(), &text, app.width() - 2);
+                        app.selected = false;
+                        app.details_selected = false;
+                    }
+                }
             }
         }
         if last_tick.elapsed() >= tick_rate {
@@ -288,6 +304,75 @@ fn run_app(terminal: &mut DefaultTerminal, mut app: App, tick_rate: Duration) ->
             last_position_save = Instant::now();
         }
     }
+}
+
+fn render_theme_chooser(f: &mut Frame, chooser: &ThemeChooser) {
+    let screen = f.area();
+    let names = chooser.names();
+    let width = screen.width.saturating_sub(2).min(76);
+    let height = screen
+        .height
+        .saturating_sub(2)
+        .min(18)
+        .min(names.len() as u16 + 8);
+    if width < 24 || height < 8 {
+        return;
+    }
+    let area = Rect::new(
+        (screen.width - width) / 2,
+        (screen.height - height) / 2,
+        width,
+        height,
+    );
+    let visible = usize::from(height.saturating_sub(8)).max(1);
+    let start = chooser.selected.saturating_sub(visible - 1);
+    let mut lines = vec![
+        Line::from(format!(" Active: {}", chooser.active)),
+        Line::from(""),
+    ];
+    for (index, name) in names.iter().enumerate().skip(start).take(visible) {
+        let marker = if index == chooser.selected { ">" } else { " " };
+        let active = if name == &chooser.active { " *" } else { "" };
+        let line = Line::from(format!(" {marker} {name}{active}"));
+        lines.push(if index == chooser.selected {
+            line.reversed()
+        } else {
+            line
+        });
+    }
+    lines.push(Line::from(""));
+    let instruction = match chooser.mode {
+        ThemeMode::Browse => {
+            " j/k or arrows: select   Enter: apply   s: save   x: delete   Esc/q: close"
+        }
+        ThemeMode::SaveName => " Name (letters, digits, _ or -):",
+        ThemeMode::ConfirmDelete => {
+            " Delete selected saved theme? y: confirm   any other key: cancel"
+        }
+    };
+    lines.push(Line::from(instruction));
+    if chooser.mode == ThemeMode::SaveName {
+        lines.push(Line::from(format!(" > {}_", chooser.input)));
+    } else {
+        lines.push(Line::from(
+            " Edit: ~/.config/mdt/config.toml or ~/.config/mdt/themes/<name>.json",
+        ));
+    }
+    if !chooser.status.is_empty() {
+        lines.push(Line::from(Span::styled(
+            format!(" {}", chooser.status),
+            Style::default().fg(color_config().help_title_color),
+        )));
+    }
+    let panel = Paragraph::new(Text::from(lines))
+        .block(Block::default().title(" Themes ").borders(Borders::ALL))
+        .style(
+            Style::default()
+                .fg(color_config().help_fg_color)
+                .bg(color_config().help_bg_color),
+        );
+    f.render_widget(Clear, area);
+    f.render_widget(panel, area);
 }
 
 fn restore_position(
@@ -322,8 +407,8 @@ fn render_file_tree(f: &mut Frame, app: &App, file_tree: FileTree) {
     if GENERAL_CONFIG.help_menu {
         let area = Rect {
             x: x + 2,
-            y: size.height.saturating_sub(13),
-            height: cmp::min(10, size.height),
+            y: size.height.saturating_sub(14),
+            height: cmp::min(11, size.height),
             width: app.width().saturating_sub(5),
         };
         f.render_widget(Clear, area);
@@ -367,8 +452,7 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
         let header = Paragraph::new(Line::from(format!(" {file_name}"))).style(
             Style::default()
                 .fg(color_config().help_fg_color)
-                .bg(color_config().help_bg_color)
-                .add_modifier(Modifier::DIM),
+                .bg(color_config().help_bg_color),
         );
         f.render_widget(header, header_area);
     }
@@ -433,8 +517,8 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
     let block = Block::default().bg(color_config().help_bg_color);
     let area = if app.help_box.expanded() {
         Rect {
-            y: size.height.saturating_sub(19),
-            height: cmp::min(18, size.height),
+            y: size.height.saturating_sub(20),
+            height: cmp::min(19, size.height),
             x,
             width: area.width - 1,
         }
@@ -455,8 +539,8 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
     let area = if app.help_box.expanded() {
         Rect {
             x: x + 2,
-            y: size.height.saturating_sub(18),
-            height: cmp::min(16, size.height),
+            y: size.height.saturating_sub(19),
+            height: cmp::min(17, size.height),
             width: app.width() - 5,
         }
     } else {
