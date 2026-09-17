@@ -682,6 +682,24 @@ fn transform_codeblock(component: &mut TextComponent) {
 }
 
 fn transform_list(component: &mut TextComponent, width: u16) {
+    let original_content = component.content.clone();
+    let indent_growth = transform_list_with_width(component, width);
+    let render_width = usize::from(width.saturating_sub(1));
+
+    if indent_growth > 0
+        && component
+            .content
+            .iter()
+            .any(|line| content_entry_len(line) > render_width)
+    {
+        // Numbered markers can widen during alignment (e.g. 9. to 10.).
+        // Reserve that added indentation before wrapping the final lines.
+        component.content = original_content;
+        transform_list_with_width(component, width.saturating_sub(indent_growth).max(1));
+    }
+}
+
+fn transform_list_with_width(component: &mut TextComponent, width: u16) -> u16 {
     let mut len = 0;
     let mut lines = Vec::new();
     let mut line = Vec::new();
@@ -802,6 +820,7 @@ fn transform_list(component: &mut TextComponent, width: u16) {
     indent_index = 0;
     indent_len = 0;
     let mut unordered_list_skip = true; // Skip unordered list items. They are already aligned.
+    let mut max_indent_growth = 0;
 
     for line in &mut lines {
         if line[1]
@@ -842,11 +861,14 @@ fn transform_list(component: &mut TextComponent, width: u16) {
                 .saturating_sub(3)
         };
 
+        max_indent_growth =
+            max_indent_growth.max(amount.saturating_sub(display_width(line[0].content())));
         line[0].set_content(" ".repeat(amount));
     }
 
     component.height = lines.len() as u16;
     component.content = lines;
+    u16::try_from(max_indent_growth).unwrap_or(u16::MAX)
 }
 
 fn table_styling_width(column_count: usize) -> u16 {

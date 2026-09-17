@@ -1072,6 +1072,43 @@ mod tests {
     }
 
     #[test]
+    fn ordered_list_continuations_fit_after_marker_alignment() {
+        for item_count in [10, 100] {
+            let md = (1..=item_count)
+                .map(|n| format!("{n}. {}", "alpha beta gamma moon ".repeat(3)))
+                .collect::<Vec<_>>()
+                .join("\n");
+            let render_width = 24;
+            let root = parse_markdown(None, &md, render_width + 1);
+            let lines: Vec<String> = root
+                .components()
+                .into_iter()
+                .filter(|component| component.kind() == TextNode::List)
+                .flat_map(TextComponent::content_as_lines)
+                .collect();
+
+            assert!(
+                lines
+                    .iter()
+                    .any(|line| line.starts_with(&format!("{item_count}. ")))
+            );
+            assert!(
+                lines
+                    .iter()
+                    .all(|line| line.chars().count() <= usize::from(render_width)),
+                "ordered-list line exceeds render width: {lines:?}"
+            );
+            assert_eq!(
+                lines
+                    .iter()
+                    .map(|line| line.matches("moon").count())
+                    .sum::<usize>(),
+                item_count * 3
+            );
+        }
+    }
+
+    #[test]
     fn nested_details_tags_inner_components_with_both_ids() {
         let md = "<details>\n<summary>Outer</summary>\n\n<details>\n<summary>Inner</summary>\n\ninner body\n\n</details>\n\n</details>\n";
         let root = parse_markdown(None, md, 80);
