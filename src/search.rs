@@ -544,12 +544,7 @@ your markdown notes, or opening external links from someones README.
     }
 
     #[test]
-    fn test_search_malformed_table_no_panic() {
-        // Two tables with different column counts separated by a single blank
-        // line are parsed as one table whose cell count (7) is not a multiple
-        // of its column count (2). `transform_table` marks such a table as
-        // malformed by giving it zero columns, and searching the file then
-        // panicked with "chunk size must be non-zero" in `selected_heights`.
+    fn test_search_tables_separated_by_one_blank_line() {
         let text = "| a | b |
 |---|---|
 | 1 | 2 |
@@ -562,9 +557,17 @@ your markdown notes, or opening external links from someones README.
         let mut markdown = parse_markdown(None, text, 80);
 
         markdown.find_and_mark("x");
-        assert_eq!(markdown.search_results_heights(), Vec::<usize>::new());
+        assert!(!markdown.search_results_heights().is_empty());
+        let _ = markdown.content();
+    }
 
-        // `content_as_lines` had the same panic
+    #[test]
+    fn test_search_malformed_table_no_panic() {
+        let text = "| a | b |\n|---|---|\n| 1 | 2 | 3 |\n";
+        let mut markdown = parse_markdown(None, text, 80);
+
+        markdown.find_and_mark("3");
+        assert_eq!(markdown.search_results_heights(), Vec::<usize>::new());
         let _ = markdown.content();
     }
 }
