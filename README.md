@@ -168,6 +168,7 @@ gitignore = false
 alignment = "left" # "center" | "right"
 help_menu = true # false hides it
 document_header = false # true shows the current document path
+heading_style = "hashes" # "bars" renders H2-H6 with indented accent bars
 scrollbar = true # false hides the document position indicator
 image_max_height = 20 # maximum terminal rows used by an inline image
 remember_position = true # restore recently viewed documents at their last position
