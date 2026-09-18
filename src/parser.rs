@@ -1052,6 +1052,21 @@ mod tests {
     }
 
     #[test]
+    fn blank_line_separates_adjacent_tables() {
+        let md = "| Item | Qty |\n| --- | --- |\n| Apples | 4 |\n\n| Code | Score |\n| --- | --- |\n| X | 9 |\n";
+        let root = parse_markdown(None, md, 80);
+        let tables: Vec<_> = root
+            .components()
+            .into_iter()
+            .filter(|component| matches!(component.kind(), TextNode::Table(_, _)))
+            .collect();
+
+        assert_eq!(tables.len(), 2, "one blank line must end the first table");
+        assert_eq!(tables[0].content_as_lines(), ["Item Qty", "Apples 4"]);
+        assert_eq!(tables[1].content_as_lines(), ["Code Score", "X 9"]);
+    }
+
+    #[test]
     fn plain_paragraph_unaffected() {
         let md = "Just a paragraph.\n";
         let kinds = component_kinds(md);

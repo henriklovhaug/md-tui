@@ -104,7 +104,8 @@ t_sentence        = _{ (!"|" ~ (latex | footnote_ref_container | code | link | b
 footnote_sentence = _{ ((":" | (NEWLINE ~ "  ")) ~ WHITESPACE_S* ~ (latex | code | link | bold_italic | italic_var_1 | italic_var_2 | bold | strikethrough | normal+))+ }
 
 table_cell      = { !table_separator ~ table_cell_content }
-table_body_cell = { table_cell_content }
+// A body cell consumes at most one row-ending newline; another ends the table.
+table_body_cell = { "|" ~ WHITESPACE_S* ~ t_sentence* ~ WHITESPACE_S* ~ (("|" ~ " "* ~ NEWLINE) | NEWLINE)? }
 table_cell_content = _{ "|" ~ WHITESPACE_S* ~ t_sentence* ~ WHITESPACE_S* ~ ("|" ~ " "* ~ NEWLINE)? }
 table_separator = { ("|"? ~ (WHITESPACE_S | ":")* ~ "-"+ ~ (WHITESPACE_S | ":")* ~ "|") }
 
@@ -139,7 +140,8 @@ code_block          = {
     NEWLINE? ~ " "* ~ (("```" ~ programming_language? ~ code_line+ ~ " "* ~ "```") | ("~~~" ~ programming_language? ~ code_line+ ~ " "* ~ "~~~") | indented_code_block)
 }
 table               = {
-    NEWLINE? ~ WHITESPACE_S* ~ table_cell+ ~ NEWLINE? ~ WHITESPACE_S* ~ table_separator+ ~ (NEWLINE? ~ WHITESPACE_S* ~ table_body_cell)*
+    NEWLINE? ~ WHITESPACE_S* ~ table_cell+ ~ NEWLINE? ~ WHITESPACE_S* ~ table_separator+
+    ~ (NEWLINE ~ WHITESPACE_S* ~ table_body_cell ~ (WHITESPACE_S* ~ table_body_cell)*)?
 }
 
 quote          = { (NEWLINE? ~ WHITESPACE_S* ~ ">" ~ ((quote_marking | sentence | " ")+ | NEWLINE))+ }
