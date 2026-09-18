@@ -1109,6 +1109,88 @@ mod tests {
     }
 
     #[test]
+    fn ordered_list_wraps_once_across_counter_boundaries() {
+        for (start, item_count) in [(1, 9), (8, 5), (97, 5)] {
+            for render_width in [18, 24, 36] {
+                let md = (start..start + item_count)
+                    .map(|number| format!("{number}. {}", "alpha beta moon ".repeat(2)))
+                    .collect::<Vec<_>>()
+                    .join("\n");
+                let root = parse_markdown(None, &md, render_width + 1);
+                let lines: Vec<String> = root
+                    .components()
+                    .into_iter()
+                    .filter(|component| component.kind() == TextNode::List)
+                    .flat_map(TextComponent::content_as_lines)
+                    .collect();
+
+                assert!(
+                    lines
+                        .iter()
+                        .any(|line| line.starts_with(&format!("{start}. ")))
+                );
+                assert!(
+                    lines
+                        .iter()
+                        .any(|line| { line.starts_with(&format!("{}. ", start + item_count - 1)) })
+                );
+                assert!(
+                    lines
+                        .iter()
+                        .all(|line| line.chars().count() <= render_width as usize),
+                    "list line exceeds width {render_width}: {lines:?}"
+                );
+                assert_eq!(
+                    lines
+                        .iter()
+                        .map(|line| line.matches("moon").count())
+                        .sum::<usize>(),
+                    item_count as usize * 2
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn nested_ordered_lists_keep_their_text_with_aligned_markers() {
+        let md = (1..=10)
+            .map(|number| {
+                format!(
+                    "{number}. outer alpha beta moon alpha beta moon\n  1. inner alpha beta moon alpha beta moon"
+                )
+            })
+            .collect::<Vec<_>>()
+            .join("\n");
+        let render_width = 28;
+        let root = parse_markdown(None, &md, render_width + 1);
+        let lines: Vec<String> = root
+            .components()
+            .into_iter()
+            .filter(|component| component.kind() == TextNode::List)
+            .flat_map(TextComponent::content_as_lines)
+            .collect();
+        assert!(lines.iter().any(|line| line.starts_with("10. ")));
+        assert!(
+            lines
+                .iter()
+                .any(|line| line.trim_start().starts_with("1. inner"))
+        );
+        assert!(
+            lines
+                .iter()
+                .all(|line| line.chars().count() <= render_width as usize),
+            "nested list line exceeds width: {lines:?}"
+        );
+        assert_eq!(
+            lines
+                .iter()
+                .map(|line| line.matches("moon").count())
+                .sum::<usize>(),
+            40
+        );
+    }
+
+    #[test]
     fn nested_details_tags_inner_components_with_both_ids() {
         let md = "<details>\n<summary>Outer</summary>\n\n<details>\n<summary>Inner</summary>\n\ninner body\n\n</details>\n\n</details>\n";
         let root = parse_markdown(None, md, 80);
