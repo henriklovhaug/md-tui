@@ -10,6 +10,7 @@ pub struct GeneralConfig {
     pub centering: Centering,
     pub help_menu: bool,
     pub document_header: bool,
+    pub file_tree_directory_header: bool,
     pub heading_style: HeadingStyle,
     pub scrollbar: bool,
     pub image_max_height: u16,
@@ -51,6 +52,9 @@ pub static GENERAL_CONFIG: LazyLock<GeneralConfig> = LazyLock::new(|| {
             .unwrap_or(Centering::Left),
         help_menu: settings.get::<bool>("help_menu").unwrap_or(true),
         document_header: settings.get::<bool>("document_header").unwrap_or(false),
+        file_tree_directory_header: settings
+            .get::<bool>("file_tree_directory_header")
+            .unwrap_or(false),
         heading_style: settings
             .get::<HeadingStyle>("heading_style")
             .unwrap_or(HeadingStyle::Hashes),
