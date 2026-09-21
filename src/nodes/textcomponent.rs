@@ -682,6 +682,54 @@ fn transform_codeblock(component: &mut TextComponent) {
 }
 
 fn transform_list(component: &mut TextComponent, width: u16) {
+    // The counter can grow while rendering (9. to 10., etc.). Reserve the
+    // largest possible alignment increase before wrapping, so the list only
+    // needs one wrapping pass. This scans markers, not the formatted content.
+    let width = width
+        .saturating_sub(list_alignment_reserve(component))
+        .max(1);
+    transform_list_with_width(component, width);
+}
+
+fn list_alignment_reserve(component: &TextComponent) -> u16 {
+    let list_types = component.meta_info.iter().filter(|word| {
+        matches!(
+            word.kind(),
+            WordType::MetaInfo(MetaData::OList | MetaData::UList)
+        )
+    });
+    let markers = component
+        .content
+        .iter()
+        .flatten()
+        .filter(|word| word.kind() == WordType::ListMarker);
+    let mut count = 0u64;
+    let mut largest_start = 0u64;
+    for (marker, list_type) in markers.zip(list_types) {
+        if list_type.kind() != WordType::MetaInfo(MetaData::OList) {
+            continue;
+        }
+        count = count.saturating_add(1);
+        largest_start = largest_start.max(
+            marker
+                .content()
+                .trim_end_matches(['.', ' '])
+                .parse::<u64>()
+                .unwrap_or(1),
+        );
+    }
+    if count == 0 {
+        return 0;
+    }
+    // A generated counter cannot exceed the largest explicit start plus the
+    // remaining ordered items. Each extra digit can add one column to the
+    // alignment padding (including continuation lines).
+    let largest_possible_counter = largest_start.saturating_add(count - 1);
+    let extra_digits = largest_possible_counter.to_string().len().saturating_sub(1);
+    u16::try_from(extra_digits).unwrap_or(u16::MAX)
+}
+
+fn transform_list_with_width(component: &mut TextComponent, width: u16) {
     let mut len = 0;
     let mut lines = Vec::new();
     let mut line = Vec::new();
@@ -802,7 +850,6 @@ fn transform_list(component: &mut TextComponent, width: u16) {
     indent_index = 0;
     indent_len = 0;
     let mut unordered_list_skip = true; // Skip unordered list items. They are already aligned.
-
     for line in &mut lines {
         if line[1]
             .content()
