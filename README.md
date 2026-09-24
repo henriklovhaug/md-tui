@@ -63,10 +63,10 @@ for configuration options.
 | ---------------- | ----------------------------------------------------------------- |
 | `j` or `<Down>`  | Scroll down                                                       |
 | `k` or `<Up>`    | Scroll up                                                         |
-| `h`              | Go down half a page                                               |
-| `l`              | Go up half a page                                                 |
-| `d` or `<Left>`  | Scroll one page down                                              |
-| `u` or `<Right>` | Scroll one page up                                                |
+| `h`              | Go up half a page                                                 |
+| `l`              | Go down half a page                                               |
+| `d` or `<Right>` | Scroll one page down                                              |
+| `u` or `<Left>`  | Scroll one page up                                                |
 | `f` or `/`       | Search                                                            |
 | `n` or `N`       | Jump to next or previous search result                            |
 | `s` or `S`       | Enter select link mode. Different selection strategy              |
@@ -170,7 +170,12 @@ gitignore = false
 alignment = "left" # "center" | "right"
 help_menu = true # false hides it
 document_header = false # true shows the current document path
+file_tree_directory_header = false # true shows the browsing directory in the file tree
+heading_style = "hashes" # "bars" renders H2-H6 with indented accent bars
 scrollbar = true # false hides the document position indicator
+image_max_height = 20 # maximum terminal rows used by an inline image
+remember_position = true # restore recently viewed documents at their last position
+position_cache_ttl_minutes = 60 # ignore older positions; 0 means never expire
 
 # Inline styling
 bold_color = "reset"

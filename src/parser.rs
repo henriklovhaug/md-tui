@@ -61,7 +61,7 @@ pub fn parse_markdown(name: Option<&str>, content: &str, width: u16) -> Componen
 
     let parse_root = ParseRoot::new(name.map(str::to_string), children);
 
-    let mut root = node_to_component(parse_root).add_missing_components();
+    let mut root = node_to_component(parse_root, width).add_missing_components();
 
     root.transform(width);
     root.recompute_visibility();
@@ -94,29 +94,29 @@ fn parse_node_children(pair: Pairs<'_, Rule>) -> Vec<ParseNode> {
     children
 }
 
-fn node_to_component(root: ParseRoot) -> ComponentRoot {
+fn node_to_component(root: ParseRoot, width: u16) -> ComponentRoot {
     let mut children = Vec::new();
     let name = root.file_name().clone();
     for component in root.children_owned() {
-        children.extend(parse_components(component));
+        children.extend(parse_components(component, width));
     }
 
     ComponentRoot::new(name, children)
 }
 
-fn parse_components(parse_node: ParseNode) -> Vec<Component> {
+fn parse_components(parse_node: ParseNode, width: u16) -> Vec<Component> {
     if parse_node.kind() == MdParseEnum::Details {
-        return parse_details(parse_node);
+        return parse_details(parse_node, width);
     }
     let source_line = parse_node.source_line();
-    let mut component = parse_component(parse_node);
+    let mut component = parse_component(parse_node, width);
     if let Component::TextComponent(text) = &mut component {
         text.set_source_line(source_line);
     }
     vec![component]
 }
 
-fn parse_details(parse_node: ParseNode) -> Vec<Component> {
+fn parse_details(parse_node: ParseNode, width: u16) -> Vec<Component> {
     let source_line = parse_node.source_line();
     let mut header_text = String::from("Details");
     let mut body_components: Vec<Component> = Vec::new();
@@ -140,11 +140,11 @@ fn parse_details(parse_node: ParseNode) -> Vec<Component> {
             }
             MdParseEnum::DetailsBody => {
                 for body_child in child.children_owned() {
-                    body_components.extend(parse_components(body_child));
+                    body_components.extend(parse_components(body_child, width));
                 }
             }
             _ => {
-                body_components.extend(parse_components(child));
+                body_components.extend(parse_components(child, width));
             }
         }
     }
@@ -174,7 +174,7 @@ fn is_url(url: &str) -> bool {
     url.starts_with("http://") || url.starts_with("https://")
 }
 
-fn parse_component(parse_node: ParseNode) -> Component {
+fn parse_component(parse_node: ParseNode, width: u16) -> Component {
     match parse_node.kind() {
         MdParseEnum::Image => {
             let leaf_nodes = get_leaf_nodes(parse_node);
@@ -207,18 +207,8 @@ fn parse_component(parse_node: ParseNode) -> Component {
             }
 
             if let Some(img) = image.as_ref() {
-                let height = img.height();
-
-                let comp = ImageComponent::new(img.to_owned(), height, alt_text.clone());
-
-                if let Some(comp) = comp {
-                    Component::Image(comp)
-                } else {
-                    let word = [Word::new(format!("[{alt_text}]"), WordType::Normal)];
-
-                    let comp = TextComponent::new(TextNode::Paragraph, word.into());
-                    Component::TextComponent(comp)
-                }
+                let comp = ImageComponent::new(img.to_owned(), width, alt_text.clone());
+                Component::Image(comp)
             } else {
                 let word = [
                     Word::new("Image".to_string(), WordType::Normal),
@@ -975,6 +965,7 @@ mod tests {
             .expect("table")
             .y_offset();
         assert_eq!(markdown.source_line_at_scroll(0, table_offset * 2), 5);
+        assert_eq!(markdown.scroll_for_source_line(5, 0), table_offset);
     }
 
     #[test]
@@ -1163,6 +1154,21 @@ mod tests {
     }
 
     #[test]
+    fn blank_line_separates_adjacent_tables() {
+        let md = "| Item | Qty |\n| --- | --- |\n| Apples | 4 |\n\n| Code | Score |\n| --- | --- |\n| X | 9 |\n";
+        let root = parse_markdown(None, md, 80);
+        let tables: Vec<_> = root
+            .components()
+            .into_iter()
+            .filter(|component| matches!(component.kind(), TextNode::Table(_, _)))
+            .collect();
+
+        assert_eq!(tables.len(), 2, "one blank line must end the first table");
+        assert_eq!(tables[0].content_as_lines(), ["Item Qty", "Apples 4"]);
+        assert_eq!(tables[1].content_as_lines(), ["Code Score", "X 9"]);
+    }
+
+    #[test]
     fn plain_paragraph_unaffected() {
         let md = "Just a paragraph.\n";
         let kinds = component_kinds(md);
@@ -1180,6 +1186,125 @@ mod tests {
             .collect();
 
         assert_eq!(lines, ["1. first unindented continuation", "2. second"]);
+    }
+
+    #[test]
+    fn ordered_list_continuations_fit_after_marker_alignment() {
+        for item_count in [10, 100] {
+            let md = (1..=item_count)
+                .map(|n| format!("{n}. {}", "alpha beta gamma moon ".repeat(3)))
+                .collect::<Vec<_>>()
+                .join("\n");
+            let render_width = 24;
+            let root = parse_markdown(None, &md, render_width + 1);
+            let lines: Vec<String> = root
+                .components()
+                .into_iter()
+                .filter(|component| component.kind() == TextNode::List)
+                .flat_map(TextComponent::content_as_lines)
+                .collect();
+
+            assert!(
+                lines
+                    .iter()
+                    .any(|line| line.starts_with(&format!("{item_count}. ")))
+            );
+            assert!(
+                lines
+                    .iter()
+                    .all(|line| line.chars().count() <= usize::from(render_width)),
+                "ordered-list line exceeds render width: {lines:?}"
+            );
+            assert_eq!(
+                lines
+                    .iter()
+                    .map(|line| line.matches("moon").count())
+                    .sum::<usize>(),
+                item_count * 3
+            );
+        }
+    }
+
+    #[test]
+    fn ordered_list_wraps_once_across_counter_boundaries() {
+        for (start, item_count) in [(1, 9), (8, 5), (97, 5)] {
+            for render_width in [18, 24, 36] {
+                let md = (start..start + item_count)
+                    .map(|number| format!("{number}. {}", "alpha beta moon ".repeat(2)))
+                    .collect::<Vec<_>>()
+                    .join("\n");
+                let root = parse_markdown(None, &md, render_width + 1);
+                let lines: Vec<String> = root
+                    .components()
+                    .into_iter()
+                    .filter(|component| component.kind() == TextNode::List)
+                    .flat_map(TextComponent::content_as_lines)
+                    .collect();
+
+                assert!(
+                    lines
+                        .iter()
+                        .any(|line| line.starts_with(&format!("{start}. ")))
+                );
+                assert!(
+                    lines
+                        .iter()
+                        .any(|line| { line.starts_with(&format!("{}. ", start + item_count - 1)) })
+                );
+                assert!(
+                    lines
+                        .iter()
+                        .all(|line| line.chars().count() <= render_width as usize),
+                    "list line exceeds width {render_width}: {lines:?}"
+                );
+                assert_eq!(
+                    lines
+                        .iter()
+                        .map(|line| line.matches("moon").count())
+                        .sum::<usize>(),
+                    item_count as usize * 2
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn nested_ordered_lists_keep_their_text_with_aligned_markers() {
+        let md = (1..=10)
+            .map(|number| {
+                format!(
+                    "{number}. outer alpha beta moon alpha beta moon\n  1. inner alpha beta moon alpha beta moon"
+                )
+            })
+            .collect::<Vec<_>>()
+            .join("\n");
+        let render_width = 28;
+        let root = parse_markdown(None, &md, render_width + 1);
+        let lines: Vec<String> = root
+            .components()
+            .into_iter()
+            .filter(|component| component.kind() == TextNode::List)
+            .flat_map(TextComponent::content_as_lines)
+            .collect();
+        assert!(lines.iter().any(|line| line.starts_with("10. ")));
+        assert!(
+            lines
+                .iter()
+                .any(|line| line.trim_start().starts_with("1. inner"))
+        );
+        assert!(
+            lines
+                .iter()
+                .all(|line| line.chars().count() <= render_width as usize),
+            "nested list line exceeds width: {lines:?}"
+        );
+        assert_eq!(
+            lines
+                .iter()
+                .map(|line| line.matches("moon").count())
+                .sum::<usize>(),
+            40
+        );
     }
 
     #[test]

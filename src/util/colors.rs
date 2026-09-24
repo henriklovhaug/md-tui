@@ -79,7 +79,7 @@ pub fn read_color_config_from_file() -> ColorConfig {
             .unwrap_or(Color::Reset),
         striketrough_color: Color::from_str(
             &settings
-                .get_string("striketrough_color")
+                .get_string("strikethrough_color")
                 .unwrap_or_default(),
         )
         .unwrap_or(Color::Reset),

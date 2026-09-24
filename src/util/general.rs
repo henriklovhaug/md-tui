@@ -10,7 +10,12 @@ pub struct GeneralConfig {
     pub centering: Centering,
     pub help_menu: bool,
     pub document_header: bool,
+    pub file_tree_directory_header: bool,
+    pub heading_style: HeadingStyle,
     pub scrollbar: bool,
+    pub image_max_height: u16,
+    pub remember_position: bool,
+    pub position_cache_ttl_minutes: u64,
 }
 
 #[derive(Debug, Deserialize)]
@@ -19,6 +24,13 @@ pub enum Centering {
     Left,
     Center,
     Right,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum HeadingStyle {
+    Hashes,
+    Bars,
 }
 
 pub static GENERAL_CONFIG: LazyLock<GeneralConfig> = LazyLock::new(|| {
@@ -40,6 +52,17 @@ pub static GENERAL_CONFIG: LazyLock<GeneralConfig> = LazyLock::new(|| {
             .unwrap_or(Centering::Left),
         help_menu: settings.get::<bool>("help_menu").unwrap_or(true),
         document_header: settings.get::<bool>("document_header").unwrap_or(false),
+        file_tree_directory_header: settings
+            .get::<bool>("file_tree_directory_header")
+            .unwrap_or(false),
+        heading_style: settings
+            .get::<HeadingStyle>("heading_style")
+            .unwrap_or(HeadingStyle::Hashes),
         scrollbar: settings.get::<bool>("scrollbar").unwrap_or(true),
+        image_max_height: settings.get::<u16>("image_max_height").unwrap_or(20).max(1),
+        remember_position: settings.get::<bool>("remember_position").unwrap_or(true),
+        position_cache_ttl_minutes: settings
+            .get::<u64>("position_cache_ttl_minutes")
+            .unwrap_or(60),
     }
 });

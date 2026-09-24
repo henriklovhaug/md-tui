@@ -12,6 +12,7 @@ use std::{
 use md_tui::nodes::root::{Component, ComponentRoot};
 use md_tui::pages::file_explorer::{FileTree, MdFile};
 use md_tui::parser::parse_markdown;
+use md_tui::resume::ResumeCache;
 use md_tui::search::find_md_files_channel;
 use md_tui::util::{self, App, Boxes, Mode, destruct_terminal, general::GENERAL_CONFIG};
 use md_tui::{
@@ -21,7 +22,7 @@ use md_tui::{
 
 use crossterm::{
     cursor,
-    event::{self, DisableMouseCapture, EnableMouseCapture, Event},
+    event::{self, Event},
     execute,
     terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
@@ -34,7 +35,7 @@ use ratatui::{
     text::Line,
     widgets::{Block, Clear, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState},
 };
-use ratatui_image::{FilterType, Resize, StatefulImage};
+use ratatui_image::sliced::{SignedPosition, SlicedImage};
 
 const EMPTY_FILE: &str = "";
 
@@ -78,6 +79,11 @@ fn run_app(terminal: &mut DefaultTerminal, mut app: App, tick_rate: Duration) ->
     thread::spawn(move || find_md_files_channel(f_tx.clone()));
 
     let mut last_tick = Instant::now();
+    let mut last_position_save = Instant::now();
+    let resume_cache = ResumeCache::new(
+        GENERAL_CONFIG.remember_position,
+        GENERAL_CONFIG.position_cache_ttl_minutes,
+    );
 
     let (tx, rx) = mpsc::channel();
 
@@ -111,7 +117,12 @@ fn run_app(terminal: &mut DefaultTerminal, mut app: App, tick_rate: Duration) ->
         app.mode = Mode::View;
     }
 
+    restore_position(&resume_cache, &markdown, &mut app, terminal.size()?.height);
+
     let mut file_tree = FileTree::default();
+    let browse_dir = env::current_dir()
+        .map(|path| path.display().to_string())
+        .unwrap_or_else(|_| "(unknown directory)".to_string());
 
     loop {
         let height = terminal.size()?.height;
@@ -180,7 +191,13 @@ fn run_app(terminal: &mut DefaultTerminal, mut app: App, tick_rate: Duration) ->
                             }
                         }
                     }
-                    render_file_tree(f, &app, file_tree.clone());
+                    render_file_tree(
+                        f,
+                        &app,
+                        file_tree.clone(),
+                        &browse_dir,
+                        GENERAL_CONFIG.file_tree_directory_header,
+                    );
                 }
             }
             if app.boxes == Boxes::Search {
@@ -229,6 +246,9 @@ fn run_app(terminal: &mut DefaultTerminal, mut app: App, tick_rate: Duration) ->
             if key.kind != event::KeyEventKind::Press {
                 continue;
             }
+            let previous_view = app.mode == Mode::View;
+            let previous_document = markdown.file_name().map(str::to_owned);
+            let previous_source_line = markdown.source_line_at_scroll(app.vertical_scroll, height);
             match handle_keyboard_input(
                 key.code,
                 &mut app,
@@ -238,10 +258,25 @@ fn run_app(terminal: &mut DefaultTerminal, mut app: App, tick_rate: Duration) ->
                 &mut watcher,
             ) {
                 KeyBoardAction::Exit => {
+                    if previous_view && let Some(path) = previous_document.as_deref() {
+                        let _ = resume_cache.save(path, previous_source_line);
+                    }
                     return Ok(());
                 }
-                KeyBoardAction::Continue => {}
+                KeyBoardAction::Continue => {
+                    let document_changed = app.mode == Mode::View
+                        && (!previous_view || markdown.file_name() != previous_document.as_deref());
+                    if document_changed {
+                        if previous_view && let Some(path) = previous_document.as_deref() {
+                            let _ = resume_cache.save(path, previous_source_line);
+                        }
+                        restore_position(&resume_cache, &markdown, &mut app, height);
+                    }
+                }
                 KeyBoardAction::Edit => {
+                    if let Some(path) = markdown.file_name() {
+                        let _ = resume_cache.save(path, previous_source_line);
+                    }
                     let source_line = markdown.source_line_at_scroll(app.vertical_scroll, height);
                     terminal.draw(|f| {
                         open_editor(f, &mut app, markdown.file_name(), source_line);
@@ -252,10 +287,36 @@ fn run_app(terminal: &mut DefaultTerminal, mut app: App, tick_rate: Duration) ->
         if last_tick.elapsed() >= tick_rate {
             last_tick = Instant::now();
         }
+        if last_position_save.elapsed() >= Duration::from_secs(5) {
+            if app.mode == Mode::View
+                && let Some(path) = markdown.file_name()
+            {
+                let source_line = markdown.source_line_at_scroll(app.vertical_scroll, height);
+                let _ = resume_cache.save(path, source_line);
+            }
+            last_position_save = Instant::now();
+        }
     }
 }
 
-fn render_file_tree(f: &mut Frame, app: &App, file_tree: FileTree) {
+fn restore_position(
+    cache: &ResumeCache,
+    markdown: &ComponentRoot,
+    app: &mut App,
+    viewport_height: u16,
+) {
+    if let Some(source_line) = markdown.file_name().and_then(|path| cache.load(path)) {
+        app.vertical_scroll = markdown.scroll_for_source_line(source_line, viewport_height);
+    }
+}
+
+fn render_file_tree(
+    f: &mut Frame,
+    app: &App,
+    file_tree: FileTree,
+    browse_dir: &str,
+    show_header: bool,
+) {
     let size = f.area();
     let x = match GENERAL_CONFIG.centering {
         util::general::Centering::Left => 2,
@@ -266,11 +327,16 @@ fn render_file_tree(f: &mut Frame, app: &App, file_tree: FileTree) {
             cmp::max(size.width.saturating_sub(GENERAL_CONFIG.width + 2), 2)
         }
     };
+    let header_height = u16::from(show_header);
     let area = Rect {
         x,
         width: app.width() - 3,
-        ..size
+        y: header_height,
+        height: size.height.saturating_sub(header_height),
     };
+    if show_header {
+        render_path_header(f, x, area.width, &format!("Directory: {browse_dir}"));
+    }
     f.render_widget(file_tree, area);
 
     if GENERAL_CONFIG.help_menu {
@@ -283,6 +349,16 @@ fn render_file_tree(f: &mut Frame, app: &App, file_tree: FileTree) {
         f.render_widget(Clear, area);
         f.render_widget(app.help_box, area);
     }
+}
+
+fn render_path_header(f: &mut Frame, x: u16, width: u16, label: &str) {
+    let header = Paragraph::new(Line::from(format!(" {label}"))).style(
+        Style::default()
+            .fg(color_config().help_fg_color)
+            .bg(color_config().help_bg_color)
+            .add_modifier(Modifier::DIM),
+    );
+    f.render_widget(header, Rect::new(x, 0, width, 1));
 }
 
 fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
@@ -317,14 +393,7 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
         .file_name()
         .filter(|_| GENERAL_CONFIG.document_header)
     {
-        let header_area = Rect::new(x, 0, area.width, 1);
-        let header = Paragraph::new(Line::from(format!(" {file_name}"))).style(
-            Style::default()
-                .fg(color_config().help_fg_color)
-                .bg(color_config().help_bg_color)
-                .add_modifier(Modifier::DIM),
-        );
-        f.render_widget(header, header_area);
+        render_path_header(f, x, area.width, file_name);
     }
 
     for child in markdown.children_mut() {
@@ -348,31 +417,12 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
                     continue;
                 }
 
-                let image = StatefulImage::default().resize(Resize::Fit(Some(FilterType::Nearest)));
-
-                // Resize height based on clipping top
-                let height = cmp::min(
-                    img.height(),
-                    (img.y_offset() + img.height()).saturating_sub(img.scroll_offset()),
-                );
-
-                // Resize height based on clipping bottom
-                let height = cmp::min(
-                    height,
-                    area.height
-                        .saturating_add(img.scroll_offset())
-                        .saturating_sub(img.y_offset()),
-                );
-
-                let inner_area = Rect::new(
-                    area.x,
-                    area.y
-                        .saturating_add(img.y_offset().saturating_sub(img.scroll_offset())),
-                    area.width,
-                    height,
-                );
-
-                f.render_stateful_widget(image, inner_area, img.image_mut());
+                let y = i32::from(img.y_offset()) - i32::from(img.scroll_offset());
+                let y = y.clamp(i32::from(i16::MIN), i32::from(i16::MAX)) as i16;
+                if let Some(image) = img.image() {
+                    let position = SignedPosition::from((0, y));
+                    f.render_widget(SlicedImage::new(image, position), area);
+                }
             }
         }
     }
@@ -491,7 +541,7 @@ fn open_editor(f: &mut Frame, app: &mut App, file_name: Option<&str>, source_lin
     };
 
     disable_raw_mode().unwrap();
-    execute!(io::stdout(), LeaveAlternateScreen, DisableMouseCapture).unwrap();
+    execute!(io::stdout(), LeaveAlternateScreen).unwrap();
     execute!(io::stdout(), cursor::Show).unwrap();
 
     let _ = std::process::Command::new(editor)
@@ -503,7 +553,7 @@ fn open_editor(f: &mut Frame, app: &mut App, file_name: Option<&str>, source_lin
 
     enable_raw_mode().expect("Failed to enable raw mode");
     let mut stdout = io::stdout();
-    execute!(stdout, EnterAlternateScreen, EnableMouseCapture).unwrap();
+    execute!(stdout, EnterAlternateScreen).unwrap();
 
     app.boxes = Boxes::None;
     f.render_widget(Clear, f.area());
@@ -512,7 +562,49 @@ fn open_editor(f: &mut Frame, app: &mut App, file_name: Option<&str>, source_lin
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ratatui::widgets::Widget;
+    use ratatui::{Terminal, backend::TestBackend, widgets::Widget};
+
+    #[test]
+    fn file_tree_directory_header_does_not_cover_first_file() {
+        let mut tree = FileTree::new();
+        tree.add_file(MdFile::new("./one.md".to_string(), "one.md".to_string()));
+        let mut app = App::default();
+        app.set_width(59);
+        let mut terminal = Terminal::new(TestBackend::new(60, 30)).expect("test terminal");
+        terminal
+            .draw(|frame| render_file_tree(frame, &app, tree, "/project", true))
+            .expect("draw file tree");
+        let buffer = terminal.backend().buffer();
+        let rows = (0..30)
+            .map(|row| {
+                (0..60)
+                    .map(|column| buffer[(column, row)].symbol())
+                    .collect::<String>()
+            })
+            .collect::<Vec<_>>();
+        assert!(rows[0].contains("Directory: /project"), "{rows:?}");
+        assert!(
+            rows.iter().skip(1).any(|row| row.contains("one.md")),
+            "{rows:?}"
+        );
+    }
+
+    #[test]
+    fn file_tree_directory_header_can_be_disabled() {
+        let mut tree = FileTree::new();
+        tree.add_file(MdFile::new("./one.md".to_string(), "one.md".to_string()));
+        let mut app = App::default();
+        app.set_width(59);
+        let mut terminal = Terminal::new(TestBackend::new(60, 30)).expect("test terminal");
+        terminal
+            .draw(|frame| render_file_tree(frame, &app, tree, "/project", false))
+            .expect("draw file tree");
+        let buffer = terminal.backend().buffer();
+        let first_row = (0..60)
+            .map(|column| buffer[(column, 0)].symbol())
+            .collect::<String>();
+        assert!(!first_row.contains("Directory:"), "{first_row}");
+    }
 
     #[test]
     fn scrollbar_does_not_overwrite_the_document_last_column() {

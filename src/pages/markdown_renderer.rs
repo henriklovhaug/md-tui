@@ -18,7 +18,7 @@ use crate::{
     },
     util::{
         colors::{color_config, heading_colors},
-        general::GENERAL_CONFIG,
+        general::{GENERAL_CONFIG, HeadingStyle},
     },
 };
 
@@ -335,6 +335,17 @@ fn render_quote(area: Rect, buf: &mut Buffer, component: TextComponent, clip: Cl
     paragraph.render(area, buf);
 }
 
+fn heading_color(indent: u8) -> Color {
+    match indent {
+        2 => heading_colors().level_2,
+        3 => heading_colors().level_3,
+        4 => heading_colors().level_4,
+        5 => heading_colors().level_5,
+        6 => heading_colors().level_6,
+        _ => color_config().heading_fg_color,
+    }
+}
+
 fn style_heading(word: &Word, indent: u8) -> Span<'_> {
     if matches!(
         word.kind(),
@@ -342,36 +353,28 @@ fn style_heading(word: &Word, indent: u8) -> Span<'_> {
     ) {
         return style_word_content(word, word.content());
     }
-    match indent {
-        1 => Span::styled(
-            word.content(),
-            Style::default().fg(color_config().heading_fg_color),
-        ),
-        2 => Span::styled(
-            word.content(),
-            Style::default().fg(heading_colors().level_2),
-        ),
-        3 => Span::styled(
-            word.content(),
-            Style::default().fg(heading_colors().level_3),
-        ),
-        4 => Span::styled(
-            word.content(),
-            Style::default().fg(heading_colors().level_4),
-        ),
-        5 => Span::styled(
-            word.content(),
-            Style::default().fg(heading_colors().level_5),
-        ),
-        6 => Span::styled(
-            word.content(),
-            Style::default().fg(heading_colors().level_6),
-        ),
-        _ => Span::styled(
-            word.content(),
-            Style::default().fg(color_config().heading_fg_color),
-        ),
+    Span::styled(word.content(), Style::default().fg(heading_color(indent)))
+}
+
+fn heading_line<'a>(mut content: Vec<Span<'a>>, indent: u8, style: HeadingStyle) -> Line<'a> {
+    if indent < 2 || style == HeadingStyle::Hashes {
+        return Line::from(content);
     }
+
+    let hash_prefix = format!("{} ", "#".repeat(indent as usize));
+    if content
+        .first()
+        .is_some_and(|span| span.content.as_ref() == hash_prefix)
+    {
+        content.remove(0);
+    }
+    let prefix = format!("{}▎ ", "  ".repeat(usize::from(indent.saturating_sub(2))));
+    content.insert(
+        0,
+        Span::styled(prefix, Style::default().fg(heading_color(indent))),
+    );
+    let line = Line::from(content);
+    if indent <= 3 { line.bold() } else { line }
 }
 
 fn render_heading(area: Rect, buf: &mut Buffer, component: TextComponent) {
@@ -391,11 +394,12 @@ fn render_heading(area: Rect, buf: &mut Buffer, component: TextComponent) {
         .map(|c| style_heading(c, indent))
         .collect();
 
+    let line = heading_line(content, indent, GENERAL_CONFIG.heading_style);
     let paragraph = match indent {
-        1 => Paragraph::new(Line::from(content))
+        1 => Paragraph::new(line)
             .block(Block::default().style(Style::default().bg(color_config().heading_bg_color)))
             .alignment(Alignment::Center),
-        _ => Paragraph::new(Line::from(content)),
+        _ => Paragraph::new(line),
     };
 
     paragraph.render(area, buf);
@@ -692,5 +696,16 @@ mod tests {
             style_heading(&selected, 2).style,
             style_word_content(&selected, selected.content()).style
         );
+    }
+
+    #[test]
+    fn bar_style_replaces_only_the_rendered_hash_prefix() {
+        let content = vec![Span::raw("## "), Span::raw("Example")];
+        let line = heading_line(content.clone(), 2, HeadingStyle::Bars);
+        assert_eq!(line.spans[0].content, "▎ ");
+        assert_eq!(line.spans[1].content, "Example");
+
+        let legacy = heading_line(content, 2, HeadingStyle::Hashes);
+        assert_eq!(legacy.spans[0].content, "## ");
     }
 }
