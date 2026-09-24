@@ -5,6 +5,7 @@ use std::{
 
 use config::{Config, ConfigBuilder, Environment, File, builder::DefaultState};
 use ratatui::style::Color;
+use serde::{Deserialize, Serialize};
 
 use crate::highlight::{DEFAULT_COLOR_MAP, HIGHLIGHT_NAMES};
 
@@ -14,7 +15,7 @@ fn config_builder() -> ConfigBuilder<DefaultState> {
     Config::builder().add_source(File::with_name(config_file.to_str().unwrap()).required(false))
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct ColorConfig {
     // Inline styles
     pub italic_color: Color,
@@ -220,8 +221,41 @@ pub fn color_config() -> ColorConfig {
     *COLOR_CONFIG_INTERNAL.read().unwrap()
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct HighlightColors([Color; HIGHLIGHT_NAMES.len()]);
+
+impl HighlightColors {
+    pub fn reset() -> Self {
+        Self([Color::Reset; HIGHLIGHT_NAMES.len()])
+    }
+
+    pub fn dark() -> Self {
+        Self(DEFAULT_COLOR_MAP)
+    }
+
+    pub fn light() -> Self {
+        Self([
+            Color::Rgb(120, 80, 0),
+            Color::Rgb(120, 80, 0),
+            Color::Rgb(0, 100, 60),
+            Color::Rgb(0, 100, 60),
+            Color::Rgb(145, 30, 45),
+            Color::Rgb(145, 30, 45),
+            Color::Rgb(30, 70, 145),
+            Color::Rgb(30, 70, 145),
+            Color::Rgb(30, 70, 145),
+            Color::Rgb(30, 70, 145),
+            Color::Rgb(120, 35, 115),
+            Color::Rgb(120, 35, 115),
+            Color::Rgb(0, 105, 125),
+            Color::Rgb(0, 105, 125),
+            Color::Rgb(0, 105, 125),
+            Color::Reset,
+            Color::Reset,
+            Color::Reset,
+        ])
+    }
+}
 
 impl std::ops::Index<usize> for HighlightColors {
     type Output = Color;
@@ -271,7 +305,7 @@ pub fn highlight_colors() -> HighlightColors {
     *HIGHLIGHT_COLORS_INTERNAL.read().unwrap()
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct HeadingColors {
     pub level_2: Color,
     pub level_3: Color,

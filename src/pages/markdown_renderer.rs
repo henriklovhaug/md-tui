@@ -107,15 +107,23 @@ impl Widget for TextComponent {
     }
 }
 
+fn selected_style() -> Style {
+    let colors = color_config();
+    if colors.link_selected_fg_color == Color::Reset
+        && colors.link_selected_bg_color == Color::Reset
+    {
+        Style::default().add_modifier(Modifier::REVERSED)
+    } else {
+        Style::default()
+            .fg(colors.link_selected_fg_color)
+            .bg(colors.link_selected_bg_color)
+    }
+}
+
 fn style_word_content<'a>(word: &Word, content: impl Into<Cow<'a, str>>) -> Span<'a> {
     match word.kind() {
         WordType::MetaInfo(_) | WordType::LinkData | WordType::FootnoteData => unreachable!(),
-        WordType::Selected => Span::styled(
-            content,
-            Style::default()
-                .fg(color_config().link_selected_fg_color)
-                .bg(color_config().link_selected_bg_color),
-        ),
+        WordType::Selected => Span::styled(content, selected_style()),
         WordType::Normal => Span::raw(content),
         WordType::Code => Span::styled(content, Style::default().fg(color_config().code_fg_color))
             .bg(color_config().code_bg_color),
@@ -434,9 +442,7 @@ fn render_details_summary(area: Rect, buf: &mut Buffer, component: TextComponent
     let focused = component.is_focused();
     let mut style = Style::default().add_modifier(Modifier::BOLD);
     if focused {
-        style = style
-            .fg(color_config().link_selected_fg_color)
-            .bg(color_config().link_selected_bg_color);
+        style = style.patch(selected_style());
     }
     let marker = if folded { "▶ " } else { "▼ " };
     let mut spans: Vec<Span> = vec![Span::styled(marker, style)];

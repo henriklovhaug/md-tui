@@ -27,13 +27,14 @@ use crossterm::{
     terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
 
+use md_tui::util::themes::{ThemeChooser, ThemeMode};
 use notify::{Config, PollWatcher, Watcher};
 use ratatui::{
     DefaultTerminal, Frame,
     layout::Rect,
     style::{Modifier, Style, Stylize},
-    text::Line,
-    widgets::{Block, Clear, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState},
+    text::{Line, Span, Text},
+    widgets::{Block, Borders, Clear, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState},
 };
 use ratatui_image::sliced::{SignedPosition, SlicedImage};
 
@@ -234,6 +235,9 @@ fn run_app(terminal: &mut DefaultTerminal, mut app: App, tick_rate: Duration) ->
                 f.render_widget(Clear, link_area);
                 f.render_widget(app.link_box.clone(), link_area);
             }
+            if app.theme.open {
+                render_theme_chooser(f, &app.theme, GENERAL_CONFIG.help_menu);
+            }
         })?;
 
         let timeout = tick_rate
@@ -282,6 +286,18 @@ fn run_app(terminal: &mut DefaultTerminal, mut app: App, tick_rate: Duration) ->
                         open_editor(f, &mut app, markdown.file_name(), source_line);
                     })?;
                 }
+                KeyBoardAction::ThemeChanged => {
+                    let text = markdown
+                        .file_name()
+                        .and_then(|path| read_to_string(path).ok())
+                        .unwrap_or_else(|| stdin_buf.clone());
+                    let name = markdown.file_name().map(str::to_owned);
+                    if app.mode == Mode::View {
+                        markdown = parse_markdown(name.as_deref(), &text, app.width() - 2);
+                        app.selected = false;
+                        app.details_selected = false;
+                    }
+                }
             }
         }
         if last_tick.elapsed() >= tick_rate {
@@ -295,6 +311,136 @@ fn run_app(terminal: &mut DefaultTerminal, mut app: App, tick_rate: Duration) ->
                 let _ = resume_cache.save(path, source_line);
             }
             last_position_save = Instant::now();
+        }
+    }
+}
+
+fn render_theme_chooser(f: &mut Frame, chooser: &ThemeChooser, show_help: bool) {
+    let screen = f.area();
+    let names = chooser.names();
+    let show_help = show_help && screen.width >= 54;
+    let width = screen
+        .width
+        .saturating_sub(2)
+        .min(if show_help { 76 } else { 38 });
+    let height = screen
+        .height
+        .saturating_sub(2)
+        .min(18)
+        .min(names.len() as u16 + 8);
+    if width < 24 || height < 8 {
+        return;
+    }
+    let area = Rect::new(
+        (screen.width - width) / 2,
+        (screen.height - height) / 2,
+        width,
+        height,
+    );
+    let colors = color_config();
+    let panel_style = Style::default()
+        .fg(colors.help_fg_color)
+        .bg(colors.help_bg_color);
+    let panel = Block::default()
+        .title(" Themes ")
+        .borders(Borders::ALL)
+        .style(panel_style);
+    let inner = panel.inner(area);
+    let visible = usize::from(inner.height.saturating_sub(4)).max(1);
+    let start = chooser.selected.saturating_sub(visible - 1);
+    let mut theme_lines = vec![
+        Line::from(format!(" Active: {}", chooser.active)),
+        Line::from(""),
+    ];
+    for (index, name) in names.iter().enumerate().skip(start).take(visible) {
+        let marker = if index == chooser.selected { ">" } else { " " };
+        let active = if name == &chooser.active { " *" } else { "" };
+        let line = Line::from(format!(" {marker} {name}{active}"));
+        theme_lines.push(if index == chooser.selected {
+            line.reversed()
+        } else {
+            line
+        });
+    }
+    if !chooser.status.is_empty() {
+        theme_lines.push(Line::from(Span::styled(
+            format!(" {}", chooser.status),
+            Style::default().fg(colors.help_title_color),
+        )));
+    }
+
+    f.render_widget(Clear, area);
+    f.render_widget(panel, area);
+    if show_help {
+        let gap = 2;
+        let left_width = inner.width.saturating_sub(gap) / 2;
+        let left = Rect::new(inner.x, inner.y, left_width, inner.height);
+        let right = Rect::new(
+            inner.x + left_width + gap,
+            inner.y,
+            inner.width.saturating_sub(left_width + gap),
+            inner.height,
+        );
+        f.render_widget(
+            Paragraph::new(Text::from(theme_lines)).style(panel_style),
+            left,
+        );
+        f.render_widget(
+            Paragraph::new(Text::from(theme_help_lines(chooser))).style(panel_style),
+            right,
+        );
+    } else {
+        append_theme_prompt(&mut theme_lines, chooser);
+        f.render_widget(
+            Paragraph::new(Text::from(theme_lines)).style(panel_style),
+            inner,
+        );
+    }
+}
+
+fn theme_help_lines(chooser: &ThemeChooser) -> Vec<Line<'static>> {
+    let mut lines = match chooser.mode {
+        ThemeMode::Browse => vec![
+            Line::from("Keys"),
+            Line::from("j/k or ↑/↓  select"),
+            Line::from("Enter       apply"),
+            Line::from("s           save current"),
+            Line::from("x           delete saved"),
+            Line::from("Esc/q       close"),
+        ],
+        ThemeMode::SaveName => vec![
+            Line::from("Save theme"),
+            Line::from("Enter       save"),
+            Line::from("Esc         cancel"),
+            Line::from("Backspace   delete"),
+            Line::from(""),
+            Line::from(format!("Name: {}_", chooser.input)),
+        ],
+        ThemeMode::ConfirmDelete => vec![
+            Line::from("Delete selected theme?"),
+            Line::from("y           confirm"),
+            Line::from("Any key     cancel"),
+        ],
+    };
+    lines.extend([
+        Line::from(""),
+        Line::from("Edit colors:"),
+        Line::from("~/.config/mdt/config.toml"),
+        Line::from("~/.config/mdt/themes/<name>.json"),
+    ]);
+    lines
+}
+
+fn append_theme_prompt(lines: &mut Vec<Line<'static>>, chooser: &ThemeChooser) {
+    match chooser.mode {
+        ThemeMode::Browse => {}
+        ThemeMode::SaveName => {
+            lines.push(Line::from(""));
+            lines.push(Line::from(format!(" Name: {}_", chooser.input)));
+        }
+        ThemeMode::ConfirmDelete => {
+            lines.push(Line::from(""));
+            lines.push(Line::from(" Delete selected theme?"));
         }
     }
 }
@@ -342,8 +488,8 @@ fn render_file_tree(
     if GENERAL_CONFIG.help_menu {
         let area = Rect {
             x: x + 2,
-            y: size.height.saturating_sub(13),
-            height: cmp::min(10, size.height),
+            y: size.height.saturating_sub(14),
+            height: cmp::min(11, size.height),
             width: app.width().saturating_sub(5),
         };
         f.render_widget(Clear, area);
@@ -456,8 +602,8 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
     let block = Block::default().bg(color_config().help_bg_color);
     let area = if app.help_box.expanded() {
         Rect {
-            y: size.height.saturating_sub(19),
-            height: cmp::min(18, size.height),
+            y: size.height.saturating_sub(20),
+            height: cmp::min(19, size.height),
             x,
             width: area.width - 1,
         }
@@ -478,8 +624,8 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
     let area = if app.help_box.expanded() {
         Rect {
             x: x + 2,
-            y: size.height.saturating_sub(18),
-            height: cmp::min(16, size.height),
+            y: size.height.saturating_sub(19),
+            height: cmp::min(17, size.height),
             width: app.width() - 5,
         }
     } else {
@@ -550,6 +696,49 @@ fn open_editor(f: &mut Frame, app: &mut App, file_name: Option<&str>, source_lin
 mod tests {
     use super::*;
     use ratatui::{Terminal, backend::TestBackend, widgets::Widget};
+
+    fn buffer_rows(terminal: &Terminal<TestBackend>) -> Vec<String> {
+        let area = terminal.backend().buffer().area;
+        (0..area.height)
+            .map(|row| {
+                (0..area.width)
+                    .map(|column| terminal.backend().buffer()[(column, row)].symbol())
+                    .collect::<String>()
+            })
+            .collect()
+    }
+
+    #[test]
+    fn theme_help_uses_the_right_side_when_enabled() {
+        let chooser = ThemeChooser::default();
+        let mut terminal = Terminal::new(TestBackend::new(90, 20)).expect("test terminal");
+        terminal
+            .draw(|frame| render_theme_chooser(frame, &chooser, true))
+            .expect("draw theme chooser");
+        let rows = buffer_rows(&terminal);
+        let theme_x = rows
+            .iter()
+            .find_map(|row| row.find("Match terminal"))
+            .expect("theme name");
+        let help_x = rows
+            .iter()
+            .find_map(|row| row.find("j/k or"))
+            .expect("key help");
+        assert!(help_x > theme_x, "{rows:?}");
+    }
+
+    #[test]
+    fn theme_help_is_removed_when_help_menu_is_disabled() {
+        let chooser = ThemeChooser::default();
+        let mut terminal = Terminal::new(TestBackend::new(90, 20)).expect("test terminal");
+        terminal
+            .draw(|frame| render_theme_chooser(frame, &chooser, false))
+            .expect("draw theme chooser");
+        let output = buffer_rows(&terminal).join("\n");
+        assert!(output.contains("Match terminal"), "{output}");
+        assert!(!output.contains("j/k or"), "{output}");
+        assert!(!output.contains("Edit colors:"), "{output}");
+    }
 
     #[test]
     fn file_tree_directory_header_does_not_cover_first_file() {

@@ -13,6 +13,7 @@ use crate::boxes::{errorbox::ErrorBox, help_box::HelpBox, linkbox::LinkBox, sear
 pub mod colors;
 pub mod general;
 pub mod keys;
+pub mod themes;
 
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub enum Mode {
@@ -57,6 +58,7 @@ pub struct App {
     pub message_box: ErrorBox,
     pub help_box: HelpBox,
     pub link_box: LinkBox,
+    pub theme: themes::ThemeChooser,
 }
 
 impl App {
