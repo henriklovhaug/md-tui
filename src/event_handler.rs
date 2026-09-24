@@ -346,28 +346,11 @@ fn keyboard_mode_view(
             }
 
             Action::Hover => {
-                if app.selected {
-                    let link = markdown.selected();
-
-                    let prev_type = markdown.selected_underlying_type();
-
-                    if prev_type == WordType::FootnoteInline {
-                        app.link_box
-                            .set_message(format!("Footnote: {}", markdown.find_footnote(link)));
-                        app.boxes = Boxes::LinkPreview;
-                        return KeyBoardAction::Continue;
-                    }
-
-                    let message = match LinkType::from(link) {
-                        LinkType::Internal(e) => format!("Internal link: {e}"),
-                        LinkType::External(e) => format!("External link: {e}"),
-                        LinkType::MarkdownFile(e) => format!("Markdown file: {e}"),
-                    };
-
-                    app.link_box.set_message(message);
-                    app.boxes = Boxes::LinkPreview;
+                if app.selected || app.annotation_selected {
+                    show_selected_target(app, markdown);
                 } else {
-                    app.message_box.set_message("No link selected".to_string());
+                    app.message_box
+                        .set_message("No link, footnote, or comment selected".to_string());
                     app.boxes = Boxes::Error;
                 }
             }
@@ -583,18 +566,7 @@ fn keyboard_mode_view(
 
             Action::Enter => {
                 if app.annotation_selected {
-                    match markdown.selected_annotation() {
-                        Ok((quote, comment)) => {
-                            app.link_box.set_message(format!(
-                                "Comment on \u{201c}{quote}\u{201d}:\n\n{comment}"
-                            ));
-                            app.boxes = Boxes::LinkPreview;
-                        }
-                        Err(message) => {
-                            app.message_box.set_message(message);
-                            app.boxes = Boxes::Error;
-                        }
-                    }
+                    show_selected_target(app, markdown);
                     return KeyBoardAction::Continue;
                 }
 
@@ -615,10 +587,7 @@ fn keyboard_mode_view(
                 let prev_type = markdown.selected_underlying_type();
 
                 if prev_type == WordType::FootnoteInline {
-                    app.message_box.set_message(markdown.find_footnote(link));
-                    app.boxes = Boxes::Error;
-                    markdown.deselect();
-                    app.selected = false;
+                    show_selected_target(app, markdown);
                     return KeyBoardAction::Continue;
                 }
 
@@ -744,9 +713,48 @@ fn close_link_preview(key: KeyCode, app: &mut App) {
     }
 }
 
+fn selected_target_message(
+    markdown: &ComponentRoot,
+    annotation_selected: bool,
+) -> Result<String, String> {
+    if annotation_selected {
+        return markdown.selected_annotation().map(|(quote, comment)| {
+            format!("CriticMarkup comment on \u{201c}{quote}\u{201d}:\n\n{comment}")
+        });
+    }
+
+    let target = markdown.selected();
+    if markdown.selected_underlying_type() == WordType::FootnoteInline {
+        return Ok(format!("Footnote: {}", markdown.find_footnote(target)));
+    }
+
+    Ok(match LinkType::from(target) {
+        LinkType::Internal(value) => format!("Internal link: {value}"),
+        LinkType::External(value) => format!("External link: {value}"),
+        LinkType::MarkdownFile(value) => format!("Markdown file: {value}"),
+    })
+}
+
+fn show_selected_target(app: &mut App, markdown: &ComponentRoot) {
+    match selected_target_message(markdown, app.annotation_selected) {
+        Ok(message) => {
+            app.link_box.set_message(message);
+            app.boxes = Boxes::LinkPreview;
+        }
+        Err(message) => {
+            app.message_box.set_message(message);
+            app.boxes = Boxes::Error;
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn parsed(markdown: &str) -> ComponentRoot {
+        parse_markdown(None, markdown, 80)
+    }
 
     #[test]
     fn q_maps_to_escape_only_in_annotation_mode() {
@@ -770,5 +778,27 @@ mod tests {
             assert_eq!(app.boxes, Boxes::None);
             assert!(app.annotation_selected);
         }
+    }
+
+    #[test]
+    fn target_preview_identifies_criticmarkup_comments() {
+        let mut markdown = parsed("{==result==}{>>check this<<}");
+        markdown.select_annotation(0).expect("select annotation");
+
+        assert_eq!(
+            selected_target_message(&markdown, true).expect("annotation preview"),
+            "CriticMarkup comment on \u{201c}result\u{201d}:\n\ncheck this"
+        );
+    }
+
+    #[test]
+    fn target_preview_identifies_footnotes() {
+        let mut markdown = parsed("Reference[^one]\n\n[^one]: Supporting text");
+        markdown.select(0).expect("select footnote");
+
+        assert_eq!(
+            selected_target_message(&markdown, false).expect("footnote preview"),
+            "Footnote: Supporting text"
+        );
     }
 }
