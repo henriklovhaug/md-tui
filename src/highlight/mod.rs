@@ -68,7 +68,7 @@ pub fn highlight_code(language: &str, lines: &[u8]) -> HighlightInfo {
     // rebuilding the `HighlightConfiguration` on every call.
     let result: Result<Vec<HighlightEvent>, String> = match language {
         #[cfg(feature = "tree-sitter-bash")]
-        "bash" | "sh" => highlight_with_language(
+        "bash" | "sh" | "shell" => highlight_with_language(
             lines,
             tree_sitter_bash::LANGUAGE.into(),
             "bash",

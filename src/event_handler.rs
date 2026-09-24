@@ -53,6 +53,8 @@ pub fn keyboard_mode_file_tree(
     height: u16,
     watcher: &mut PollWatcher,
 ) -> KeyBoardAction {
+    let header_height = u16::from(GENERAL_CONFIG.file_tree_directory_header);
+    let height = height.saturating_sub(header_height);
     match app.boxes {
         Boxes::Error => match key {
             KeyCode::Enter | KeyCode::Esc => {
@@ -76,7 +78,8 @@ pub fn keyboard_mode_file_tree(
                 app.search_box.insert(c);
                 file_tree.search(app.search_box.content());
                 let file_height = file_tree.height(height);
-                app.search_box.set_position(10, file_height as u16 + 2);
+                app.search_box
+                    .set_position(10, file_height as u16 + 2 + header_height);
             }
 
             KeyCode::Backspace => {
@@ -86,7 +89,8 @@ pub fn keyboard_mode_file_tree(
                 app.search_box.delete();
                 file_tree.search(app.search_box.content());
                 let file_height = file_tree.height(height);
-                app.search_box.set_position(10, file_height as u16 + 2);
+                app.search_box
+                    .set_position(10, file_height as u16 + 2 + header_height);
             }
             _ => {}
         },
@@ -145,7 +149,8 @@ pub fn keyboard_mode_file_tree(
             }
             Action::Search => {
                 let file_height = file_tree.height(height);
-                app.search_box.set_position(10, file_height as u16 + 2);
+                app.search_box
+                    .set_position(10, file_height as u16 + 2 + header_height);
                 app.search_box.set_width(20);
                 app.boxes = Boxes::Search;
                 app.help_box.close();
