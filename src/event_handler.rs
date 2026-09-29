@@ -17,6 +17,7 @@ use crate::{
 pub enum KeyBoardAction {
     Continue,
     Edit,
+    ThemeChanged,
     Exit,
 }
 
@@ -28,6 +29,13 @@ pub fn handle_keyboard_input(
     height: u16,
     watcher: &mut PollWatcher,
 ) -> KeyBoardAction {
+    if app.theme.open {
+        return if app.theme.key(key) {
+            KeyBoardAction::ThemeChanged
+        } else {
+            KeyBoardAction::Continue
+        };
+    }
     if key == KeyCode::Char('q') && app.boxes != Boxes::Search {
         return KeyBoardAction::Exit;
     }
@@ -87,6 +95,10 @@ pub fn keyboard_mode_file_tree(
             _ => {}
         },
         Boxes::None => match key_to_action(key) {
+            Action::Theme => {
+                app.theme.open = true;
+                app.help_box.close();
+            }
             Action::Down => {
                 file_tree.next(height);
             }
@@ -250,6 +262,10 @@ fn keyboard_mode_view(
             _ => {}
         },
         Boxes::None => match key_to_action(key) {
+            Action::Theme => {
+                app.theme.open = true;
+                app.help_box.close();
+            }
             Action::Down => {
                 if app.selected {
                     app.select_index = cmp::min(app.select_index + 1, markdown.num_links() - 1);
