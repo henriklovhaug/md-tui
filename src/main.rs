@@ -153,6 +153,10 @@ fn run_app(terminal: &mut DefaultTerminal, mut app: App, tick_rate: Duration) ->
         if app.set_width(terminal.size()?.width - 1) {
             let url = if let Some(url) = markdown.file_name() {
                 url
+            } else if app.mode == Mode::View {
+                app.vertical_scroll = 0;
+                markdown = parse_markdown(None, &stdin_buf, app.width() - 2);
+                continue;
             } else {
                 app.mode = Mode::FileTree;
                 continue;
