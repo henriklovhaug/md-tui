@@ -1,3 +1,22 @@
+# Version 0.11.0
+
+- Fix parser for `[text](url)` types links allowing `[` in the url part
+- Add theme chooser
+- Add `shell` to bash syntax highlighting
+- Add browsing directory header to file tree
+- Fix adjacent tables parsing
+- Fix width calculation for ordered list
+- Add scrollbar to document
+- Add alternate styling for headings
+- Fix incorrect configuration documentation in README
+- Change from scaling to clipping for images
+- Fix mouse tracking remaining enabled after editing a file
+- Add persistent reading position
+- Fix emphasis from capturing too much
+- Fix substring search
+- Add open editor at current position in the document
+- Improve parser for tables
+
 # Version 0.10.4
 
 - Fix parser for indented tables
