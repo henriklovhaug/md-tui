@@ -763,7 +763,8 @@ impl From<Rule> for MdParseEnum {
             Rule::caution => Self::Caution,
             Rule::p_char
             | Rule::t_char
-            | Rule::link_char
+            | Rule::link_presentation_char
+            | Rule::link_data_char
             | Rule::wiki_link_char
             | Rule::normal
             | Rule::t_normal
