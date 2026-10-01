@@ -36,7 +36,7 @@ pub fn handle_keyboard_input(
             KeyBoardAction::Continue
         };
     }
-    if key == KeyCode::Char('q') && app.boxes != Boxes::Search {
+    if key == KeyCode::Char('q') && app.boxes == Boxes::None && !app.annotation_selected {
         return KeyBoardAction::Exit;
     }
     match app.mode {
@@ -196,9 +196,7 @@ pub fn keyboard_mode_file_tree(
             _ => {}
         },
         Boxes::LinkPreview => {
-            if key == KeyCode::Esc {
-                app.boxes = Boxes::None;
-            }
+            close_link_preview(key, app);
         }
     }
 
@@ -261,7 +259,7 @@ fn keyboard_mode_view(
             }
             _ => {}
         },
-        Boxes::None => match key_to_action(key) {
+        Boxes::None => match view_action(key, app.annotation_selected) {
             Action::Theme => {
                 app.theme.open = true;
                 app.help_box.close();
@@ -285,6 +283,17 @@ fn keyboard_mode_view(
                         } else {
                             app.vertical_scroll
                         };
+                } else if app.annotation_selected {
+                    let max_idx = markdown.num_annotations().saturating_sub(1);
+                    app.annotation_select_index =
+                        cmp::min(app.annotation_select_index + 1, max_idx);
+                    app.vertical_scroll = if let Ok(scroll) =
+                        markdown.select_annotation(app.annotation_select_index)
+                    {
+                        scroll.saturating_sub(height / 3)
+                    } else {
+                        app.vertical_scroll
+                    };
                 } else {
                     app.vertical_scroll = cmp::min(
                         app.vertical_scroll + 1,
@@ -310,6 +319,15 @@ fn keyboard_mode_view(
                         } else {
                             app.vertical_scroll
                         };
+                } else if app.annotation_selected {
+                    app.annotation_select_index = app.annotation_select_index.saturating_sub(1);
+                    app.vertical_scroll = if let Ok(scroll) =
+                        markdown.select_annotation(app.annotation_select_index)
+                    {
+                        scroll.saturating_sub(height / 3)
+                    } else {
+                        app.vertical_scroll
+                    };
                 } else {
                     app.vertical_scroll = app.vertical_scroll.saturating_sub(1);
                 }
@@ -344,28 +362,11 @@ fn keyboard_mode_view(
             }
 
             Action::Hover => {
-                if app.selected {
-                    let link = markdown.selected();
-
-                    let prev_type = markdown.selected_underlying_type();
-
-                    if prev_type == WordType::FootnoteInline {
-                        app.link_box
-                            .set_message(format!("Footnote: {}", markdown.find_footnote(link)));
-                        app.boxes = Boxes::LinkPreview;
-                        return KeyBoardAction::Continue;
-                    }
-
-                    let message = match LinkType::from(link) {
-                        LinkType::Internal(e) => format!("Internal link: {e}"),
-                        LinkType::External(e) => format!("External link: {e}"),
-                        LinkType::MarkdownFile(e) => format!("Markdown file: {e}"),
-                    };
-
-                    app.link_box.set_message(message);
-                    app.boxes = Boxes::LinkPreview;
+                if app.selected || app.annotation_selected {
+                    show_selected_target(app, markdown);
                 } else {
-                    app.message_box.set_message("No link selected".to_string());
+                    app.message_box
+                        .set_message("No link, footnote, or comment selected".to_string());
                     app.boxes = Boxes::Error;
                 }
             }
@@ -392,6 +393,7 @@ fn keyboard_mode_view(
                     };
                     app.selected = true;
                     app.details_selected = false;
+                    app.annotation_selected = false;
                     markdown.deselect_details();
                 } else {
                     // Something weird must have happened at this point
@@ -420,6 +422,7 @@ fn keyboard_mode_view(
                 app.select_index = index;
                 app.selected = true;
                 app.details_selected = false;
+                app.annotation_selected = false;
                 markdown.deselect_details();
                 app.vertical_scroll = if let Ok(scroll) = markdown.select(app.select_index) {
                     scroll.saturating_sub(height / 3)
@@ -443,6 +446,7 @@ fn keyboard_mode_view(
                 // Clear any link selection first — the two modes are
                 // mutually exclusive.
                 app.selected = false;
+                app.annotation_selected = false;
                 markdown.deselect();
 
                 let next_idx = if app.details_selected {
@@ -467,6 +471,39 @@ fn keyboard_mode_view(
                 };
             }
 
+            Action::SelectAnnotation => {
+                let annotations = markdown.annotation_index_and_height();
+                if annotations.is_empty() {
+                    app.message_box
+                        .set_message("No CriticMarkup annotations found".to_string());
+                    app.boxes = Boxes::Error;
+                    return KeyBoardAction::Continue;
+                }
+
+                app.selected = false;
+                app.details_selected = false;
+                markdown.deselect();
+                markdown.deselect_details();
+
+                let next_idx = if app.annotation_selected {
+                    cmp::min(app.annotation_select_index + 1, annotations.len() - 1)
+                } else {
+                    annotations
+                        .iter()
+                        .find(|(_, y)| *y >= app.vertical_scroll)
+                        .map(|(index, _)| *index)
+                        .unwrap_or_else(|| annotations.last().map_or(0, |(index, _)| *index))
+                };
+
+                app.annotation_select_index = next_idx;
+                app.annotation_selected = true;
+                app.vertical_scroll = if let Ok(scroll) = markdown.select_annotation(next_idx) {
+                    scroll.saturating_sub(height / 3)
+                } else {
+                    app.vertical_scroll
+                };
+            }
+
             Action::Search => {
                 app.search_box.clear();
                 app.search_box.set_position(2, height - 3);
@@ -485,6 +522,16 @@ fn keyboard_mode_view(
             }
 
             Action::SearchNext => {
+                if app.annotation_selected {
+                    let max_idx = markdown.num_annotations().saturating_sub(1);
+                    app.annotation_select_index =
+                        cmp::min(app.annotation_select_index + 1, max_idx);
+                    if let Ok(scroll) = markdown.select_annotation(app.annotation_select_index) {
+                        app.vertical_scroll = scroll.saturating_sub(height / 3);
+                    }
+                    return KeyBoardAction::Continue;
+                }
+
                 let heights = markdown.search_results_heights();
 
                 let next = heights
@@ -500,6 +547,14 @@ fn keyboard_mode_view(
             }
 
             Action::SearchPrevious => {
+                if app.annotation_selected {
+                    app.annotation_select_index = app.annotation_select_index.saturating_sub(1);
+                    if let Ok(scroll) = markdown.select_annotation(app.annotation_select_index) {
+                        app.vertical_scroll = scroll.saturating_sub(height / 3);
+                    }
+                    return KeyBoardAction::Continue;
+                }
+
                 let heights = markdown.search_results_heights();
 
                 let next = heights
@@ -522,9 +577,15 @@ fn keyboard_mode_view(
                 markdown.deselect();
                 app.details_selected = false;
                 markdown.deselect_details();
+                app.annotation_selected = false;
             }
 
             Action::Enter => {
+                if app.annotation_selected {
+                    show_selected_target(app, markdown);
+                    return KeyBoardAction::Continue;
+                }
+
                 // A focused `<details>` summary toggles its fold state
                 // and stays in selection mode so the user can chain
                 // multiple toggles without re-pressing `D`.
@@ -542,10 +603,7 @@ fn keyboard_mode_view(
                 let prev_type = markdown.selected_underlying_type();
 
                 if prev_type == WordType::FootnoteInline {
-                    app.message_box.set_message(markdown.find_footnote(link));
-                    app.boxes = Boxes::Error;
-                    markdown.deselect();
-                    app.selected = false;
+                    show_selected_target(app, markdown);
                     return KeyBoardAction::Continue;
                 }
 
@@ -652,11 +710,116 @@ fn keyboard_mode_view(
             }
             _ => {}
         },
-        Boxes::LinkPreview => {
-            if key == KeyCode::Esc {
-                app.boxes = Boxes::None;
-            }
-        }
+        Boxes::LinkPreview => close_link_preview(key, app),
     }
     KeyBoardAction::Continue
+}
+
+fn view_action(key: KeyCode, annotation_selected: bool) -> Action {
+    if key == KeyCode::Char('q') && annotation_selected {
+        Action::Escape
+    } else {
+        key_to_action(key)
+    }
+}
+
+fn close_link_preview(key: KeyCode, app: &mut App) {
+    if matches!(key, KeyCode::Esc | KeyCode::Char('q')) {
+        app.boxes = Boxes::None;
+    }
+}
+
+fn selected_target_message(
+    markdown: &ComponentRoot,
+    annotation_selected: bool,
+) -> Result<String, String> {
+    if annotation_selected {
+        return markdown.selected_annotation().map(|(quote, comment)| {
+            format!("CriticMarkup comment on \u{201c}{quote}\u{201d}:\n\n{comment}")
+        });
+    }
+
+    let target = markdown.selected();
+    if markdown.selected_underlying_type() == WordType::FootnoteInline {
+        return Ok(format!("Footnote: {}", markdown.find_footnote(target)));
+    }
+
+    Ok(match LinkType::from(target) {
+        LinkType::Internal(value) => format!("Internal link: {value}"),
+        LinkType::External(value) => format!("External link: {value}"),
+        LinkType::MarkdownFile(value) => format!("Markdown file: {value}"),
+    })
+}
+
+fn show_selected_target(app: &mut App, markdown: &ComponentRoot) {
+    match selected_target_message(markdown, app.annotation_selected) {
+        Ok(message) => {
+            app.link_box.set_message(message);
+            app.boxes = Boxes::LinkPreview;
+        }
+        Err(message) => {
+            app.message_box.set_message(message);
+            app.boxes = Boxes::Error;
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn parsed(markdown: &str) -> ComponentRoot {
+        parse_markdown(None, markdown, 80)
+    }
+
+    #[test]
+    fn q_maps_to_escape_only_in_annotation_mode() {
+        assert!(matches!(
+            view_action(KeyCode::Char('q'), true),
+            Action::Escape
+        ));
+        assert!(matches!(
+            view_action(KeyCode::Char('q'), false),
+            Action::None
+        ));
+    }
+
+    #[test]
+    fn preview_closes_with_escape_or_q_and_keeps_annotation_mode_active() {
+        for key in [KeyCode::Esc, KeyCode::Char('q')] {
+            let mut app = App::default();
+            app.boxes = Boxes::LinkPreview;
+            app.annotation_selected = true;
+            close_link_preview(key, &mut app);
+            assert_eq!(app.boxes, Boxes::None);
+            assert!(app.annotation_selected);
+        }
+
+        let mut app = App::default();
+        app.boxes = Boxes::LinkPreview;
+        close_link_preview(KeyCode::Enter, &mut app);
+        assert_eq!(app.boxes, Boxes::LinkPreview);
+    }
+
+    #[test]
+    fn target_preview_identifies_criticmarkup_comments() {
+        let mut markdown = parsed("{==result==}{>>check this<<}");
+        markdown.select_annotation(0).expect("select annotation");
+
+        assert_eq!(
+            selected_target_message(&markdown, true).expect("annotation preview"),
+            "CriticMarkup comment on \u{201c}result\u{201d}:\n\ncheck this"
+        );
+    }
+
+    #[test]
+    fn target_preview_identifies_footnotes() {
+        let mut markdown = parsed("Reference[^one]\n\n[^one]: Supporting text");
+        markdown.select(0).expect("select footnote");
+
+        assert_eq!(
+            selected_target_message(&markdown, false).expect("footnote preview"),
+            "Footnote: Supporting text"
+        );
+    }
 }

@@ -76,6 +76,8 @@ impl ThemePalette {
                 link_selected_fg_color: r,
                 link_selected_bg_color: r,
                 scrollbar_color: r,
+                critic_highlight_fg_color: r,
+                critic_highlight_bg_color: r,
                 code_block_bg_color: r,
                 heading_fg_color: r,
                 heading_bg_color: r,
@@ -136,6 +138,12 @@ impl ThemePalette {
                 c.code_block_bg_color = c.code_bg_color;
                 c.link_selected_bg_color = accent;
                 c.link_selected_fg_color = Color::White;
+                c.critic_highlight_bg_color = if warm {
+                    Color::Rgb(249, 237, 210)
+                } else {
+                    Color::Rgb(255, 247, 205)
+                };
+                c.critic_highlight_fg_color = Color::Black;
                 c.scrollbar_color = accent;
                 c.file_tree_name_color = accent;
                 c.file_tree_path_color = Color::DarkGray;
@@ -168,6 +176,12 @@ impl ThemePalette {
                 c.code_block_bg_color = c.code_bg_color;
                 c.link_selected_bg_color = if contrast { Color::Yellow } else { Color::Blue };
                 c.link_selected_fg_color = if contrast { Color::Black } else { Color::White };
+                c.critic_highlight_bg_color = if contrast {
+                    Color::LightYellow
+                } else {
+                    Color::DarkGray
+                };
+                c.critic_highlight_fg_color = if contrast { Color::Black } else { Color::White };
                 c.scrollbar_color = accent;
                 c.file_tree_name_color = accent;
                 c.file_tree_path_color = Color::Gray;

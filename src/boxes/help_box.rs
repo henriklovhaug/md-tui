@@ -159,7 +159,11 @@ fn render_markdown_help(expandend: bool, area: Rect, buf: &mut Buffer) {
         ]),
         Row::new(vec![
             format!("{}", KEY_CONFIG.select_link),
-            "Enter select mode".to_string(),
+            "Select links".to_string(),
+        ]),
+        Row::new(vec![
+            format!("{}", KEY_CONFIG.select_annotation),
+            "Select annotations".to_string(),
         ]),
         Row::new(vec![
             format!("{}", KEY_CONFIG.theme),

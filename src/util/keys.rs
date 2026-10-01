@@ -14,6 +14,7 @@ pub enum Action {
     SelectLink,
     SelectLinkAlt,
     SelectDetails,
+    SelectAnnotation,
     Theme,
     SearchNext,
     SearchPrevious,
@@ -44,6 +45,7 @@ pub struct KeyConfig {
     pub select_link: char,
     pub select_link_alt: char,
     pub select_details: char,
+    pub select_annotation: char,
     pub theme: char,
     pub edit: char,
     pub hover: char,
@@ -96,6 +98,10 @@ pub fn key_to_action(key: KeyCode) -> Action {
 
             if c == KEY_CONFIG.select_details {
                 return Action::SelectDetails;
+            }
+
+            if c == KEY_CONFIG.select_annotation {
+                return Action::SelectAnnotation;
             }
 
             if c == KEY_CONFIG.theme {
@@ -175,6 +181,7 @@ pub static KEY_CONFIG: LazyLock<KeyConfig> = LazyLock::new(|| {
         select_link: settings.get::<char>("select_link").unwrap_or('s'),
         select_link_alt: settings.get::<char>("select_link_alt").unwrap_or('S'),
         select_details: settings.get::<char>("select_details").unwrap_or('D'),
+        select_annotation: settings.get::<char>("select_annotation").unwrap_or('c'),
         theme: settings.get::<char>("theme").unwrap_or('T'),
         search_next: settings.get::<char>("search_next").unwrap_or('n'),
         search_previous: settings.get::<char>("search_previous").unwrap_or('N'),

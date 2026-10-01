@@ -174,6 +174,15 @@ fn is_url(url: &str) -> bool {
     url.starts_with("http://") || url.starts_with("https://")
 }
 
+fn is_critic_content(kind: MdParseEnum) -> bool {
+    matches!(
+        kind,
+        MdParseEnum::CriticHighlight
+            | MdParseEnum::CriticCodeHighlight
+            | MdParseEnum::CriticComment
+    )
+}
+
 fn parse_component(parse_node: ParseNode, width: u16) -> Component {
     match parse_node.kind() {
         MdParseEnum::Image => {
@@ -244,7 +253,7 @@ fn parse_component(parse_node: ParseNode, width: u16) -> Component {
                     words.push(comp);
                 }
 
-                if content.starts_with(' ') {
+                if content.starts_with(' ') && !is_critic_content(node.kind()) {
                     content.remove(0);
                     let comp = Word::new(" ".to_owned(), word_type);
                     words.push(comp);
@@ -265,7 +274,7 @@ fn parse_component(parse_node: ParseNode, width: u16) -> Component {
                     let comp = Word::new(content.clone(), WordType::LinkData);
                     words.push(comp);
                 }
-                if content.starts_with(' ') {
+                if content.starts_with(' ') && !is_critic_content(node.kind()) {
                     content.remove(0);
                     let comp = Word::new(" ".to_owned(), word_type);
                     words.push(comp);
@@ -313,7 +322,7 @@ fn parse_component(parse_node: ParseNode, width: u16) -> Component {
                     words.push(comp);
                 }
 
-                if content.starts_with(' ') {
+                if content.starts_with(' ') && !is_critic_content(node.kind()) {
                     content.remove(0);
                     let comp = Word::new(" ".to_owned(), word_type);
                     words.push(comp);
@@ -345,7 +354,7 @@ fn parse_component(parse_node: ParseNode, width: u16) -> Component {
                     words.push(comp);
                 }
 
-                if content.starts_with(' ') {
+                if content.starts_with(' ') && !is_critic_content(node.kind()) {
                     content.remove(0);
                     let comp = Word::new(" ".to_owned(), word_type);
                     words.push(comp);
@@ -405,7 +414,10 @@ fn parse_component(parse_node: ParseNode, width: u16) -> Component {
                         let comp = Word::new(content.clone(), WordType::LinkData);
                         inner_words.push(comp);
                     }
-                    if content.starts_with(' ') && node.kind() != MdParseEnum::Indent {
+                    if content.starts_with(' ')
+                        && node.kind() != MdParseEnum::Indent
+                        && !is_critic_content(node.kind())
+                    {
                         content.remove(0);
                         let comp = Word::new(" ".to_owned(), word_type);
                         inner_words.push(comp);
@@ -458,7 +470,7 @@ fn parse_component(parse_node: ParseNode, width: u16) -> Component {
                         inner_words.push(comp);
                     }
 
-                    if content.starts_with(' ') {
+                    if content.starts_with(' ') && !is_critic_content(word.kind()) {
                         content.remove(0);
                         let comp = Word::new(" ".to_owned(), word_type);
                         inner_words.push(comp);
@@ -510,6 +522,11 @@ fn get_leaf_nodes(node: ParseNode) -> Vec<ParseNode> {
             ParseNode::new(MdParseEnum::Word, String::new())
         };
         leaf_nodes.push(comp);
+    }
+
+    // Preserve the boundary between adjacent CriticMarkup annotations.
+    if node.kind() == MdParseEnum::CriticMarkup {
+        leaf_nodes.push(ParseNode::new(MdParseEnum::Word, String::new()));
     }
 
     if matches!(
@@ -670,6 +687,11 @@ pub enum MdParseEnum {
     CodeBlockStr,
     CodeBlockStrSpaceIndented,
     CodeStr,
+    CriticComment,
+    CriticCodeHighlight,
+    CriticHighlight,
+    CriticMarkup,
+    CriticPrefix,
     Details,
     DetailsBody,
     DetailsOpenAttr,
@@ -724,6 +746,11 @@ impl From<Rule> for MdParseEnum {
             Rule::strikethrough => Self::StrikethroughStr,
             Rule::code_word => Self::Code,
             Rule::code => Self::CodeStr,
+            Rule::critic_comment => Self::CriticComment,
+            Rule::critic_code_highlight => Self::CriticCodeHighlight,
+            Rule::critic_highlight => Self::CriticHighlight,
+            Rule::critic_markup => Self::CriticMarkup,
+            Rule::critic_prefix => Self::CriticPrefix,
             Rule::programming_language => Self::PLanguage,
             Rule::link_word | Rule::link_line | Rule::link | Rule::wiki_link_word => Self::Link,
             Rule::wiki_link_alone => Self::WikiLink,
@@ -817,6 +844,153 @@ mod tests {
             .iter()
             .map(|c| c.kind())
             .collect()
+    }
+
+    #[test]
+    fn renders_critic_markup_without_delimiters_and_keeps_comment() {
+        let mut root = parse_markdown(
+            None,
+            "Before {==text under review==}{>>Explain the concern.<<} after.\n",
+            80,
+        );
+        let component = root
+            .components()
+            .into_iter()
+            .find(|component| component.kind() == TextNode::Paragraph)
+            .expect("paragraph");
+        let rendered = component.content_as_lines().join("\n");
+
+        assert_eq!(rendered, "Before text under review after.");
+        assert!(!rendered.contains("{=="));
+        assert_eq!(root.num_annotations(), 1);
+
+        root.select_annotation(0).expect("select annotation");
+        let (quote, comment) = root.selected_annotation().expect("selected annotation");
+        assert_eq!(quote, "text under review");
+        assert_eq!(comment, "Explain the concern.");
+    }
+
+    #[test]
+    fn supports_multiline_critic_markup() {
+        let mut root = parse_markdown(
+            None,
+            "{==A highlighted passage\nthat spans lines==}{>>One comment.<<}\n",
+            80,
+        );
+
+        assert_eq!(root.num_annotations(), 1);
+        root.select_annotation(0).expect("select annotation");
+        let (quote, comment) = root.selected_annotation().expect("selected annotation");
+        assert_eq!(quote, "A highlighted passage that spans lines");
+        assert_eq!(comment, "One comment.");
+    }
+
+    #[test]
+    fn critic_markup_inside_code_is_literal() {
+        let root = parse_markdown(
+            None,
+            "`{==inline==}{>>comment<<}`\n\n```text\n{==block==}{>>comment<<}\n```\n",
+            80,
+        );
+
+        assert_eq!(root.num_annotations(), 0);
+        let rendered = root
+            .components()
+            .into_iter()
+            .flat_map(TextComponent::content_as_lines)
+            .collect::<Vec<_>>()
+            .join("\n");
+        assert!(rendered.contains("{==inline==}{>>comment<<}"));
+        assert!(rendered.contains("{==block==}{>>comment<<}"));
+    }
+
+    #[test]
+    fn selects_adjacent_critic_markup_annotations_independently() {
+        let mut root = parse_markdown(None, "{==first==}{>>one<<}{==second==}{>>two<<}\n", 80);
+
+        assert_eq!(root.num_annotations(), 2);
+        root.select_annotation(1).expect("select second annotation");
+        let (quote, comment) = root.selected_annotation().expect("selected annotation");
+        assert_eq!(quote, "second");
+        assert_eq!(comment, "two");
+    }
+
+    fn selected_words(root: &ComponentRoot) -> Vec<String> {
+        root.components()
+            .iter()
+            .flat_map(|component| component.content().iter().flatten())
+            .filter(|word| word.kind() == WordType::Selected)
+            .map(|word| word.content().to_owned())
+            .collect()
+    }
+
+    #[test]
+    fn wrapped_critic_markup_is_selected_as_one_annotation() {
+        let mut root = parse_markdown(
+            None,
+            "{==A highlighted passage that spans lines==}{>>one<<} {==second==}{>>two<<}\n",
+            21,
+        );
+
+        assert_eq!(root.num_annotations(), 2);
+        assert_eq!(root.annotation_index_and_height().len(), 2);
+        root.select_annotation(0).expect("select first annotation");
+        assert_eq!(selected_words(&root).len(), 2);
+        root.select_annotation(1).expect("select second annotation");
+        assert_eq!(selected_words(&root), ["second"]);
+    }
+
+    #[test]
+    fn critic_markup_preserves_leading_whitespace_inside_delimiters() {
+        let mut root = parse_markdown(None, "{==  first==}{>>  one<<} {==second==}{>>two<<}\n", 80);
+
+        assert_eq!(root.num_annotations(), 2);
+        assert_eq!(root.annotation_index_and_height().len(), 2);
+        root.select_annotation(0).expect("select first annotation");
+        assert_eq!(selected_words(&root), ["  first"]);
+        let (quote, comment) = root.selected_annotation().expect("selected annotation");
+        assert_eq!(quote, "  first");
+        assert_eq!(comment, "  one");
+
+        root.select_annotation(1).expect("select second annotation");
+        assert_eq!(selected_words(&root), ["second"]);
+    }
+
+    #[test]
+    fn annotation_at_heading_start_keeps_following_space() {
+        let root = parse_markdown(None, "## {==Result==}{>>comment<<} rest\n", 80);
+        let heading = root
+            .components()
+            .into_iter()
+            .find(|component| component.kind() == TextNode::Heading)
+            .expect("heading");
+        let rendered = heading.content_as_lines().join("\n");
+
+        assert!(rendered.contains("Result rest"), "rendered: {rendered:?}");
+        assert_eq!(root.num_annotations(), 1);
+    }
+
+    #[test]
+    fn critic_markup_selected_inside_inline_code_is_recognized() {
+        let mut root = parse_markdown(
+            None,
+            "The `{==coefficient`==}{>>Interpret this term.<<} is absorbed.\n",
+            80,
+        );
+
+        assert_eq!(root.num_annotations(), 1);
+        root.select_annotation(0).expect("select annotation");
+        let (quote, comment) = root.selected_annotation().expect("selected annotation");
+        assert_eq!(quote, "coefficient");
+        assert_eq!(comment, "Interpret this term.");
+        let rendered = root
+            .components()
+            .into_iter()
+            .flat_map(TextComponent::content_as_lines)
+            .collect::<Vec<_>>()
+            .join("\n");
+        assert!(rendered.contains("The coefficient is absorbed."));
+        assert!(!rendered.contains("{=="));
     }
 
     #[test]
