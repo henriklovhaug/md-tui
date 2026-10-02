@@ -1,21 +1,24 @@
 # Version 0.11.0
 
+- Add CriticMarkup annotation rendering and navigation (@ancri)
 - Fix parser for `[text](url)` types links allowing `[` in the url part
-- Add theme chooser
+- Add theme chooser (@ancri)
 - Add `shell` to bash syntax highlighting
-- Add browsing directory header to file tree
-- Fix adjacent tables parsing
-- Fix width calculation for ordered list
-- Add scrollbar to document
-- Add alternate styling for headings
+- Add browsing directory header to file tree (@ancri)
+- Fix adjacent tables parsing (@ancri)
+- Fix width calculation for ordered list (@ancri)
+- Add scrollbar to document (@ancri)
+- Add persistent document header (@ancri)
+- Add alternate styling for headings (@ancri)
+- Fix half-page key descriptions in README (@ancri)
 - Fix incorrect configuration documentation in README
-- Change from scaling to clipping for images
+- Change from scaling to clipping for images (@ancri)
 - Fix mouse tracking remaining enabled after editing a file
-- Add persistent reading position
-- Fix emphasis from capturing too much
-- Fix substring search
-- Add open editor at current position in the document
-- Improve parser for tables
+- Add persistent reading position (@ancri)
+- Fix emphasis from capturing too much (@ancri)
+- Fix substring search (@ancri)
+- Add open editor at current position in the document (@ancri)
+- Improve parser for tables (@ancri)
 
 # Version 0.10.4
 

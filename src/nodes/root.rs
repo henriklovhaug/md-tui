@@ -196,6 +196,58 @@ impl ComponentRoot {
         indexes
     }
 
+    #[must_use]
+    pub fn annotation_index_and_height(&self) -> Vec<(usize, u16)> {
+        self.components
+            .iter()
+            .filter_map(|component| match component {
+                Component::TextComponent(text) => Some(text),
+                Component::Image(_) => None,
+            })
+            .flat_map(TextComponent::annotation_heights)
+            .enumerate()
+            .collect()
+    }
+
+    #[must_use]
+    pub fn num_annotations(&self) -> usize {
+        self.components()
+            .iter()
+            .map(|component| component.num_annotations())
+            .sum()
+    }
+
+    pub fn select_annotation(&mut self, index: usize) -> Result<u16, String> {
+        self.deselect();
+        let mut count = 0;
+        for component in self
+            .components
+            .iter_mut()
+            .filter_map(|component| match component {
+                Component::TextComponent(text) => Some(text),
+                Component::Image(_) => None,
+            })
+        {
+            let component_count = component.num_annotations();
+            if index < count + component_count {
+                component.visually_select_annotation(index - count)?;
+                return Ok(component.y_offset());
+            }
+            count += component_count;
+        }
+        Err(format!(
+            "Annotation index out of bounds: {index} >= {count}"
+        ))
+    }
+
+    pub fn selected_annotation(&self) -> Result<(String, &str), String> {
+        self.components()
+            .into_iter()
+            .find(|component| component.is_focused())
+            .ok_or("no annotation selected")?
+            .selected_annotation()
+    }
+
     /// Sets the y offset of the components
     pub fn set_scroll(&mut self, scroll: u16) {
         let mut y_offset = 0;
