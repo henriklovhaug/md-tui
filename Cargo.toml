@@ -16,7 +16,7 @@ name = "mdt"
 path = "src/main.rs"
 
 [features]
-default = ["tree-sitter", "network"]
+default = ["tree-sitter", "network", "mermaid"]
 tree-sitter = [
   "tree-sitter-bash",
   "tree-sitter-c",

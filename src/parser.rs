@@ -173,9 +173,11 @@ fn parse_details(parse_node: ParseNode, width: u16) -> Vec<Component> {
 /// Render a fenced code block tagged `mermaid` to an image.
 #[cfg(feature = "mermaid")]
 fn render_mermaid_block(leaf_nodes: &[ParseNode]) -> Option<image::DynamicImage> {
-    let is_mermaid = leaf_nodes
-        .iter()
-        .any(|n| n.kind() == MdParseEnum::PLanguage && n.content().trim() == "mermaid");
+    let config = &crate::util::general::GENERAL_CONFIG;
+    let is_mermaid = config.mermaid
+        && leaf_nodes
+            .iter()
+            .any(|n| n.kind() == MdParseEnum::PLanguage && n.content().trim() == "mermaid");
     if !is_mermaid {
         return None;
     }
@@ -184,7 +186,7 @@ fn render_mermaid_block(leaf_nodes: &[ParseNode]) -> Option<image::DynamicImage>
         .filter(|n| n.kind() == MdParseEnum::CodeBlockStr)
         .map(ParseNode::content)
         .collect();
-    crate::mermaid::render(&source, &crate::mermaid::MermaidStyle::default())
+    crate::mermaid::render(&source, &config.mermaid_style)
 }
 
 fn is_url(url: &str) -> bool {
@@ -1685,6 +1687,7 @@ mod tests {
         assert!(component_kinds_of(&root).contains(&TextNode::CodeBlock));
     }
 
+    #[cfg(feature = "mermaid")]
     fn component_kinds_of(root: &ComponentRoot) -> Vec<TextNode> {
         root.components().iter().map(|c| c.kind()).collect()
     }
