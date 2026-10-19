@@ -189,7 +189,7 @@ remember_position = true # restore recently viewed documents at their last posit
 position_cache_ttl_minutes = 60 # ignore older positions; 0 means never expire
 mermaid = true # false shows mermaid blocks as plain code
 mermaid_theme = "modern" # "dark" | "forest" | "neutral" | "default"
-mermaid_background_color = "" # any SVG color, e.g. "#1e1e2e"; "" keeps the theme's
+mermaid_background_color = "" # any SVG color, e.g. "#1e1e2e" or "transparent"; "" keeps the theme's
 mermaid_node_color = ""
 mermaid_border_color = ""
 mermaid_text_color = ""
@@ -304,6 +304,12 @@ browser or Node.js is needed. A block that fails to render is shown as a normal
 code block. Set `mermaid_theme = "dark"` for dark terminals, and use the
 `mermaid_*_color` settings under [Colors and Misc](#colors-and-misc) to match
 your colors.
+
+Set `mermaid_background_color = "transparent"` to let the terminal background
+show through. Pair it with a theme whose text and lines contrast with your
+terminal, such as `dark` on a dark terminal. Transparency is shown in terminals
+using the Kitty or iTerm2 protocol; Sixel and the half-block fallback may not
+show it.
 
 Images, including diagrams, use the best graphics protocol the terminal
 supports (Kitty, iTerm2 or Sixel) and fall back to colored half blocks
