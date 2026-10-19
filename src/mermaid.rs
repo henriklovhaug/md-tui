@@ -14,8 +14,8 @@ static SVG_OPTIONS: LazyLock<usvg::Options<'static>> = LazyLock::new(|| {
     options
 });
 
-/// How Mermaid diagrams are coloured. Each colour is any SVG colour, such as
-/// `#1e1e2e` or `white`, and replaces the theme's colour when set.
+/// How Mermaid diagrams are colored. Each color is any SVG color, such as
+/// `#1e1e2e` or `white`, and replaces the theme's color when set.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MermaidStyle {
     /// A mermaid-rs-renderer theme name: modern, default, dark, forest or neutral.
@@ -68,10 +68,10 @@ impl MermaidStyle {
                 vec![&mut theme.line_color, &mut theme.sequence_actor_line],
             ),
         ];
-        for (colour, fields) in overrides {
-            if let Some(colour) = colour {
+        for (color, fields) in overrides {
+            if let Some(color) = color {
                 for field in fields {
-                    colour.clone_into(field);
+                    color.clone_into(field);
                 }
             }
         }
@@ -133,7 +133,7 @@ mod tests {
     }
 
     #[test]
-    fn background_colour_overrides_the_theme() {
+    fn background_color_overrides_the_theme() {
         let style = MermaidStyle {
             theme: "dark".to_owned(),
             background_color: Some("#1e1e2e".to_owned()),

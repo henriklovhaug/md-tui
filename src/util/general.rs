@@ -82,8 +82,8 @@ impl GeneralConfig {
 
 #[cfg(feature = "mermaid")]
 fn mermaid_style(settings: &Config) -> crate::mermaid::MermaidStyle {
-    // An empty colour keeps the theme's own colour.
-    let colour = |key: &str| {
+    // An empty color keeps the theme's own color.
+    let color = |key: &str| {
         settings
             .get::<String>(key)
             .ok()
@@ -94,11 +94,11 @@ fn mermaid_style(settings: &Config) -> crate::mermaid::MermaidStyle {
         theme: settings
             .get::<String>("mermaid_theme")
             .unwrap_or(defaults.theme),
-        background_color: colour("mermaid_background_color"),
-        node_color: colour("mermaid_node_color"),
-        border_color: colour("mermaid_border_color"),
-        text_color: colour("mermaid_text_color"),
-        line_color: colour("mermaid_line_color"),
+        background_color: color("mermaid_background_color"),
+        node_color: color("mermaid_node_color"),
+        border_color: color("mermaid_border_color"),
+        text_color: color("mermaid_text_color"),
+        line_color: color("mermaid_line_color"),
     }
 }
 
@@ -128,7 +128,7 @@ mod tests {
     }
 
     #[test]
-    fn mermaid_settings_are_read_and_empty_colours_keep_the_theme() {
+    fn mermaid_settings_are_read_and_empty_colors_keep_the_theme() {
         let config = config_from(
             r##"
             mermaid = false
