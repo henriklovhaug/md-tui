@@ -39,6 +39,7 @@ tree-sitter = [
   "tree-sitter-yaml",
 ]
 network = ["ureq"]
+mermaid = ["mermaid-rs-renderer", "resvg"]
 
 [dependencies]
 ratatui = { version = "0.30.2", features = ["macros", "all-widgets", "serde"] }
@@ -58,6 +59,8 @@ serde_json = "1.0.151"
 strsim = "0.11.1"
 unicode-width = "0.2.2"
 ureq = { version = "3.4.2", optional = true }
+mermaid-rs-renderer = { version = "0.3.1", default-features = false, optional = true }
+resvg = { version = "0.47.0", default-features = false, features = ["text", "system-fonts", "memmap-fonts"], optional = true }
 tree-sitter = "0.27.0"
 tree-sitter-highlight = "0.27.0"
 tree-sitter-bash = { version = "0.25.1", optional = true }
