@@ -298,28 +298,18 @@ flowchart TD
   B -->|No| D[Debug]
 ```
 
-Diagrams are rendered natively by
-[mermaid-rs-renderer](https://github.com/1jehuang/mermaid-rs-renderer), so no
-browser or Node.js is needed. A block that fails to render is shown as a normal
+Mermaid blocks that fail to render are shown as a normal
 code block. Set `mermaid_theme = "dark"` for dark terminals, and use the
 `mermaid_*_color` settings under [Colors and Misc](#colors-and-misc) to match
 your colors.
 
 Set `mermaid_background_color = "transparent"` to let the terminal background
-show through. Pair it with a theme whose text and lines contrast with your
-terminal, such as `dark` on a dark terminal. Transparency is shown in terminals
-using the Kitty or iTerm2 protocol; Sixel and the half-block fallback may not
-show it.
+show through. Transparency is shown in terminals using the Kitty or iTerm2
+protocol; Sixel and the half-block fallback may not show it.
 
 Images, including diagrams, use the best graphics protocol the terminal
 supports (Kitty, iTerm2 or Sixel) and fall back to colored half blocks
 elsewhere. In tmux, run `set -g allow-passthrough on`.
-
-Mermaid support is a default Cargo feature. To build without it:
-
-```sh
-cargo install md-tui --locked --no-default-features --features tree-sitter,network
-```
 
 ## Links
 
