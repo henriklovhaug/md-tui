@@ -184,7 +184,7 @@ fn render_mermaid_block(leaf_nodes: &[ParseNode]) -> Option<image::DynamicImage>
         .filter(|n| n.kind() == MdParseEnum::CodeBlockStr)
         .map(ParseNode::content)
         .collect();
-    crate::mermaid::render(&source)
+    crate::mermaid::render(&source, &crate::mermaid::MermaidStyle::default())
 }
 
 fn is_url(url: &str) -> bool {
