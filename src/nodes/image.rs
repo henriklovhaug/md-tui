@@ -2,13 +2,25 @@ use std::sync::LazyLock;
 
 use image::DynamicImage;
 use ratatui::layout::Size;
-use ratatui_image::{FilterType, Resize, picker::Picker, sliced::SlicedProtocol};
+use ratatui_image::{
+    FilterType, Resize,
+    picker::{Picker, cap_parser::QueryStdioOptions},
+    sliced::SlicedProtocol,
+};
 
 use super::{root::ComponentProps, textcomponent::TextNode};
 use crate::util::general::GENERAL_CONFIG;
 
-static IMAGE_PICKER: LazyLock<Picker> =
-    LazyLock::new(|| Picker::from_query_stdio().unwrap_or_else(|_| Picker::halfblocks()));
+static IMAGE_PICKER: LazyLock<Picker> = LazyLock::new(|| {
+    // Compressing kitty transmissions shrinks diagrams and screenshots by
+    // 30-50x, which matters when the image passes through tmux. It is only
+    // used if the terminal reports it can inflate them.
+    let options = QueryStdioOptions {
+        kitty_compression: true,
+        ..QueryStdioOptions::default()
+    };
+    Picker::from_query_stdio_with_options(options).unwrap_or_else(|_| Picker::halfblocks())
+});
 
 pub struct ImageComponent {
     _alt_text: String,
