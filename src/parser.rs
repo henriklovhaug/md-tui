@@ -170,6 +170,25 @@ fn parse_details(parse_node: ParseNode, width: u16) -> Vec<Component> {
     out
 }
 
+/// Render a fenced code block tagged `mermaid` to an image.
+#[cfg(feature = "mermaid")]
+fn render_mermaid_block(leaf_nodes: &[ParseNode]) -> Option<image::DynamicImage> {
+    let config = &crate::util::general::GENERAL_CONFIG;
+    let is_mermaid = config.mermaid
+        && leaf_nodes
+            .iter()
+            .any(|n| n.kind() == MdParseEnum::PLanguage && n.content().trim() == "mermaid");
+    if !is_mermaid {
+        return None;
+    }
+    let source: String = leaf_nodes
+        .iter()
+        .filter(|n| n.kind() == MdParseEnum::CodeBlockStr)
+        .map(ParseNode::content)
+        .collect();
+    crate::mermaid::render(&source, &config.mermaid_style)
+}
+
 fn is_url(url: &str) -> bool {
     url.starts_with("http://") || url.starts_with("https://")
 }
@@ -369,6 +388,12 @@ fn parse_component(parse_node: ParseNode, width: u16) -> Component {
 
         MdParseEnum::CodeBlock => {
             let leaf_nodes = get_leaf_nodes(parse_node);
+
+            #[cfg(feature = "mermaid")]
+            if let Some(image) = render_mermaid_block(&leaf_nodes) {
+                return Component::Image(ImageComponent::new(image, width, "mermaid diagram"));
+            }
+
             let mut words = Vec::new();
 
             let mut space_indented = false;
@@ -1629,5 +1654,41 @@ mod tests {
             heading_text("##    Many   spaces   here\n"),
             "## Many spaces here"
         );
+    }
+
+    #[cfg(feature = "mermaid")]
+    #[test]
+    fn mermaid_code_block_renders_as_image() {
+        let root = parse_markdown(
+            None,
+            "```mermaid\nflowchart TD\n  A[Start] --> B[End]\n```\n",
+            80,
+        );
+
+        assert!(
+            root.children()
+                .iter()
+                .any(|c| matches!(c, Component::Image(_)))
+        );
+        assert!(!component_kinds_of(&root).contains(&TextNode::CodeBlock));
+    }
+
+    #[cfg(feature = "mermaid")]
+    #[test]
+    fn invalid_mermaid_falls_back_to_code_block() {
+        let root = parse_markdown(None, "```mermaid\nnot a diagram at all\n```\n", 80);
+
+        assert!(
+            !root
+                .children()
+                .iter()
+                .any(|c| matches!(c, Component::Image(_)))
+        );
+        assert!(component_kinds_of(&root).contains(&TextNode::CodeBlock));
+    }
+
+    #[cfg(feature = "mermaid")]
+    fn component_kinds_of(root: &ComponentRoot) -> Vec<TextNode> {
+        root.components().iter().map(|c| c.kind()).collect()
     }
 }

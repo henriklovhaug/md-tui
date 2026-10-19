@@ -28,6 +28,7 @@ files. It focuses on keyboard navigation and functional link navigation.
 - File tree for browsing Markdown files
 - Search and link selection modes
 - Optional image rendering, depending on terminal support
+- Mermaid diagrams rendered as images
 
 ## Installation
 
@@ -186,6 +187,13 @@ scrollbar = true # false hides the document position indicator
 image_max_height = 20 # maximum terminal rows used by an inline image
 remember_position = true # restore recently viewed documents at their last position
 position_cache_ttl_minutes = 60 # ignore older positions; 0 means never expire
+mermaid = true # false shows mermaid blocks as plain code
+mermaid_theme = "modern" # "dark" | "forest" | "neutral" | "default"
+mermaid_background_color = "" # any SVG color, e.g. "#1e1e2e" or "transparent"; "" keeps the theme's
+mermaid_node_color = ""
+mermaid_border_color = ""
+mermaid_text_color = ""
+mermaid_line_color = ""
 
 # Inline styling
 bold_color = "reset"
@@ -268,6 +276,40 @@ Press `c` to select an annotation, use `j`/`k`, the arrow keys, or `n`/`N` to
 move between annotations, and press Enter to read its comment. Enter, Escape,
 or `q` closes the comment popup and stays in annotation mode. With the popup
 closed, Escape or `q` exits annotation mode.
+
+## Images and Mermaid Diagrams
+
+Images use the usual Markdown syntax on a line of their own. Relative paths are
+resolved from the directory `mdt` was started in, and paths cannot contain
+spaces or parentheses.
+
+```markdown
+![alt text](path/to/image.png)
+![alt text](https://example.com/image.png)
+```
+
+Fenced code blocks whose language is `mermaid` are drawn as diagrams. This
+block, tagged `mermaid` instead of `text`, would render as a flowchart:
+
+```text
+flowchart TD
+  A[Start] --> B{Is it working?}
+  B -->|Yes| C[Ship it]
+  B -->|No| D[Debug]
+```
+
+Mermaid blocks that fail to render are shown as a normal
+code block. Set `mermaid_theme = "dark"` for dark terminals, and use the
+`mermaid_*_color` settings under [Colors and Misc](#colors-and-misc) to match
+your colors.
+
+Set `mermaid_background_color = "transparent"` to let the terminal background
+show through. Transparency is shown in terminals using the Kitty or iTerm2
+protocol; Sixel and the half-block fallback may not show it.
+
+Images, including diagrams, use the best graphics protocol the terminal
+supports (Kitty, iTerm2 or Sixel) and fall back to colored half blocks
+elsewhere. In tmux, run `set -g allow-passthrough on`.
 
 ## Links
 

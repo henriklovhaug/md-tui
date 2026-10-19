@@ -1,5 +1,7 @@
 pub mod boxes;
 pub mod event_handler;
+#[cfg(feature = "mermaid")]
+pub mod mermaid;
 pub mod nodes;
 pub mod pages;
 pub mod parser;

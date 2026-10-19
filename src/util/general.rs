@@ -16,6 +16,10 @@ pub struct GeneralConfig {
     pub image_max_height: u16,
     pub remember_position: bool,
     pub position_cache_ttl_minutes: u64,
+    #[cfg(feature = "mermaid")]
+    pub mermaid: bool,
+    #[cfg(feature = "mermaid")]
+    pub mermaid_style: crate::mermaid::MermaidStyle,
 }
 
 #[derive(Debug, Deserialize)]
@@ -41,28 +45,105 @@ pub static GENERAL_CONFIG: LazyLock<GeneralConfig> = LazyLock::new(|| {
         .add_source(Environment::with_prefix("MDT").separator("_"))
         .build()
         .unwrap_or_default();
-
-    let width = settings.get::<u16>("width").unwrap_or(100);
-    GeneralConfig {
-        // width = 0 means "use full terminal width"
-        width: if width == 0 { u16::MAX } else { width },
-        gitignore: settings.get::<bool>("gitignore").unwrap_or(false),
-        centering: settings
-            .get::<Centering>("alignment")
-            .unwrap_or(Centering::Left),
-        help_menu: settings.get::<bool>("help_menu").unwrap_or(true),
-        document_header: settings.get::<bool>("document_header").unwrap_or(false),
-        file_tree_directory_header: settings
-            .get::<bool>("file_tree_directory_header")
-            .unwrap_or(false),
-        heading_style: settings
-            .get::<HeadingStyle>("heading_style")
-            .unwrap_or(HeadingStyle::Hashes),
-        scrollbar: settings.get::<bool>("scrollbar").unwrap_or(true),
-        image_max_height: settings.get::<u16>("image_max_height").unwrap_or(20).max(1),
-        remember_position: settings.get::<bool>("remember_position").unwrap_or(true),
-        position_cache_ttl_minutes: settings
-            .get::<u64>("position_cache_ttl_minutes")
-            .unwrap_or(60),
-    }
+    GeneralConfig::from_settings(&settings)
 });
+
+impl GeneralConfig {
+    fn from_settings(settings: &Config) -> Self {
+        let width = settings.get::<u16>("width").unwrap_or(100);
+        GeneralConfig {
+            // width = 0 means "use full terminal width"
+            width: if width == 0 { u16::MAX } else { width },
+            gitignore: settings.get::<bool>("gitignore").unwrap_or(false),
+            centering: settings
+                .get::<Centering>("alignment")
+                .unwrap_or(Centering::Left),
+            help_menu: settings.get::<bool>("help_menu").unwrap_or(true),
+            document_header: settings.get::<bool>("document_header").unwrap_or(false),
+            file_tree_directory_header: settings
+                .get::<bool>("file_tree_directory_header")
+                .unwrap_or(false),
+            heading_style: settings
+                .get::<HeadingStyle>("heading_style")
+                .unwrap_or(HeadingStyle::Hashes),
+            scrollbar: settings.get::<bool>("scrollbar").unwrap_or(true),
+            image_max_height: settings.get::<u16>("image_max_height").unwrap_or(20).max(1),
+            remember_position: settings.get::<bool>("remember_position").unwrap_or(true),
+            position_cache_ttl_minutes: settings
+                .get::<u64>("position_cache_ttl_minutes")
+                .unwrap_or(60),
+            #[cfg(feature = "mermaid")]
+            mermaid: settings.get::<bool>("mermaid").unwrap_or(true),
+            #[cfg(feature = "mermaid")]
+            mermaid_style: mermaid_style(settings),
+        }
+    }
+}
+
+#[cfg(feature = "mermaid")]
+fn mermaid_style(settings: &Config) -> crate::mermaid::MermaidStyle {
+    // An empty color keeps the theme's own color.
+    let color = |key: &str| {
+        settings
+            .get::<String>(key)
+            .ok()
+            .filter(|value| !value.is_empty())
+    };
+    let defaults = crate::mermaid::MermaidStyle::default();
+    crate::mermaid::MermaidStyle {
+        theme: settings
+            .get::<String>("mermaid_theme")
+            .unwrap_or(defaults.theme),
+        background_color: color("mermaid_background_color"),
+        node_color: color("mermaid_node_color"),
+        border_color: color("mermaid_border_color"),
+        text_color: color("mermaid_text_color"),
+        line_color: color("mermaid_line_color"),
+    }
+}
+
+#[cfg(all(test, feature = "mermaid"))]
+mod tests {
+    use config::{Config, File, FileFormat};
+
+    use super::GeneralConfig;
+
+    fn config_from(toml: &str) -> GeneralConfig {
+        let settings = Config::builder()
+            .add_source(File::from_str(toml, FileFormat::Toml))
+            .build()
+            .unwrap();
+        GeneralConfig::from_settings(&settings)
+    }
+
+    #[test]
+    fn mermaid_is_on_by_default_with_the_modern_theme() {
+        let config = config_from("");
+
+        assert!(config.mermaid);
+        assert_eq!(
+            config.mermaid_style,
+            crate::mermaid::MermaidStyle::default()
+        );
+    }
+
+    #[test]
+    fn mermaid_settings_are_read_and_empty_colors_keep_the_theme() {
+        let config = config_from(
+            r##"
+            mermaid = false
+            mermaid_theme = "dark"
+            mermaid_background_color = "#1e1e2e"
+            mermaid_text_color = ""
+            "##,
+        );
+
+        assert!(!config.mermaid);
+        assert_eq!(config.mermaid_style.theme, "dark");
+        assert_eq!(
+            config.mermaid_style.background_color.as_deref(),
+            Some("#1e1e2e")
+        );
+        assert_eq!(config.mermaid_style.text_color, None);
+    }
+}
