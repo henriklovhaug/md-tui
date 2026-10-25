@@ -1,3 +1,7 @@
+# Version 0.11.1
+
+- Update dependencies to fix CA certificate CVE
+
 # Version 0.11.0
 
 - Add CriticMarkup annotation rendering and navigation (@ancri)
