@@ -511,6 +511,17 @@ fn parse_component(parse_node: ParseNode, width: u16) -> Component {
     }
 }
 
+fn emphasis_word_kind(container: MdParseEnum) -> Option<MdParseEnum> {
+    match container {
+        MdParseEnum::ItalicStr => Some(MdParseEnum::Italic),
+        MdParseEnum::BoldStr => Some(MdParseEnum::Bold),
+        MdParseEnum::BoldItalicStr => Some(MdParseEnum::BoldItalic),
+        MdParseEnum::StrikethroughStr => Some(MdParseEnum::Strikethrough),
+        MdParseEnum::CodeStr => Some(MdParseEnum::Code),
+        _ => None,
+    }
+}
+
 fn get_leaf_nodes(node: ParseNode) -> Vec<ParseNode> {
     let mut leaf_nodes = Vec::new();
 
@@ -558,8 +569,17 @@ fn get_leaf_nodes(node: ParseNode) -> Vec<ParseNode> {
             leaf_nodes.push(node);
         }
     } else {
+        let emphasis_word = emphasis_word_kind(node.kind());
+        let mut prev_emphasis_word = false;
         for child in node.children_owned() {
+            let is_emphasis_word = emphasis_word.is_some_and(|word| child.kind() == word);
+            if prev_emphasis_word && is_emphasis_word && !child.content().starts_with(' ') {
+                // Soft line breaks inside emphasis produce separate word nodes
+                // without the whitespace that `parse_text` injects elsewhere.
+                leaf_nodes.push(ParseNode::new(MdParseEnum::Word, " ".to_owned()));
+            }
             leaf_nodes.append(&mut get_leaf_nodes(child));
+            prev_emphasis_word = is_emphasis_word;
         }
     }
     leaf_nodes
@@ -991,6 +1011,30 @@ mod tests {
             .join("\n");
         assert!(rendered.contains("The coefficient is absorbed."));
         assert!(!rendered.contains("{=="));
+    }
+
+    #[test]
+    fn multiline_bold_preserves_word_spacing() {
+        let root = parse_markdown(None, "Before **one two\nthree four** after.\n", 80);
+        let component = root
+            .components()
+            .into_iter()
+            .find(|component| component.kind() == TextNode::Paragraph)
+            .expect("paragraph");
+        let rendered = component.content_as_lines().join("\n");
+        assert_eq!(rendered, "Before one two three four after.");
+    }
+
+    #[test]
+    fn multiline_italic_preserves_word_spacing() {
+        let root = parse_markdown(None, "Before *one two\nthree four* after.\n", 80);
+        let component = root
+            .components()
+            .into_iter()
+            .find(|component| component.kind() == TextNode::Paragraph)
+            .expect("paragraph");
+        let rendered = component.content_as_lines().join("\n");
+        assert_eq!(rendered, "Before one two three four after.");
     }
 
     #[test]
