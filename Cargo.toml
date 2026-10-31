@@ -1,6 +1,6 @@
 [package]
 name = "md-tui"
-version = "0.11.1"
+version = "0.11.2"
 edition = "2024"
 authors = ["Henrik Tøn Løvhaug"]
 description = "A terminal markdown viewer"
@@ -49,15 +49,15 @@ config = { version = "0.15.27", default-features = false, features = ["toml"] }
 dirs = "7.0.0"
 image = { version = "0.25.10", default-features = false }
 itertools = "0.15.0"
-notify = "8.2.0"
-open = "5.4.4"
-pest = "2.9.4"
-pest_derive = "2.9.4"
+notify = "8.2.1"
+open = "5.4.5"
+pest = "2.9.5"
+pest_derive = "2.9.5"
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.154"
 strsim = "0.11.1"
-unicode-width = "0.2.2"
-ureq = { version = "3.4.2", optional = true }
+unicode-width = "0.2.3"
+ureq = { version = "3.5.0", optional = true }
 tree-sitter = "0.27.1"
 tree-sitter-highlight = "0.27.1"
 tree-sitter-bash = { version = "0.25.1", optional = true }
@@ -75,7 +75,7 @@ tree-sitter-ocaml = { version = "0.26.0", optional = true }
 tree-sitter-php = { version = "0.25.1", optional = true }
 tree-sitter-python = { version = "0.25.0", optional = true }
 tree-sitter-rust = { version = "0.24.2", optional = true }
-tree-sitter-scala = { version = "0.26.2", optional = true }
+tree-sitter-scala = { version = "0.26.3", optional = true }
 tree-sitter-typescript = { version = "0.23.2", optional = true }
 tree-sitter-yaml = { version = "0.7.2", optional = true }
 tree-sitter-diff = { version = "0.1.0", optional = true }

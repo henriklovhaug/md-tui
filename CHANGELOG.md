@@ -1,3 +1,7 @@
+# Version 0.11.2
+
+- Fix spacing issue in longer italic/bold sentences that goes over multiple lines
+
 # Version 0.11.1
 
 - Update dependencies to fix CA certificate CVE
