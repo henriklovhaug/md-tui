@@ -16,6 +16,7 @@ use md_tui::resume::ResumeCache;
 use md_tui::search::find_md_files_channel;
 use md_tui::util::{self, App, Boxes, Mode, destruct_terminal, general::GENERAL_CONFIG};
 use md_tui::{
+    boxes::help_box::MARKDOWN_HELP_ROWS,
     event_handler::{KeyBoardAction, handle_keyboard_input},
     util::colors::color_config,
 };
@@ -512,9 +513,11 @@ fn render_path_header(f: &mut Frame, x: u16, width: u16, label: &str) {
 }
 
 fn help_background_area(document_area: Rect, screen_height: u16, expanded: bool) -> Rect {
+    // When expanded: one row above the keys for the annotation status, one below them.
+    let height = if expanded { MARKDOWN_HELP_ROWS + 2 } else { 3 };
     Rect {
-        y: screen_height.saturating_sub(if expanded { 20 } else { 4 }),
-        height: cmp::min(if expanded { 19 } else { 3 }, screen_height),
+        y: screen_height.saturating_sub(height + 1),
+        height: cmp::min(height, screen_height),
         x: document_area.x,
         width: document_area.width,
     }
@@ -621,7 +624,7 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
     }
 
     if app.annotation_selected && app.help_box.expanded() {
-        let status_area = Rect::new(x, size.height.saturating_sub(19), area.width, 1);
+        let status_area = Rect::new(x, area.y, area.width, 1);
         let status = Paragraph::new(
             " ANNOTATION MODE  j/n/\u{2193} next  k/N/\u{2191} previous  Enter comment  Esc/q normal",
         )
@@ -636,8 +639,8 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
     let area = if app.help_box.expanded() {
         Rect {
             x: x + 2,
-            y: size.height.saturating_sub(19),
-            height: cmp::min(17, size.height),
+            y: size.height.saturating_sub(MARKDOWN_HELP_ROWS + 2),
+            height: cmp::min(MARKDOWN_HELP_ROWS, size.height),
             width: app.width() - 5,
         }
     } else {
