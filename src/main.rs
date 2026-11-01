@@ -543,7 +543,8 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
         .file_name()
         .filter(|_| GENERAL_CONFIG.document_header)
     {
-        render_path_header(f, x, area.width, file_name);
+        let header_path = document_header_path(file_name, GENERAL_CONFIG.document_header_full_path);
+        render_path_header(f, x, area.width, &header_path);
     }
 
     for child in markdown.children_mut() {
@@ -659,6 +660,15 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
     }
 }
 
+fn document_header_path(file_name: &str, full_path: bool) -> String {
+    if !full_path {
+        return file_name.to_owned();
+    }
+    std::path::absolute(file_name)
+        .map(|path| path.display().to_string())
+        .unwrap_or_else(|_| file_name.to_owned())
+}
+
 fn scrollbar_state(
     document_height: u16,
     terminal_height: u16,
@@ -755,6 +765,18 @@ mod tests {
         assert!(output.contains("Match terminal"), "{output}");
         assert!(!output.contains("j/k or"), "{output}");
         assert!(!output.contains("Edit colors:"), "{output}");
+    }
+
+    #[test]
+    fn document_header_can_show_relative_or_absolute_path() {
+        let relative = "notes/example.md";
+        assert_eq!(document_header_path(relative, false), relative);
+        let full = document_header_path(relative, true);
+        assert!(std::path::Path::new(&full).is_absolute());
+        assert!(full.ends_with("/notes/example.md"), "{full}");
+
+        let absolute = "/tmp/example.md";
+        assert_eq!(document_header_path(absolute, true), absolute);
     }
 
     #[test]
