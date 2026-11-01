@@ -177,6 +177,7 @@ fn run_app(terminal: &mut DefaultTerminal, mut app: App, tick_rate: Duration) ->
         }
 
         markdown.set_scroll(app.vertical_scroll);
+        app.help_box.set_mode(app.mode);
 
         terminal.draw(|f| {
             match app.mode {
