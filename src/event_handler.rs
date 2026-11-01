@@ -39,9 +39,30 @@ pub fn handle_keyboard_input(
     if key == KeyCode::Char('q') && app.boxes == Boxes::None && !app.annotation_selected {
         return KeyBoardAction::Exit;
     }
+    if key == KeyCode::Esc && app.boxes == Boxes::None {
+        if app.help_box.expanded() {
+            app.help_box.close();
+            return KeyBoardAction::Continue;
+        }
+        if GENERAL_CONFIG.escape_quits && nothing_to_escape(app, markdown, file_tree) {
+            return KeyBoardAction::Exit;
+        }
+    }
     match app.mode {
         Mode::FileTree => keyboard_mode_file_tree(key, app, markdown, file_tree, height, watcher),
         Mode::View => keyboard_mode_view(key, app, markdown, height, watcher),
+    }
+}
+
+fn nothing_to_escape(app: &App, markdown: &ComponentRoot, file_tree: &FileTree) -> bool {
+    match app.mode {
+        Mode::FileTree => file_tree.files().len() == file_tree.all_files().len(),
+        Mode::View => {
+            !app.selected
+                && !app.details_selected
+                && !app.annotation_selected
+                && markdown.search_results_heights().is_empty()
+        }
     }
 }
 
@@ -767,6 +788,7 @@ fn show_selected_target(app: &mut App, markdown: &ComponentRoot) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::pages::file_explorer::MdFile;
 
     fn parsed(markdown: &str) -> ComponentRoot {
         parse_markdown(None, markdown, 80)
@@ -782,6 +804,46 @@ mod tests {
             view_action(KeyCode::Char('q'), false),
             Action::None
         ));
+    }
+
+    #[test]
+    fn escape_has_something_to_do_while_a_document_is_selected_or_searched() {
+        let mut markdown = parsed("# Title\n\nA searchable word.");
+        let tree = FileTree::default();
+        let mut app = App::default();
+        app.mode = Mode::View;
+        assert!(nothing_to_escape(&app, &markdown, &tree));
+
+        app.selected = true;
+        assert!(!nothing_to_escape(&app, &markdown, &tree));
+        app.selected = false;
+        app.details_selected = true;
+        assert!(!nothing_to_escape(&app, &markdown, &tree));
+        app.details_selected = false;
+        app.annotation_selected = true;
+        assert!(!nothing_to_escape(&app, &markdown, &tree));
+        app.annotation_selected = false;
+
+        markdown.find_and_mark("searchable");
+        assert!(!nothing_to_escape(&app, &markdown, &tree));
+        markdown.deselect();
+        assert!(nothing_to_escape(&app, &markdown, &tree));
+    }
+
+    #[test]
+    fn escape_clears_a_file_tree_search_before_it_quits() {
+        let markdown = parsed("");
+        let mut tree = FileTree::default();
+        tree.add_file(MdFile::new("./one.md".to_string(), "one.md".to_string()));
+        tree.add_file(MdFile::new("./two.md".to_string(), "two.md".to_string()));
+        let mut app = App::default();
+        app.mode = Mode::FileTree;
+        assert!(nothing_to_escape(&app, &markdown, &tree));
+
+        tree.search(Some("one"));
+        assert!(!nothing_to_escape(&app, &markdown, &tree));
+        tree.search(None);
+        assert!(nothing_to_escape(&app, &markdown, &tree));
     }
 
     #[test]
