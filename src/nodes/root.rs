@@ -5,8 +5,22 @@ use crate::search::{compare_heading, find_and_mark};
 use super::{
     image::ImageComponent,
     textcomponent::{TextComponent, TextNode},
-    word::{Word, WordType},
+    word::{MetaData, Word, WordType},
 };
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DocumentHeading {
+    pub level: u8,
+    pub title: String,
+    pub offset: u16,
+}
+
+#[must_use]
+pub fn heading_at_offset(headings: &[DocumentHeading], offset: u16) -> Option<usize> {
+    headings
+        .iter()
+        .rposition(|heading| heading.offset <= offset)
+}
 
 pub struct ComponentRoot {
     file_name: Option<String>,
@@ -318,6 +332,40 @@ impl ComponentRoot {
         Err(format!("Heading not found: {heading}"))
     }
 
+    /// Visible headings in document order, with their rendered row offsets.
+    #[must_use]
+    pub fn headings(&self) -> Vec<DocumentHeading> {
+        let mut headings = Vec::new();
+        let mut offset = 0u16;
+        for component in &self.components {
+            match component {
+                Component::TextComponent(text) => {
+                    if !text.is_hidden() && text.kind() == TextNode::Heading {
+                        let level = text
+                            .meta_info()
+                            .iter()
+                            .find_map(|word| match word.kind() {
+                                WordType::MetaInfo(MetaData::HeadingLevel(level)) => Some(level),
+                                _ => None,
+                            })
+                            .unwrap_or(1);
+                        let title = text.content_as_lines().join(" ");
+                        let prefix = format!("{} ", "#".repeat(usize::from(level)));
+                        let title = title.strip_prefix(&prefix).unwrap_or(&title).trim();
+                        headings.push(DocumentHeading {
+                            level,
+                            title: title.to_owned(),
+                            offset,
+                        });
+                    }
+                    offset = offset.saturating_add(text.height());
+                }
+                Component::Image(image) => offset = offset.saturating_add(image.height()),
+            }
+        }
+        headings
+    }
+
     /// Return the content of the components, where each element a line
     #[must_use]
     pub fn content(&self) -> Vec<String> {
@@ -592,5 +640,53 @@ impl ComponentProps for Component {
             Component::TextComponent(comp) => comp.kind(),
             Component::Image(comp) => comp.kind(),
         }
+    }
+}
+
+#[cfg(test)]
+mod heading_tests {
+    use super::*;
+    use crate::parser::parse_markdown;
+
+    #[test]
+    fn headings_keep_levels_titles_and_rendered_offsets() {
+        let markdown = parse_markdown(
+            None,
+            "Intro\n\n# First\n\nBody\n\n## Second `code`\n\nMore\n\n### Third\n",
+            50,
+        );
+        let headings = markdown.headings();
+        assert_eq!(headings.len(), 3);
+        assert_eq!(
+            (headings[0].level, headings[0].title.as_str()),
+            (1, "First")
+        );
+        assert_eq!(
+            (headings[1].level, headings[1].title.as_str()),
+            (2, "Second code")
+        );
+        assert_eq!(
+            (headings[2].level, headings[2].title.as_str()),
+            (3, "Third")
+        );
+        assert!(headings[0].offset < headings[1].offset);
+        assert!(headings[1].offset < headings[2].offset);
+        assert_eq!(heading_at_offset(&headings, 0), None);
+        assert_eq!(heading_at_offset(&headings, headings[1].offset), Some(1));
+        assert_eq!(heading_at_offset(&headings, markdown.height()), Some(2));
+    }
+
+    #[test]
+    fn hidden_headings_are_not_listed() {
+        let mut markdown = parse_markdown(None, "# Visible\n\n## Hidden\n", 50);
+        for component in markdown.children_mut() {
+            if let Component::TextComponent(text) = component
+                && text.kind() == TextNode::Heading
+                && text.content_as_lines().join(" ").contains("Hidden")
+            {
+                text.set_hidden(true);
+            }
+        }
+        assert_eq!(markdown.headings().len(), 1);
     }
 }
