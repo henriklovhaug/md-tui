@@ -511,6 +511,15 @@ fn render_path_header(f: &mut Frame, x: u16, width: u16, label: &str) {
     f.render_widget(header, Rect::new(x, 0, width, 1));
 }
 
+fn help_background_area(document_area: Rect, screen_height: u16, expanded: bool) -> Rect {
+    Rect {
+        y: screen_height.saturating_sub(if expanded { 20 } else { 4 }),
+        height: cmp::min(if expanded { 19 } else { 3 }, screen_height),
+        x: document_area.x,
+        width: document_area.width,
+    }
+}
+
 fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
     let size = f.area();
 
@@ -604,21 +613,7 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
 
     // Render a block at the bottom to show the current mode
     let block = Block::default().bg(color_config().help_bg_color);
-    let area = if app.help_box.expanded() {
-        Rect {
-            y: size.height.saturating_sub(20),
-            height: cmp::min(19, size.height),
-            x,
-            width: area.width - 1,
-        }
-    } else {
-        Rect {
-            y: size.height.saturating_sub(4),
-            height: cmp::min(3, size.height),
-            x,
-            width: area.width - 1,
-        }
-    };
+    let area = help_background_area(area, size.height, app.help_box.expanded());
 
     if GENERAL_CONFIG.help_menu {
         f.render_widget(Clear, area);
@@ -797,6 +792,26 @@ mod tests {
             .map(|column| buffer[(column, 0)].symbol())
             .collect::<String>();
         assert!(!first_row.contains("Directory:"), "{first_row}");
+    }
+
+    #[test]
+    fn help_background_clears_the_last_document_column() {
+        let screen = Rect::new(0, 0, 8, 6);
+        let document = Rect::new(2, 0, 5, 6);
+
+        for (expanded, row) in [(true, 1), (false, 3)] {
+            let mut buffer = ratatui::buffer::Buffer::empty(screen);
+            buffer[(6, row)].set_symbol("Z");
+            buffer[(7, row)].set_symbol("│");
+
+            Clear.render(
+                help_background_area(document, screen.height, expanded),
+                &mut buffer,
+            );
+
+            assert_eq!(buffer[(6, row)].symbol(), " ");
+            assert_eq!(buffer[(7, row)].symbol(), "│");
+        }
     }
 
     #[test]
