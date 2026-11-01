@@ -272,6 +272,12 @@ fn run_app(terminal: &mut DefaultTerminal, mut app: App, tick_rate: Duration) ->
                     return Ok(());
                 }
                 KeyBoardAction::Continue => {
+                    if previous_view
+                        && app.mode == Mode::FileTree
+                        && let Some(path) = previous_document.as_deref()
+                    {
+                        let _ = resume_cache.save(path, previous_source_line);
+                    }
                     let document_changed = app.mode == Mode::View
                         && (!previous_view || markdown.file_name() != previous_document.as_deref());
                     if document_changed {
