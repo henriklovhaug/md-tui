@@ -75,9 +75,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 
 fn run_app(terminal: &mut DefaultTerminal, mut app: App, tick_rate: Duration) -> io::Result<()> {
-    let (f_tx, f_rx) = mpsc::channel::<Option<MdFile>>();
-
-    thread::spawn(move || find_md_files_channel(f_tx.clone()));
+    let mut f_rx = start_file_scan();
+    let mut rescanned_files: Option<Vec<MdFile>> = None;
 
     let mut last_tick = Instant::now();
     let mut last_position_save = Instant::now();
@@ -183,19 +182,9 @@ fn run_app(terminal: &mut DefaultTerminal, mut app: App, tick_rate: Duration) ->
                     render_markdown(f, &app, &mut markdown);
                 }
                 Mode::FileTree => {
-                    if !file_tree.loaded() {
-                        while let Ok(e) = f_rx.try_recv() {
-                            match e {
-                                Some(file) => {
-                                    file_tree.add_file(file);
-                                }
-                                None => {
-                                    file_tree = file_tree.clone().finish();
-                                    break;
-                                }
-                            }
-                        }
-                    }
+                    let tree_height =
+                        height.saturating_sub(u16::from(GENERAL_CONFIG.file_tree_directory_header));
+                    drain_file_scan(&f_rx, &mut file_tree, &mut rescanned_files, tree_height);
                     render_file_tree(
                         f,
                         &app,
@@ -272,6 +261,17 @@ fn run_app(terminal: &mut DefaultTerminal, mut app: App, tick_rate: Duration) ->
                     return Ok(());
                 }
                 KeyBoardAction::Continue => {
+                    if previous_view && app.mode == Mode::FileTree {
+                        if let Some(path) = previous_document.as_deref() {
+                            let _ = resume_cache.save(path, previous_source_line);
+                        }
+                        if file_tree.loaded() {
+                            rescanned_files = Some(Vec::new());
+                        } else {
+                            file_tree = FileTree::default();
+                        }
+                        f_rx = start_file_scan();
+                    }
                     let document_changed = app.mode == Mode::View
                         && (!previous_view || markdown.file_name() != previous_document.as_deref());
                     if document_changed {
@@ -457,6 +457,32 @@ fn restore_position(
 ) {
     if let Some(source_line) = markdown.file_name().and_then(|path| cache.load(path)) {
         app.vertical_scroll = markdown.scroll_for_source_line(source_line, viewport_height);
+    }
+}
+
+fn start_file_scan() -> mpsc::Receiver<Option<MdFile>> {
+    let (tx, rx) = mpsc::channel();
+    thread::spawn(move || find_md_files_channel(tx));
+    rx
+}
+
+/// The first scan streams into the tree; later ones replace its files when they finish.
+fn drain_file_scan(
+    rx: &mpsc::Receiver<Option<MdFile>>,
+    file_tree: &mut FileTree,
+    rescanned_files: &mut Option<Vec<MdFile>>,
+    height: u16,
+) {
+    while let Ok(entry) = rx.try_recv() {
+        match (entry, rescanned_files.as_mut()) {
+            (Some(file), Some(files)) => files.push(file),
+            (Some(file), None) => file_tree.add_file(file),
+            (None, Some(files)) => {
+                file_tree.replace_files(std::mem::take(files), height);
+                *rescanned_files = None;
+            }
+            (None, None) => *file_tree = file_tree.clone().finish(),
+        }
     }
 }
 
@@ -780,6 +806,30 @@ mod tests {
             rows.iter().skip(1).any(|row| row.contains("one.md")),
             "{rows:?}"
         );
+    }
+
+    #[test]
+    fn rescan_replaces_the_tree_only_when_it_finishes() {
+        let mut tree = FileTree::new();
+        tree.add_file(MdFile::new("./one.md".to_string(), "one.md".to_string()));
+        let mut tree = tree.finish();
+        let (tx, rx) = mpsc::channel();
+        let mut rescanned = Some(Vec::new());
+
+        tx.send(Some(MdFile::new(
+            "./two.md".to_string(),
+            "two.md".to_string(),
+        )))
+        .expect("send file");
+        drain_file_scan(&rx, &mut tree, &mut rescanned, 20);
+        assert_eq!(tree.all_files().len(), 1);
+        assert!(rescanned.is_some());
+
+        tx.send(None).expect("send end of scan");
+        drain_file_scan(&rx, &mut tree, &mut rescanned, 20);
+        assert_eq!(tree.all_files()[0].name(), "two.md");
+        assert_eq!(tree.all_files().len(), 1);
+        assert!(rescanned.is_none());
     }
 
     #[test]

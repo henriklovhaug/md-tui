@@ -80,6 +80,7 @@ pub struct FileTree {
     page: u32,
     list_state: ListState,
     search: Option<String>,
+    sorted: bool,
     loaded: bool,
 }
 
@@ -92,6 +93,7 @@ impl FileTree {
             list_state: ListState::default(),
             page: 0,
             search: None,
+            sorted: false,
             loaded: false,
         }
     }
@@ -106,6 +108,27 @@ impl FileTree {
         let mut this = self;
         this.loaded = true;
         this
+    }
+
+    /// Swap in a newer scan, keeping the search, the sort and the selected file if it still exists.
+    pub fn replace_files(&mut self, files: Vec<MdFile>, height: u16) {
+        let selected = self.selected().map(|file| file.path.clone());
+        let sorted = self.sorted;
+        let search = self.search.take();
+        self.all_files = files;
+        self.search(search.as_deref());
+        if sorted {
+            self.sort_name();
+        }
+        let index = selected.and_then(|path| {
+            self.files
+                .iter()
+                .position(|item| matches!(item, MdFileComponent::File(file) if file.path == path))
+        });
+        if let Some(index) = index {
+            self.page = (index / self.partition(height)) as u32;
+            self.list_state.select(Some(index));
+        }
     }
 
     pub fn sort(&mut self) {
@@ -129,6 +152,7 @@ impl FileTree {
     }
 
     pub fn sort_name(&mut self) {
+        self.sorted = true;
         // Separate files and spacers into two vectors
         let (mut files, mut spacers): (Vec<_>, Vec<_>) = self
             .files
@@ -170,6 +194,7 @@ impl FileTree {
     pub fn search(&mut self, query: Option<&str>) {
         self.state_mut().select(None);
         self.page = 0;
+        self.sorted = false;
         self.search = query.map(ToOwned::to_owned);
         match query {
             Some(query) => {
@@ -397,5 +422,107 @@ impl Widget for FileTree {
         );
 
         page_count.render(area, buf);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const HEIGHT: u16 = 20;
+
+    fn md_file(name: &str) -> MdFile {
+        MdFile::new(format!("./{name}"), name.to_string())
+    }
+
+    fn tree(names: &[&str]) -> FileTree {
+        let mut tree = FileTree::new();
+        for name in names {
+            tree.add_file(md_file(name));
+        }
+        tree.finish()
+    }
+
+    fn scan(names: &[&str]) -> Vec<MdFile> {
+        names.iter().map(|name| md_file(name)).collect()
+    }
+
+    fn listed(tree: &FileTree) -> Vec<&str> {
+        tree.files().iter().map(|file| file.name()).collect()
+    }
+
+    #[test]
+    fn replacing_files_keeps_the_selected_file() {
+        let mut tree = tree(&["b.md", "c.md"]);
+        tree.next(HEIGHT);
+        tree.next(HEIGHT);
+        assert_eq!(tree.selected().map(MdFile::name), Some("c.md"));
+
+        tree.replace_files(scan(&["a.md", "b.md", "c.md"]), HEIGHT);
+
+        assert_eq!(listed(&tree), ["a.md", "b.md", "c.md"]);
+        assert_eq!(tree.selected().map(MdFile::name), Some("c.md"));
+    }
+
+    #[test]
+    fn replacing_files_follows_the_selection_to_its_new_page() {
+        let names = (0..20).map(|i| format!("{i:02}.md")).collect::<Vec<_>>();
+        let names = names.iter().map(String::as_str).collect::<Vec<_>>();
+        let mut tree = tree(&names[1..]);
+        tree.first();
+        for _ in 0..4 {
+            tree.next(HEIGHT);
+        }
+        let selected = tree.selected().map(|file| file.name.clone());
+        let before = tree.page;
+        assert_eq!(before, 0);
+
+        let mut grown = (0..10).map(|i| format!("new{i}.md")).collect::<Vec<_>>();
+        grown.extend(names[1..].iter().map(ToString::to_string));
+        let grown = grown.iter().map(String::as_str).collect::<Vec<_>>();
+        tree.replace_files(scan(&grown), HEIGHT);
+
+        assert_eq!(tree.selected().map(|file| file.name.clone()), selected);
+        let index = tree.state().selected().expect("selection");
+        assert_eq!(tree.page as usize, index / tree.partition(HEIGHT));
+        assert!(tree.page > before);
+    }
+
+    #[test]
+    fn replacing_files_clears_the_selection_of_a_removed_file() {
+        let mut tree = tree(&["a.md", "b.md"]);
+        tree.next(HEIGHT);
+        tree.next(HEIGHT);
+
+        tree.replace_files(scan(&["a.md"]), HEIGHT);
+
+        assert_eq!(listed(&tree), ["a.md"]);
+        assert!(tree.selected().is_none());
+    }
+
+    #[test]
+    fn replacing_files_keeps_an_active_search() {
+        let mut tree = tree(&["alpha.md", "beta.md"]);
+        tree.search(Some("alpha"));
+
+        tree.replace_files(scan(&["alpha.md", "alpha2.md", "beta.md"]), HEIGHT);
+
+        assert_eq!(listed(&tree), ["alpha.md", "alpha2.md"]);
+        assert_eq!(tree.all_files().len(), 3);
+    }
+
+    #[test]
+    fn replacing_files_keeps_the_name_sort() {
+        // sort_name orders by the path after its leading letters.
+        let mut tree = tree(&["b2.md", "a1.md"]);
+        tree.sort_name();
+        assert_eq!(listed(&tree), ["a1.md", "b2.md"]);
+
+        tree.replace_files(scan(&["c3.md", "b2.md", "a1.md"]), HEIGHT);
+        assert_eq!(listed(&tree), ["a1.md", "b2.md", "c3.md"]);
+
+        tree.search(None);
+        tree.replace_files(scan(&["c3.md", "b2.md", "a1.md"]), HEIGHT);
+        assert_eq!(listed(&tree), ["c3.md", "b2.md", "a1.md"]);
     }
 }
