@@ -4,13 +4,16 @@ use crossterm::event::KeyCode;
 use notify::{PollWatcher, Watcher};
 
 use crate::{
-    nodes::{root::ComponentRoot, word::WordType},
+    nodes::{
+        root::{ComponentRoot, heading_at_offset},
+        word::WordType,
+    },
     pages::file_explorer::FileTree,
     parser::parse_markdown,
     util::{
         App, Boxes, Jump, LinkType, Mode,
         general::GENERAL_CONFIG,
-        keys::{Action, key_to_action},
+        keys::{Action, KEY_CONFIG, key_to_action},
     },
 };
 
@@ -35,6 +38,10 @@ pub fn handle_keyboard_input(
         } else {
             KeyBoardAction::Continue
         };
+    }
+    if app.headings_open {
+        handle_heading_popup(key, app, markdown, height);
+        return KeyBoardAction::Continue;
     }
     if key == KeyCode::Char('q') && app.boxes == Boxes::None && !app.annotation_selected {
         return KeyBoardAction::Exit;
@@ -504,6 +511,19 @@ fn keyboard_mode_view(
                 };
             }
 
+            Action::Headings => {
+                let headings = markdown.headings();
+                if headings.is_empty() {
+                    app.message_box.set_message("No headings found".to_string());
+                    app.boxes = Boxes::Error;
+                } else {
+                    app.heading_index =
+                        heading_at_offset(&headings, app.vertical_scroll).unwrap_or(0);
+                    app.headings_open = true;
+                    app.help_box.close();
+                }
+            }
+
             Action::Search => {
                 app.search_box.clear();
                 app.search_box.set_position(2, height - 3);
@@ -715,6 +735,49 @@ fn keyboard_mode_view(
     KeyBoardAction::Continue
 }
 
+fn handle_heading_popup(key: KeyCode, app: &mut App, markdown: &mut ComponentRoot, height: u16) {
+    let headings = markdown.headings();
+    if headings.is_empty() {
+        app.headings_open = false;
+        return;
+    }
+    app.heading_index = app.heading_index.min(headings.len() - 1);
+    if matches!(key, KeyCode::Char('q') | KeyCode::Esc) || key == KeyCode::Char(KEY_CONFIG.headings)
+    {
+        app.headings_open = false;
+        return;
+    }
+    match key_to_action(key) {
+        Action::Up => app.heading_index = app.heading_index.saturating_sub(1),
+        Action::Down => app.heading_index = (app.heading_index + 1).min(headings.len() - 1),
+        Action::PageUp | Action::HalfPageUp => {
+            app.heading_index = app.heading_index.saturating_sub(heading_page_size(height));
+        }
+        Action::PageDown | Action::HalfPageDown => {
+            app.heading_index =
+                (app.heading_index + heading_page_size(height)).min(headings.len() - 1);
+        }
+        Action::ToTop => app.heading_index = 0,
+        Action::ToBottom => app.heading_index = headings.len() - 1,
+        Action::Enter => {
+            app.vertical_scroll = headings[app.heading_index]
+                .offset
+                .min(markdown.height().saturating_sub(height / 2));
+            app.headings_open = false;
+            app.selected = false;
+            app.details_selected = false;
+            app.annotation_selected = false;
+            markdown.deselect();
+            markdown.deselect_details();
+        }
+        _ => {}
+    }
+}
+
+fn heading_page_size(screen_height: u16) -> usize {
+    usize::from(screen_height.saturating_sub(6).clamp(1, 18))
+}
+
 fn view_action(key: KeyCode, annotation_selected: bool) -> Action {
     if key == KeyCode::Char('q') && annotation_selected {
         Action::Escape
@@ -821,5 +884,30 @@ mod tests {
             selected_target_message(&markdown, false).expect("footnote preview"),
             "Footnote: Supporting text"
         );
+    }
+
+    #[test]
+    fn heading_popup_can_move_jump_and_close_without_quitting() {
+        let mut markdown = parse_markdown(
+            None,
+            "# First\n\nParagraph one.\n\n## Second\n\nParagraph two.\n\n### Third\n",
+            40,
+        );
+        let mut app = App::default();
+        app.headings_open = true;
+        handle_heading_popup(KeyCode::Down, &mut app, &mut markdown, 8);
+        assert_eq!(app.heading_index, 1);
+        let target = markdown.headings()[1]
+            .offset
+            .min(markdown.height().saturating_sub(4));
+        handle_heading_popup(KeyCode::Enter, &mut app, &mut markdown, 8);
+        assert_eq!(app.vertical_scroll, target);
+        assert!(!app.headings_open);
+
+        app.headings_open = true;
+        app.vertical_scroll = 1;
+        handle_heading_popup(KeyCode::Char('q'), &mut app, &mut markdown, 8);
+        assert!(!app.headings_open);
+        assert_eq!(app.vertical_scroll, 1);
     }
 }

@@ -9,11 +9,12 @@ use std::{
     time::{Duration, Instant},
 };
 
-use md_tui::nodes::root::{Component, ComponentRoot};
+use md_tui::nodes::root::{Component, ComponentRoot, heading_at_offset};
 use md_tui::pages::file_explorer::{FileTree, MdFile};
 use md_tui::parser::parse_markdown;
 use md_tui::resume::ResumeCache;
 use md_tui::search::find_md_files_channel;
+use md_tui::util::keys::KEY_CONFIG;
 use md_tui::util::{self, App, Boxes, Mode, destruct_terminal, general::GENERAL_CONFIG};
 use md_tui::{
     event_handler::{KeyBoardAction, handle_keyboard_input},
@@ -242,6 +243,9 @@ fn run_app(terminal: &mut DefaultTerminal, mut app: App, tick_rate: Duration) ->
             if app.theme.open {
                 render_theme_chooser(f, &app.theme, GENERAL_CONFIG.help_menu);
             }
+            if app.headings_open {
+                render_heading_popup(f, &app, &markdown, GENERAL_CONFIG.help_menu);
+            }
         })?;
 
         let timeout = tick_rate
@@ -317,6 +321,75 @@ fn run_app(terminal: &mut DefaultTerminal, mut app: App, tick_rate: Duration) ->
             last_position_save = Instant::now();
         }
     }
+}
+
+fn render_heading_popup(f: &mut Frame, app: &App, markdown: &ComponentRoot, show_help: bool) {
+    let headings = markdown.headings();
+    if headings.is_empty() {
+        return;
+    }
+    let screen = f.area();
+    // Borders and the current section, plus the key hints when help is enabled.
+    let chrome: u16 = if show_help { 4 } else { 3 };
+    let width = screen.width.saturating_sub(2).min(88);
+    let rows = u16::try_from(headings.len()).unwrap_or(u16::MAX);
+    let height = screen
+        .height
+        .saturating_sub(2)
+        .min(22)
+        .min(rows.saturating_add(chrome));
+    if width < 24 || height <= chrome {
+        return;
+    }
+    let area = Rect::new(
+        (screen.width - width) / 2,
+        (screen.height - height) / 2,
+        width,
+        height,
+    );
+    let visible = usize::from(height - chrome);
+    let selected = app.heading_index.min(headings.len() - 1);
+    let first = selected
+        .saturating_sub(visible / 2)
+        .min(headings.len().saturating_sub(visible));
+    let current = heading_at_offset(&headings, app.vertical_scroll);
+    let current_title = current.map_or("Before first heading", |index| {
+        headings[index].title.as_str()
+    });
+    let mut lines = vec![Line::from(format!(
+        " Viewing: {current_title}  ({}/{})",
+        current.map_or(0, |index| index + 1),
+        headings.len()
+    ))];
+    for (index, heading) in headings.iter().enumerate().skip(first).take(visible) {
+        let cursor = if index == selected { '>' } else { ' ' };
+        let location = if Some(index) == current { '*' } else { ' ' };
+        let indent = "  ".repeat(usize::from(heading.level.saturating_sub(1)));
+        let line = Line::from(format!(" {cursor}{location} {indent}{}", heading.title));
+        lines.push(if index == selected {
+            line.reversed()
+        } else {
+            line
+        });
+    }
+    if show_help {
+        lines.push(Line::from(format!(
+            " {}/{}  {}/{}: move  Enter: jump  Esc/q: close  *: current",
+            selected + 1,
+            headings.len(),
+            KEY_CONFIG.down,
+            KEY_CONFIG.up
+        )));
+    }
+    let panel = Paragraph::new(Text::from(lines))
+        .block(Block::default().title(" Headings ").borders(Borders::ALL))
+        .style(
+            Style::default()
+                .fg(color_config().help_fg_color)
+                .bg(color_config().help_bg_color),
+        );
+    f.render_widget(Clear, area);
+    f.render_widget(panel, area);
 }
 
 fn render_theme_chooser(f: &mut Frame, chooser: &ThemeChooser, show_help: bool) {
@@ -606,8 +679,8 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
     let block = Block::default().bg(color_config().help_bg_color);
     let area = if app.help_box.expanded() {
         Rect {
-            y: size.height.saturating_sub(20),
-            height: cmp::min(19, size.height),
+            y: size.height.saturating_sub(21),
+            height: cmp::min(20, size.height),
             x,
             width: area.width - 1,
         }
@@ -626,7 +699,7 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
     }
 
     if app.annotation_selected && app.help_box.expanded() {
-        let status_area = Rect::new(x, size.height.saturating_sub(19), area.width, 1);
+        let status_area = Rect::new(x, size.height.saturating_sub(20), area.width, 1);
         let status = Paragraph::new(
             " ANNOTATION MODE  j/n/\u{2193} next  k/N/\u{2191} previous  Enter comment  Esc/q normal",
         )
@@ -641,8 +714,8 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
     let area = if app.help_box.expanded() {
         Rect {
             x: x + 2,
-            y: size.height.saturating_sub(19),
-            height: cmp::min(17, size.height),
+            y: size.height.saturating_sub(20),
+            height: cmp::min(18, size.height),
             width: app.width() - 5,
         }
     } else {
@@ -723,6 +796,45 @@ mod tests {
                     .collect::<String>()
             })
             .collect()
+    }
+
+    #[test]
+    fn single_heading_popup_shows_current_location_and_selection() {
+        let markdown = parse_markdown(None, "# Only heading\n\nBody.\n", 50);
+        let mut app = App::default();
+        app.headings_open = true;
+        let mut terminal = Terminal::new(TestBackend::new(60, 12)).expect("test terminal");
+        terminal
+            .draw(|frame| render_heading_popup(frame, &app, &markdown, true))
+            .expect("draw heading popup");
+        let buffer = terminal.backend().buffer();
+        let output = (0..12)
+            .map(|row| {
+                (0..60)
+                    .map(|column| buffer[(column, row)].symbol())
+                    .collect::<String>()
+            })
+            .collect::<Vec<_>>()
+            .join("\n");
+        assert!(output.contains("Headings"), "{output}");
+        assert!(output.contains("Viewing: Only heading"), "{output}");
+        assert!(output.contains(">* Only heading"), "{output}");
+        assert!(output.contains("Enter: jump"), "{output}");
+    }
+
+    #[test]
+    fn heading_popup_key_hints_follow_the_help_menu_setting() {
+        let markdown = parse_markdown(None, "# Only heading\n\nBody.\n", 50);
+        let mut app = App::default();
+        app.headings_open = true;
+        let mut terminal = Terminal::new(TestBackend::new(60, 12)).expect("test terminal");
+        terminal
+            .draw(|frame| render_heading_popup(frame, &app, &markdown, false))
+            .expect("draw heading popup");
+        let output = buffer_rows(&terminal).join("\n");
+        assert!(output.contains("Viewing: Only heading"), "{output}");
+        assert!(output.contains(">* Only heading"), "{output}");
+        assert!(!output.contains("Enter: jump"), "{output}");
     }
 
     #[test]

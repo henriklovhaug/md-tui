@@ -166,6 +166,10 @@ fn render_markdown_help(expandend: bool, area: Rect, buf: &mut Buffer) {
             "Select annotations".to_string(),
         ]),
         Row::new(vec![
+            format!("{}", KEY_CONFIG.headings),
+            "Browse headings".to_string(),
+        ]),
+        Row::new(vec![
             format!("{}", KEY_CONFIG.theme),
             "Choose theme".to_string(),
         ]),
