@@ -300,6 +300,7 @@ fn run_app(terminal: &mut DefaultTerminal, mut app: App, tick_rate: Duration) ->
                         markdown = parse_markdown(name.as_deref(), &text, app.width() - 2);
                         app.selected = false;
                         app.details_selected = false;
+                        app.annotation_selected = false;
                     }
                 }
             }
