@@ -16,6 +16,7 @@ use md_tui::resume::ResumeCache;
 use md_tui::search::find_md_files_channel;
 use md_tui::util::{self, App, Boxes, Mode, destruct_terminal, general::GENERAL_CONFIG};
 use md_tui::{
+    boxes::help_box::MARKDOWN_HELP_ROWS,
     event_handler::{KeyBoardAction, handle_keyboard_input},
     util::colors::color_config,
 };
@@ -176,6 +177,7 @@ fn run_app(terminal: &mut DefaultTerminal, mut app: App, tick_rate: Duration) ->
         }
 
         markdown.set_scroll(app.vertical_scroll);
+        app.help_box.set_mode(app.mode);
 
         terminal.draw(|f| {
             match app.mode {
@@ -511,6 +513,17 @@ fn render_path_header(f: &mut Frame, x: u16, width: u16, label: &str) {
     f.render_widget(header, Rect::new(x, 0, width, 1));
 }
 
+fn help_background_area(document_area: Rect, screen_height: u16, expanded: bool) -> Rect {
+    // When expanded: one row above the keys for the annotation status, one below them.
+    let height = if expanded { MARKDOWN_HELP_ROWS + 2 } else { 3 };
+    Rect {
+        y: screen_height.saturating_sub(height + 1),
+        height: cmp::min(height, screen_height),
+        x: document_area.x,
+        width: document_area.width,
+    }
+}
+
 fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
     let size = f.area();
 
@@ -604,21 +617,7 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
 
     // Render a block at the bottom to show the current mode
     let block = Block::default().bg(color_config().help_bg_color);
-    let area = if app.help_box.expanded() {
-        Rect {
-            y: size.height.saturating_sub(20),
-            height: cmp::min(19, size.height),
-            x,
-            width: area.width - 1,
-        }
-    } else {
-        Rect {
-            y: size.height.saturating_sub(4),
-            height: cmp::min(3, size.height),
-            x,
-            width: area.width - 1,
-        }
-    };
+    let area = help_background_area(area, size.height, app.help_box.expanded());
 
     if GENERAL_CONFIG.help_menu {
         f.render_widget(Clear, area);
@@ -626,7 +625,7 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
     }
 
     if app.annotation_selected && app.help_box.expanded() {
-        let status_area = Rect::new(x, size.height.saturating_sub(19), area.width, 1);
+        let status_area = Rect::new(x, area.y, area.width, 1);
         let status = Paragraph::new(
             " ANNOTATION MODE  j/n/\u{2193} next  k/N/\u{2191} previous  Enter comment  Esc/q normal",
         )
@@ -641,8 +640,8 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
     let area = if app.help_box.expanded() {
         Rect {
             x: x + 2,
-            y: size.height.saturating_sub(19),
-            height: cmp::min(17, size.height),
+            y: size.height.saturating_sub(MARKDOWN_HELP_ROWS + 2),
+            height: cmp::min(MARKDOWN_HELP_ROWS, size.height),
             width: app.width() - 5,
         }
     } else {
@@ -797,6 +796,26 @@ mod tests {
             .map(|column| buffer[(column, 0)].symbol())
             .collect::<String>();
         assert!(!first_row.contains("Directory:"), "{first_row}");
+    }
+
+    #[test]
+    fn help_background_clears_the_last_document_column() {
+        let screen = Rect::new(0, 0, 8, 6);
+        let document = Rect::new(2, 0, 5, 6);
+
+        for (expanded, row) in [(true, 1), (false, 3)] {
+            let mut buffer = ratatui::buffer::Buffer::empty(screen);
+            buffer[(6, row)].set_symbol("Z");
+            buffer[(7, row)].set_symbol("│");
+
+            Clear.render(
+                help_background_area(document, screen.height, expanded),
+                &mut buffer,
+            );
+
+            assert_eq!(buffer[(6, row)].symbol(), " ");
+            assert_eq!(buffer[(7, row)].symbol(), "│");
+        }
     }
 
     #[test]

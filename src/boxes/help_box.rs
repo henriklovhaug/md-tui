@@ -8,6 +8,9 @@ use ratatui::{
 
 use crate::util::{Mode, colors::color_config, keys::KEY_CONFIG};
 
+/// Lines in the expanded document help: the header and one per key.
+pub const MARKDOWN_HELP_ROWS: u16 = 18;
+
 #[derive(Debug, Clone, Copy, Default)]
 pub struct HelpBox {
     mode: Mode,
@@ -184,4 +187,20 @@ fn render_markdown_help(expandend: bool, area: Rect, buf: &mut Buffer) {
         .fg(color_config().help_fg_color);
 
     table.render(area, buf);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn expanded_document_help_fits_its_declared_height() {
+        let area = Rect::new(0, 0, 60, MARKDOWN_HELP_ROWS);
+        let mut buffer = Buffer::empty(area);
+        render_markdown_help(true, area, &mut buffer);
+        let last_row = (0..area.width)
+            .map(|column| buffer[(column, area.height - 1)].symbol())
+            .collect::<String>();
+        assert!(last_row.contains("Quit"), "{last_row}");
+    }
 }
