@@ -107,17 +107,17 @@ impl Widget for TextComponent {
     }
 }
 
-fn selected_style() -> Style {
-    let colors = color_config();
-    if colors.link_selected_fg_color == Color::Reset
-        && colors.link_selected_bg_color == Color::Reset
-    {
+fn marked_style(fg: Color, bg: Color) -> Style {
+    if fg == Color::Reset && bg == Color::Reset {
         Style::default().add_modifier(Modifier::REVERSED)
     } else {
-        Style::default()
-            .fg(colors.link_selected_fg_color)
-            .bg(colors.link_selected_bg_color)
+        Style::default().fg(fg).bg(bg)
     }
+}
+
+fn selected_style() -> Style {
+    let colors = color_config();
+    marked_style(colors.link_selected_fg_color, colors.link_selected_bg_color)
 }
 
 fn style_word_content<'a>(word: &Word, content: impl Into<Cow<'a, str>>) -> Span<'a> {
@@ -128,12 +128,16 @@ fn style_word_content<'a>(word: &Word, content: impl Into<Cow<'a, str>>) -> Span
         | WordType::CriticComment => unreachable!(),
         WordType::Selected => Span::styled(content, selected_style()),
         WordType::Normal => Span::raw(content),
-        WordType::CriticHighlight => Span::styled(
-            content,
-            Style::default()
-                .fg(color_config().critic_highlight_fg_color)
-                .bg(color_config().critic_highlight_bg_color),
-        ),
+        WordType::CriticHighlight => {
+            let colors = color_config();
+            Span::styled(
+                content,
+                marked_style(
+                    colors.critic_highlight_fg_color,
+                    colors.critic_highlight_bg_color,
+                ),
+            )
+        }
         WordType::Code => Span::styled(content, Style::default().fg(color_config().code_fg_color))
             .bg(color_config().code_bg_color),
         WordType::Link | WordType::FootnoteInline => {
@@ -701,6 +705,18 @@ mod tests {
         assert_eq!(
             style_heading(&selected, 2).style,
             style_word_content(&selected, selected.content()).style
+        );
+    }
+
+    #[test]
+    fn marks_without_colors_fall_back_to_reversed_video() {
+        assert_eq!(
+            marked_style(Color::Reset, Color::Reset),
+            Style::default().add_modifier(Modifier::REVERSED)
+        );
+        assert_eq!(
+            marked_style(Color::Black, Color::Reset),
+            Style::default().fg(Color::Black).bg(Color::Reset)
         );
     }
 
