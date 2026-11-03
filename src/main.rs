@@ -124,6 +124,7 @@ fn run_app(terminal: &mut DefaultTerminal, mut app: App, tick_rate: Duration) ->
     let browse_dir = env::current_dir()
         .map(|path| path.display().to_string())
         .unwrap_or_else(|_| "(unknown directory)".to_string());
+    let mut last_drawn_height = terminal.size()?.height;
 
     loop {
         let height = terminal.size()?.height;
@@ -151,28 +152,28 @@ fn run_app(terminal: &mut DefaultTerminal, mut app: App, tick_rate: Duration) ->
                 break;
             }
         }
-        if app.set_width(terminal.size()?.width - 1) {
-            let url = if let Some(url) = markdown.file_name() {
-                url
-            } else if app.mode == Mode::View {
-                app.vertical_scroll = 0;
-                markdown = parse_markdown(None, &stdin_buf, app.width() - 2);
-                continue;
+        if app.set_width(terminal.size()?.width.saturating_sub(1)) && app.mode == Mode::View {
+            let text = if let Some(path) = markdown.file_name() {
+                if let Ok(file) = read_to_string(path) {
+                    file
+                } else {
+                    app.message_box
+                        .set_message(format!("Could not open file {path:?}"));
+                    app.boxes = Boxes::Error;
+                    app.mode = Mode::FileTree;
+                    continue;
+                }
             } else {
-                app.mode = Mode::FileTree;
-                continue;
+                stdin_buf.clone()
             };
-            let text = if let Ok(file) = read_to_string(url) {
-                app.vertical_scroll = 0;
-                file
-            } else {
-                app.message_box
-                    .set_message(format!("Could not open file {:?}", markdown.file_name()));
-                app.boxes = Boxes::Error;
-                app.mode = Mode::FileTree;
-                continue;
-            };
-            markdown = parse_markdown(markdown.file_name(), &text, app.width() - 2);
+            reflow_markdown(
+                &mut markdown,
+                &text,
+                app.width().saturating_sub(2),
+                &mut app.vertical_scroll,
+                last_drawn_height,
+                height,
+            );
         }
 
         markdown.set_scroll(app.vertical_scroll);
@@ -243,6 +244,7 @@ fn run_app(terminal: &mut DefaultTerminal, mut app: App, tick_rate: Duration) ->
                 render_theme_chooser(f, &app.theme, GENERAL_CONFIG.help_menu);
             }
         })?;
+        last_drawn_height = height;
 
         let timeout = tick_rate
             .checked_sub(last_tick.elapsed())
@@ -447,6 +449,23 @@ fn append_theme_prompt(lines: &mut Vec<Line<'static>>, chooser: &ThemeChooser) {
             lines.push(Line::from(" Delete selected theme?"));
         }
     }
+}
+
+fn reflow_markdown(
+    markdown: &mut ComponentRoot,
+    text: &str,
+    width: u16,
+    scroll: &mut u16,
+    old_height: u16,
+    new_height: u16,
+) {
+    let source_line = (*scroll > 0).then(|| {
+        markdown.set_scroll(*scroll);
+        markdown.source_line_at_scroll(*scroll, old_height)
+    });
+    let name = markdown.file_name().map(str::to_owned);
+    *markdown = parse_markdown(name.as_deref(), text, width);
+    *scroll = source_line.map_or(0, |line| markdown.scroll_for_source_line(line, new_height));
 }
 
 fn restore_position(
@@ -838,5 +857,56 @@ mod tests {
         ratatui::widgets::StatefulWidget::render(scrollbar, area, &mut buffer, &mut state);
 
         assert_eq!(buffer[(0, 9)].symbol(), "┃");
+    }
+    #[test]
+    fn resizing_at_the_top_stays_at_the_top() {
+        let text =
+            "A deliberately long paragraph that wraps differently in narrow and wide panes.\n\n"
+                .repeat(40);
+        let mut markdown = parse_markdown(Some("example.md"), &text, 78);
+        let mut scroll = 0;
+
+        reflow_markdown(&mut markdown, &text, 38, &mut scroll, 20, 20);
+
+        assert_eq!(scroll, 0);
+    }
+
+    #[test]
+    fn resizing_keeps_the_viewed_source_block() {
+        let text = (0..40)
+            .map(|i| {
+                format!(
+                    "## Section {i}\n\nA deliberately long paragraph that wraps differently in narrow and wide panes.\n\n"
+                )
+            })
+            .collect::<String>();
+
+        for at_end in [false, true] {
+            let mut markdown = parse_markdown(Some("example.md"), &text, 78);
+            let old_height = 20;
+            let new_height = 12;
+            let mut scroll = if at_end {
+                markdown.height().saturating_sub(old_height / 2)
+            } else {
+                markdown.scroll_for_source_line(80, old_height)
+            };
+            markdown.set_scroll(scroll);
+            let source_line = markdown.source_line_at_scroll(scroll, old_height);
+            assert!(source_line > 1);
+
+            reflow_markdown(
+                &mut markdown,
+                &text,
+                38,
+                &mut scroll,
+                old_height,
+                new_height,
+            );
+            markdown.set_scroll(scroll);
+            assert_eq!(
+                markdown.source_line_at_scroll(scroll, new_height),
+                source_line
+            );
+        }
     }
 }
