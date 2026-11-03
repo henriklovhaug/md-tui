@@ -144,7 +144,6 @@ pub fn keyboard_mode_file_tree(
                 *markdown = parse_markdown(Some(file.path_str()), &text, app.width() - 2);
                 let _ = watcher.watch(file.path(), notify::RecursiveMode::NonRecursive);
                 app.mode = Mode::View;
-                app.help_box.set_mode(Mode::View);
                 app.select_index = 0;
             }
             Action::Search => {
@@ -172,12 +171,10 @@ pub fn keyboard_mode_file_tree(
                     let _ = watcher.watch(path, notify::RecursiveMode::NonRecursive);
                     app.reset();
                     app.mode = Mode::View;
-                    app.help_box.set_mode(Mode::View);
                 }
                 Jump::FileTree => {
                     markdown.clear();
                     app.mode = Mode::FileTree;
-                    app.help_box.set_mode(Mode::FileTree);
                 }
             },
             Action::Help if GENERAL_CONFIG.help_menu => {
@@ -514,7 +511,6 @@ fn keyboard_mode_view(
 
             Action::ToFileTree => {
                 app.mode = Mode::FileTree;
-                app.help_box.set_mode(Mode::FileTree);
                 if let Some(file) = markdown.file_name() {
                     app.history.push(Jump::File(file.to_string()));
                 }
@@ -696,12 +692,10 @@ fn keyboard_mode_view(
                     let _ = watcher.watch(path, notify::RecursiveMode::NonRecursive);
                     app.reset();
                     app.mode = Mode::View;
-                    app.help_box.set_mode(Mode::View);
                 }
                 Jump::FileTree => {
                     markdown.clear();
                     app.mode = Mode::FileTree;
-                    app.help_box.set_mode(Mode::FileTree);
                 }
             },
 
