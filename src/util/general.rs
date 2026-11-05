@@ -16,6 +16,7 @@ pub struct GeneralConfig {
     pub image_max_height: u16,
     pub remember_position: bool,
     pub position_cache_ttl_minutes: u64,
+    pub escape_quits: bool,
 }
 
 #[derive(Debug, Deserialize)]
@@ -64,5 +65,10 @@ pub static GENERAL_CONFIG: LazyLock<GeneralConfig> = LazyLock::new(|| {
         position_cache_ttl_minutes: settings
             .get::<u64>("position_cache_ttl_minutes")
             .unwrap_or(60),
+        // The "_" env separator delivers MDT_ESCAPE_QUITS as `escape.quits`.
+        escape_quits: settings
+            .get::<bool>("escape.quits")
+            .or_else(|_| settings.get::<bool>("escape_quits"))
+            .unwrap_or(false),
     }
 });
