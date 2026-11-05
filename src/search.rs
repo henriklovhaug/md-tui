@@ -570,4 +570,40 @@ your markdown notes, or opening external links from someones README.
         assert_eq!(markdown.search_results_heights(), Vec::<usize>::new());
         let _ = markdown.content();
     }
+
+    #[test]
+    fn test_sort_name_orders_by_file_name() {
+        let mut tree = FileTree::new();
+        for (path, name) in [
+            ("./zebra.md", "zebra.md"),
+            ("./Mango.md", "Mango.md"),
+            ("./notes/alpha.md", "alpha.md"),
+            ("./b/same.md", "same.md"),
+            ("./a/same.md", "same.md"),
+            ("./apple.md", "apple.md"),
+        ] {
+            tree.add_file(MdFile::new(path.to_string(), name.to_string()));
+        }
+
+        // A second press keeps the order.
+        for _ in 0..2 {
+            tree.sort_name();
+            let paths = tree
+                .files()
+                .iter()
+                .map(|file| file.path_str())
+                .collect::<Vec<_>>();
+            assert_eq!(
+                paths,
+                [
+                    "./notes/alpha.md",
+                    "./apple.md",
+                    "./Mango.md",
+                    "./a/same.md",
+                    "./b/same.md",
+                    "./zebra.md",
+                ]
+            );
+        }
+    }
 }
