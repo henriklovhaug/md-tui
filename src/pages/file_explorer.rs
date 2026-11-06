@@ -137,22 +137,11 @@ impl FileTree {
 
         // Sort the files in-place by name
         files.sort_unstable_by(|a, b| match (a, b) {
-            (MdFileComponent::File(fa), MdFileComponent::File(fb)) => {
-                let a = fa
-                    .path()
-                    .to_str()
-                    .unwrap()
-                    .trim_start_matches("./")
-                    .trim_start_matches(char::is_alphabetic);
-                let b = fb
-                    .path()
-                    .to_str()
-                    .unwrap()
-                    .trim_start_matches("./")
-                    .trim_start_matches(char::is_alphabetic);
-
-                b.to_lowercase().cmp(&a.to_lowercase())
-            }
+            (MdFileComponent::File(fa), MdFileComponent::File(fb)) => fb
+                .name
+                .to_lowercase()
+                .cmp(&fa.name.to_lowercase())
+                .then_with(|| fb.path.cmp(&fa.path)),
             _ => unreachable!(), // This case should not happen
         });
 
