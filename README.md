@@ -180,6 +180,7 @@ gitignore = false
 alignment = "left" # "center" | "right"
 help_menu = true # false hides it
 document_header = false # true shows the current document path
+file_tree_details = false # true shows each file's modified time and size in the file tree
 file_tree_directory_header = false # true shows the browsing directory in the file tree
 document_header_full_path = false # true shows the absolute document path, with or without document_header
 heading_style = "hashes" # "bars" renders H2-H6 with indented accent bars

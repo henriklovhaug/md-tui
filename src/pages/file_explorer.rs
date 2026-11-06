@@ -6,15 +6,23 @@ use itertools::Itertools;
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Alignment, Rect};
 use ratatui::style::Stylize;
-use ratatui::text::Text;
+use ratatui::text::{Line, Text};
 use ratatui::widgets::{HighlightSpacing, Widget};
 use ratatui::{
     style::{Modifier, Style},
     widgets::{Block, List, ListItem, ListState, StatefulWidget},
 };
+use unicode_width::UnicodeWidthStr;
 
+use super::file_details::{DETAILS_WIDTH, file_details};
 use crate::search::find_files;
 use crate::util::colors::color_config;
+use crate::util::general::GENERAL_CONFIG;
+
+/// Columns before each row, taken by the selection marker.
+const MARKER_WIDTH: usize = 2;
+/// Columns between a file name and its details.
+const DETAILS_GAP: usize = 2;
 
 #[derive(Debug, Clone)]
 enum MdFileComponent {
@@ -22,16 +30,34 @@ enum MdFileComponent {
     Spacer,
 }
 
+impl MdFileComponent {
+    fn list_item(&self, name_column: usize) -> ListItem<'static> {
+        match self {
+            Self::File(file) => file.list_item(name_column),
+            Self::Spacer => ListItem::new(Text::raw("")),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Default)]
 pub struct MdFile {
     pub path: String,
     pub name: String,
+    pub(super) details: Option<String>,
 }
 
 impl MdFile {
     #[must_use]
     pub fn new(path: String, name: String) -> Self {
-        Self { path, name }
+        let details = GENERAL_CONFIG
+            .file_tree_details
+            .then(|| file_details(Path::new(&path)))
+            .flatten();
+        Self {
+            path,
+            name,
+            details,
+        }
     }
 
     #[must_use]
@@ -48,29 +74,33 @@ impl MdFile {
     pub fn name(&self) -> &str {
         &self.name
     }
-}
 
-impl From<MdFile> for ListItem<'_> {
-    fn from(val: MdFile) -> Self {
-        let mut text = Text::default();
-        text.extend([
-            val.name.clone().fg(color_config().file_tree_name_color),
-            val.path
-                .clone()
-                .italic()
-                .fg(color_config().file_tree_path_color),
-        ]);
-        ListItem::new(text)
-    }
-}
-
-impl From<MdFileComponent> for ListItem<'_> {
-    fn from(value: MdFileComponent) -> Self {
-        match value {
-            MdFileComponent::File(f) => f.into(),
-            MdFileComponent::Spacer => ListItem::new(Text::raw("")),
+    fn list_item(&self, name_column: usize) -> ListItem<'static> {
+        let colors = color_config();
+        let mut name_row = vec![self.name.clone().fg(colors.file_tree_name_color)];
+        if let Some(details) = &self.details {
+            let padding = name_column.saturating_sub(self.name.width()) + DETAILS_GAP;
+            name_row
+                .push(format!("{}{details}", " ".repeat(padding)).fg(colors.file_tree_path_color));
         }
+        ListItem::new(vec![
+            Line::from(name_row),
+            Line::from(self.path.clone().italic().fg(colors.file_tree_path_color)),
+        ])
     }
+}
+
+/// Where the details start on a page, so they line up. A longer name pushes its own details over.
+fn name_column(items: &[MdFileComponent], width: u16) -> usize {
+    items
+        .iter()
+        .filter_map(|item| match item {
+            MdFileComponent::File(file) if file.details.is_some() => Some(file.name.width()),
+            _ => None,
+        })
+        .max()
+        .unwrap_or(0)
+        .min(usize::from(width).saturating_sub(MARKER_WIDTH + DETAILS_GAP + DETAILS_WIDTH))
 }
 
 #[derive(Debug, Clone, Default)]
@@ -352,8 +382,9 @@ impl Widget for FileTree {
         state.select(state.selected().map(|i| i % partition));
 
         let y_height = items.len() / 2 * 3;
+        let name_column = name_column(&items, area.width);
 
-        let items = List::new(items)
+        let items = List::new(items.iter().map(|item| item.list_item(name_column)))
             .block(
                 Block::default()
                     .title("MD-TUI")
