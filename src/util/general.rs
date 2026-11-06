@@ -11,6 +11,7 @@ pub struct GeneralConfig {
     pub help_menu: bool,
     pub document_header: bool,
     pub file_tree_directory_header: bool,
+    pub document_header_full_path: bool,
     pub heading_style: HeadingStyle,
     pub scrollbar: bool,
     pub image_max_height: u16,
@@ -52,9 +53,12 @@ pub static GENERAL_CONFIG: LazyLock<GeneralConfig> = LazyLock::new(|| {
             .get::<Centering>("alignment")
             .unwrap_or(Centering::Left),
         help_menu: settings.get::<bool>("help_menu").unwrap_or(true),
-        document_header: settings.get::<bool>("document_header").unwrap_or(false),
+        document_header: shows_document_header(&settings),
         file_tree_directory_header: settings
             .get::<bool>("file_tree_directory_header")
+            .unwrap_or(false),
+        document_header_full_path: settings
+            .get::<bool>("document_header_full_path")
             .unwrap_or(false),
         heading_style: settings
             .get::<HeadingStyle>("heading_style")
@@ -72,3 +76,38 @@ pub static GENERAL_CONFIG: LazyLock<GeneralConfig> = LazyLock::new(|| {
             .unwrap_or(false),
     }
 });
+
+/// The full path option is the more specific of the two, so it shows the header by itself.
+fn shows_document_header(settings: &Config) -> bool {
+    settings.get::<bool>("document_header").unwrap_or(false)
+        || settings
+            .get::<bool>("document_header_full_path")
+            .unwrap_or(false)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn shows_header_with(document_header: bool, full_path: bool) -> bool {
+        let settings = Config::builder()
+            .set_override("document_header", document_header)
+            .and_then(|builder| builder.set_override("document_header_full_path", full_path))
+            .and_then(|builder| builder.build())
+            .unwrap();
+        shows_document_header(&settings)
+    }
+
+    #[test]
+    fn document_header_is_off_by_default() {
+        assert!(!shows_document_header(&Config::default()));
+    }
+
+    #[test]
+    fn either_option_shows_the_document_header() {
+        assert!(!shows_header_with(false, false));
+        assert!(shows_header_with(true, false));
+        assert!(shows_header_with(false, true));
+        assert!(shows_header_with(true, true));
+    }
+}
