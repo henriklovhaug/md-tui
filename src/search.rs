@@ -75,11 +75,16 @@ pub fn find_md_files_channel(tx: Sender<Option<MdFile>>) {
                     continue;
                 }
 
-                tx.send(Some(MdFile::new(
-                    path_str.to_string(),
-                    path_name.to_string(),
-                )))
-                .unwrap();
+                // A newer scan replaces this one by dropping the receiver.
+                if tx
+                    .send(Some(MdFile::new(
+                        path_str.to_string(),
+                        path_name.to_string(),
+                    )))
+                    .is_err()
+                {
+                    return;
+                }
             } else if let (Some(file_name), Some(path)) = (path.file_name(), path.to_str())
                 && GENERAL_CONFIG.gitignore
                 && file_name == ".gitignore"
@@ -89,7 +94,7 @@ pub fn find_md_files_channel(tx: Sender<Option<MdFile>>) {
         }
     }
 
-    tx.send(None).unwrap();
+    let _ = tx.send(None);
 }
 
 #[must_use]
@@ -339,6 +344,13 @@ mod tests {
     };
 
     use super::*;
+
+    #[test]
+    fn test_file_scan_stops_when_the_receiver_is_gone() {
+        let (tx, rx) = std::sync::mpsc::channel();
+        drop(rx);
+        find_md_files_channel(tx);
+    }
 
     #[test]
     fn test_find() {
