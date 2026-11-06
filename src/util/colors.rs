@@ -20,7 +20,7 @@ pub struct ColorConfig {
     // Inline styles
     pub italic_color: Color,
     pub bold_color: Color,
-    pub striketrough_color: Color,
+    pub strikethrough_color: Color,
     pub bold_italic_color: Color,
     pub code_fg_color: Color,
     pub code_bg_color: Color,
@@ -78,7 +78,7 @@ pub fn read_color_config_from_file() -> ColorConfig {
             .unwrap_or(Color::Reset),
         bold_color: Color::from_str(&settings.get::<String>("bold_color").unwrap_or_default())
             .unwrap_or(Color::Reset),
-        striketrough_color: Color::from_str(
+        strikethrough_color: Color::from_str(
             &settings
                 .get_string("strikethrough_color")
                 .unwrap_or_default(),
