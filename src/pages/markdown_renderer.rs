@@ -154,7 +154,7 @@ fn style_word_content<'a>(word: &Word, content: impl Into<Cow<'a, str>>) -> Span
         WordType::Strikethrough | WordType::Footnote => Span::styled(
             content,
             Style::default()
-                .fg(color_config().striketrough_color)
+                .fg(color_config().strikethrough_color)
                 .add_modifier(Modifier::CROSSED_OUT),
         ),
         WordType::White => Span::styled(content, Style::default().fg(Color::White)),

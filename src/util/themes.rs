@@ -68,7 +68,7 @@ impl ThemePalette {
             colors: ColorConfig {
                 italic_color: r,
                 bold_color: r,
-                striketrough_color: r,
+                strikethrough_color: r,
                 bold_italic_color: r,
                 code_fg_color: r,
                 code_bg_color: r,
