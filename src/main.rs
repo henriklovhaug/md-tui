@@ -509,14 +509,26 @@ fn render_file_tree(
     if show_header {
         render_path_header(f, x, area.width, &format!("Directory: {browse_dir}"));
     }
+    let page_count_row = area.y + file_tree.height(area.height) as u16 + 2;
     f.render_widget(file_tree, area);
 
     if GENERAL_CONFIG.help_menu {
-        let area = Rect {
-            x: x + 2,
-            y: size.height.saturating_sub(14),
-            height: cmp::min(11, size.height),
-            width: app.width().saturating_sub(5),
+        let area = if app.help_box.expanded() {
+            Rect {
+                x: x + 2,
+                y: size.height.saturating_sub(14),
+                height: cmp::min(11, size.height),
+                width: app.width().saturating_sub(5),
+            }
+        } else {
+            // Where a document has it, unless the page count is there.
+            let y = size.height.saturating_sub(3);
+            Rect {
+                x: x + 2,
+                y: if y == page_count_row { y + 1 } else { y },
+                height: cmp::min(1, size.height),
+                width: app.width().saturating_sub(5),
+            }
         };
         f.render_widget(Clear, area);
         f.render_widget(app.help_box, area);
@@ -838,6 +850,39 @@ mod tests {
             .map(|column| buffer[(column, 0)].symbol())
             .collect::<String>();
         assert!(!first_row.contains("Directory:"), "{first_row}");
+    }
+
+    #[test]
+    fn closed_file_tree_help_leaves_the_files_and_page_count_visible() {
+        // 26 and 27 rows put the page count on the row the closed help would take.
+        for (height, show_header) in [
+            (24, false),
+            (26, false),
+            (27, true),
+            (40, false),
+            (60, true),
+        ] {
+            let mut tree = FileTree::new();
+            for index in 0..60 {
+                let name = format!("f{index:02}.md");
+                tree.add_file(MdFile::new(format!("./{name}"), name));
+            }
+            let tree_height = height - u16::from(show_header);
+            let files_on_page = tree.height(tree_height) / 3;
+            let mut app = App::default();
+            app.set_width(59);
+            let mut terminal = Terminal::new(TestBackend::new(60, height)).expect("test terminal");
+            terminal
+                .draw(|frame| render_file_tree(frame, &app, tree, "/project", show_header))
+                .expect("draw file tree");
+
+            let output = buffer_rows(&terminal).join("\n");
+            for index in 0..files_on_page {
+                assert!(output.contains(&format!("./f{index:02}.md")), "{output}");
+            }
+            assert!(output.contains("1/"), "{output}");
+            assert!(output.contains("? - Help"), "{output}");
+        }
     }
 
     #[test]
