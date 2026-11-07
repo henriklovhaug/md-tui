@@ -149,6 +149,7 @@ select_link_alt = 'S'
 select_details = 'D'
 # Select CriticMarkup annotations. Press <Enter> to read the selected comment.
 select_annotation = 'c'
+headings = 'H' # open the document heading navigator
 theme = 'T' # open the theme chooser
 edit = 'e'
 hover = 'K'
