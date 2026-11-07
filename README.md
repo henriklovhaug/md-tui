@@ -158,11 +158,6 @@ file_tree = 't'
 sort = 'o'
 ```
 
-Press `H` in a document to list its headings. The `*` marks the section at the
-top of the viewport; the selected row starts there. Use `j`/`k` (or arrow keys)
-to choose a heading, `u`/`d` to move by a page, Enter to jump, or Esc/`q` to
-close without moving. The binding can be changed with `headings` above.
-
 ### Colors and Misc
 
 Press `T` in the file tree or document view to choose a color theme. `Custom`
