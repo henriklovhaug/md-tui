@@ -21,8 +21,9 @@ use crate::util::general::GENERAL_CONFIG;
 
 /// Columns before each row, taken by the selection marker.
 const MARKER_WIDTH: usize = 2;
-/// Columns between a file name and its details.
-const DETAILS_GAP: usize = 2;
+/// Columns between a file name and its details. A top-level path is the name
+/// plus `./`, so three leaves a column between it and the details.
+const DETAILS_GAP: usize = 3;
 
 #[derive(Debug, Clone)]
 enum MdFileComponent {

@@ -116,11 +116,12 @@ mod tests {
             ],
             60,
         );
-        assert_eq!(rows[1], format!("  a.md            {DETAILS}"));
+        assert_eq!(rows[1], format!("  a.md             {DETAILS}"));
         assert_eq!(rows[2], "  ./a.md");
-        assert_eq!(rows[4], format!("  longer-name.md  {DETAILS}"));
+        assert_eq!(rows[4], format!("  longer-name.md   {DETAILS}"));
+        assert_eq!(rows[5], "  ./longer-name.md");
         let wide = rows[7].chars().collect::<Vec<_>>();
-        let details = wide[18..].iter().collect::<String>();
+        let details = wide[19..].iter().collect::<String>();
         assert_eq!(details, DETAILS);
     }
 
@@ -132,7 +133,7 @@ mod tests {
             44,
         );
         assert_eq!(rows[1], format!("  a.md            {DETAILS}"));
-        assert_eq!(rows[4], format!("  {long}  {}", &DETAILS[..8]));
+        assert_eq!(rows[4], format!("  {long}   {}", &DETAILS[..7]));
     }
 
     #[test]
@@ -142,6 +143,6 @@ mod tests {
             60,
         );
         assert_eq!(rows[1], "  a.md");
-        assert_eq!(rows[4], format!("  longer-name.md  {DETAILS}"));
+        assert_eq!(rows[4], format!("  longer-name.md   {DETAILS}"));
     }
 }
