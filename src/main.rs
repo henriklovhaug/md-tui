@@ -125,7 +125,7 @@ fn run_app(terminal: &mut DefaultTerminal, mut app: App, tick_rate: Duration) ->
     let browse_dir = env::current_dir()
         .map(|path| path.display().to_string())
         .unwrap_or_else(|_| "(unknown directory)".to_string());
-    let mut last_drawn_height = terminal.size()?.height;
+    let mut resize_anchor = None;
 
     loop {
         let height = terminal.size()?.height;
@@ -172,8 +172,8 @@ fn run_app(terminal: &mut DefaultTerminal, mut app: App, tick_rate: Duration) ->
                 &text,
                 app.width().saturating_sub(2),
                 &mut app.vertical_scroll,
-                last_drawn_height,
                 height,
+                &mut resize_anchor,
             );
         }
 
@@ -246,7 +246,6 @@ fn run_app(terminal: &mut DefaultTerminal, mut app: App, tick_rate: Duration) ->
                 render_theme_chooser(f, &app.theme, GENERAL_CONFIG.help_menu);
             }
         })?;
-        last_drawn_height = height;
 
         let timeout = tick_rate
             .checked_sub(last_tick.elapsed())
@@ -454,21 +453,43 @@ fn append_theme_prompt(lines: &mut Vec<Line<'static>>, chooser: &ThemeChooser) {
     }
 }
 
+/// The row at the top of the view when a run of width changes began, and the
+/// scroll the last change left.
+struct ResizeAnchor {
+    document: Option<String>,
+    top: md_tui::nodes::root::RowPosition,
+    scroll: u16,
+}
+
+/// Re-wrap the document and keep the row at the top of the view there. Each
+/// change in a run maps from where the run began, so the view does not drift.
 fn reflow_markdown(
     markdown: &mut ComponentRoot,
     text: &str,
     width: u16,
     scroll: &mut u16,
-    old_height: u16,
-    new_height: u16,
+    viewport_height: u16,
+    anchor: &mut Option<ResizeAnchor>,
 ) {
-    let source_line = (*scroll > 0).then(|| {
-        markdown.set_scroll(*scroll);
-        markdown.source_line_at_scroll(*scroll, old_height)
+    let document = markdown.file_name().map(str::to_owned);
+    let top = match anchor.take() {
+        Some(anchor) if anchor.document == document && anchor.scroll == *scroll => Some(anchor.top),
+        _ => markdown.position_of_row(*scroll),
+    };
+    let blocks = markdown.children().len();
+    *markdown = parse_markdown(document.as_deref(), text, width);
+    // The blocks only line up if the file did not change in between
+    let row = top
+        .filter(|_| markdown.children().len() == blocks)
+        .and_then(|top| markdown.row_of_position(top));
+    *scroll = row
+        .unwrap_or(*scroll)
+        .min(markdown.height().saturating_sub(viewport_height / 2));
+    *anchor = row.and(top).map(|top| ResizeAnchor {
+        document,
+        top,
+        scroll: *scroll,
     });
-    let name = markdown.file_name().map(str::to_owned);
-    *markdown = parse_markdown(name.as_deref(), text, width);
-    *scroll = source_line.map_or(0, |line| markdown.scroll_for_source_line(line, new_height));
 }
 
 fn restore_position(
@@ -953,47 +974,70 @@ mod tests {
         let mut markdown = parse_markdown(Some("example.md"), &text, 78);
         let mut scroll = 0;
 
-        reflow_markdown(&mut markdown, &text, 38, &mut scroll, 20, 20);
+        reflow_markdown(&mut markdown, &text, 38, &mut scroll, 20, &mut None);
 
         assert_eq!(scroll, 0);
     }
 
-    #[test]
-    fn resizing_keeps_the_viewed_source_block() {
-        let text = (0..40)
-            .map(|i| {
-                format!(
-                    "## Section {i}\n\nA deliberately long paragraph that wraps differently in narrow and wide panes.\n\n"
-                )
+    /// A code block with a blank line, then sections of numbered words, so a
+    /// row shows where its text comes from.
+    fn numbered_sections() -> String {
+        let sections = (0..4)
+            .map(|section| {
+                let words = (0..60).map(|word| format!("s{section}w{word:02}"));
+                let words = words.collect::<Vec<_>>().join(" ");
+                format!("## Section {section}\n\n{words}\n\n")
             })
             .collect::<String>();
+        format!("```\nfirst\n\nsecond\n```\n\n{sections}")
+    }
 
-        for at_end in [false, true] {
-            let mut markdown = parse_markdown(Some("example.md"), &text, 78);
-            let old_height = 20;
-            let new_height = 12;
-            let mut scroll = if at_end {
-                markdown.height().saturating_sub(old_height / 2)
-            } else {
-                markdown.scroll_for_source_line(80, old_height)
-            };
-            markdown.set_scroll(scroll);
-            let source_line = markdown.source_line_at_scroll(scroll, old_height);
-            assert!(source_line > 1);
+    #[test]
+    fn resizing_keeps_the_row_at_the_top() {
+        let text = numbered_sections();
+        // A heading at the top, as after following a link, a row inside a
+        // paragraph that re-wraps, and a blank line in a code block
+        for (top, below, same_line) in [
+            ("Section 2", 0, true),
+            ("s1w40", 0, false),
+            ("first", 1, true),
+        ] {
+            for (width, new_width) in [(78, 38), (38, 78)] {
+                let mut markdown = parse_markdown(Some("example.md"), &text, width);
+                let lines = markdown.content();
+                let row = lines.iter().position(|line| line.contains(top)).unwrap() + below;
+                let mut scroll = u16::try_from(row).unwrap();
 
-            reflow_markdown(
-                &mut markdown,
-                &text,
-                38,
-                &mut scroll,
-                old_height,
-                new_height,
-            );
-            markdown.set_scroll(scroll);
-            assert_eq!(
-                markdown.source_line_at_scroll(scroll, new_height),
-                source_line
-            );
+                reflow_markdown(&mut markdown, &text, new_width, &mut scroll, 20, &mut None);
+
+                let line = &markdown.content()[usize::from(scroll)];
+                if same_line {
+                    assert_eq!(line, &lines[row]);
+                } else {
+                    let first_word = lines[row].split_whitespace().next().unwrap();
+                    assert!(line.contains(first_word), "{first_word} not in {line:?}");
+                }
+            }
         }
+    }
+
+    #[test]
+    fn resizing_back_returns_to_the_same_row() {
+        let text = numbered_sections();
+        let mut markdown = parse_markdown(Some("example.md"), &text, 78);
+        let row = markdown
+            .content()
+            .iter()
+            .position(|line| line.contains("s1w30"));
+        let start = u16::try_from(row.unwrap()).unwrap();
+        let mut scroll = start;
+        let mut anchor = None;
+
+        // One column at a time, as when dragging a pane border
+        for width in (58..78).rev().chain(59..=78) {
+            reflow_markdown(&mut markdown, &text, width, &mut scroll, 20, &mut anchor);
+        }
+
+        assert_eq!(scroll, start);
     }
 }
