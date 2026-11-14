@@ -1330,6 +1330,7 @@ version = "0.11.2"
 dependencies = [
  "better-panic",
  "cc",
+ "chrono",
  "config",
  "crossterm 0.29.0",
  "dirs",
