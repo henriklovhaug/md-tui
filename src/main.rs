@@ -18,7 +18,7 @@ use md_tui::util::keys::KEY_CONFIG;
 use md_tui::util::{self, App, Boxes, Mode, destruct_terminal, general::GENERAL_CONFIG};
 use md_tui::{
     boxes::help_box::MARKDOWN_HELP_ROWS,
-    event_handler::{KeyBoardAction, handle_keyboard_input},
+    event_handler::{KeyBoardAction, handle_keyboard_input, keep_placement},
     util::colors::color_config,
 };
 
@@ -127,6 +127,7 @@ fn run_app(terminal: &mut DefaultTerminal, mut app: App, tick_rate: Duration) ->
         .map(|path| path.display().to_string())
         .unwrap_or_else(|_| "(unknown directory)".to_string());
     let mut last_drawn_height = terminal.size()?.height;
+    let mut pressed_a_key = false;
 
     loop {
         let height = terminal.size()?.height;
@@ -149,6 +150,7 @@ fn run_app(terminal: &mut DefaultTerminal, mut app: App, tick_rate: Duration) ->
                         app.vertical_scroll,
                         markdown.height().saturating_sub(height / 2),
                     );
+                    keep_placement(&mut app, &markdown, height);
                 }
 
                 break;
@@ -176,12 +178,13 @@ fn run_app(terminal: &mut DefaultTerminal, mut app: App, tick_rate: Duration) ->
                 last_drawn_height,
                 height,
             );
+            keep_placement(&mut app, &markdown, height);
         }
 
         markdown.set_scroll(app.vertical_scroll);
         app.help_box.set_mode(app.mode);
 
-        terminal.draw(|f| {
+        let draw_frame = |f: &mut Frame| {
             match app.mode {
                 Mode::View => {
                     render_markdown(f, &app, &mut markdown);
@@ -249,8 +252,15 @@ fn run_app(terminal: &mut DefaultTerminal, mut app: App, tick_rate: Duration) ->
             if app.headings_open {
                 render_heading_popup(f, &app, &markdown, GENERAL_CONFIG.help_menu);
             }
-        })?;
-        last_drawn_height = height;
+        };
+        // A key pressed with more input already queued, like an editor's `<line>G` and `k`s,
+        // shows only the end state. Resizes and other events still draw at once.
+        // Not Duration::ZERO: with crossterm's use-dev-tty, a zero poll never sees buffered keys.
+        if !(pressed_a_key && event::poll(Duration::from_millis(1))?) {
+            terminal.draw(draw_frame)?;
+            last_drawn_height = height;
+        }
+        pressed_a_key = false;
 
         let timeout = tick_rate
             .checked_sub(last_tick.elapsed())
@@ -262,9 +272,11 @@ fn run_app(terminal: &mut DefaultTerminal, mut app: App, tick_rate: Duration) ->
             if key.kind != event::KeyEventKind::Press {
                 continue;
             }
+            pressed_a_key = true;
             let previous_view = app.mode == Mode::View;
             let previous_document = markdown.file_name().map(str::to_owned);
-            let previous_source_line = markdown.source_line_at_scroll(app.vertical_scroll, height);
+            let previous_source_line =
+                markdown.source_line_at_scroll(app.vertical_scroll, app.position_height(height));
             match handle_keyboard_input(
                 key.code,
                 &mut app,
@@ -293,9 +305,9 @@ fn run_app(terminal: &mut DefaultTerminal, mut app: App, tick_rate: Duration) ->
                     if let Some(path) = markdown.file_name() {
                         let _ = resume_cache.save(path, previous_source_line);
                     }
-                    let source_line = markdown.source_line_at_scroll(app.vertical_scroll, height);
+                    // Read before the key: `e` ends a placement and its lead rows.
                     terminal.draw(|f| {
-                        open_editor(f, &mut app, markdown.file_name(), source_line);
+                        open_editor(f, &mut app, markdown.file_name(), previous_source_line);
                     })?;
                 }
                 KeyBoardAction::ThemeChanged => {
@@ -306,6 +318,7 @@ fn run_app(terminal: &mut DefaultTerminal, mut app: App, tick_rate: Duration) ->
                     let name = markdown.file_name().map(str::to_owned);
                     if app.mode == Mode::View {
                         markdown = parse_markdown(name.as_deref(), &text, app.width() - 2);
+                        keep_placement(&mut app, &markdown, height);
                         app.selected = false;
                         app.details_selected = false;
                         app.annotation_selected = false;
@@ -320,7 +333,8 @@ fn run_app(terminal: &mut DefaultTerminal, mut app: App, tick_rate: Duration) ->
             if app.mode == Mode::View
                 && let Some(path) = markdown.file_name()
             {
-                let source_line = markdown.source_line_at_scroll(app.vertical_scroll, height);
+                let source_line = markdown
+                    .source_line_at_scroll(app.vertical_scroll, app.position_height(height));
                 let _ = resume_cache.save(path, source_line);
             }
             last_position_save = Instant::now();
@@ -648,13 +662,16 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
     let header_height = u16::from(GENERAL_CONFIG.document_header && markdown.file_name().is_some());
     let area = Rect {
         width: cmp::min(app.width() - 3, size.width - 1),
-        height: if GENERAL_CONFIG.help_menu {
-            size.height.saturating_sub(5 + header_height)
-        } else {
-            size.height.saturating_sub(header_height)
-        },
+        height: GENERAL_CONFIG.document_height(size.height, markdown.file_name().is_some()),
         x,
         y: header_height,
+    };
+    // A placed line near the document's top pushes the text, not the scrollbar, down.
+    let lead = app.lead().min(area.height);
+    let text_area = Rect {
+        y: area.y + lead,
+        height: area.height - lead,
+        ..area
     };
 
     if let Some(file_name) = markdown
@@ -671,16 +688,16 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
                 if comp.is_hidden() {
                     continue;
                 }
-                if comp.y_offset().saturating_sub(comp.scroll_offset()) >= area.height
+                if comp.y_offset().saturating_sub(comp.scroll_offset()) >= text_area.height
                     || (comp.y_offset() + comp.height()).saturating_sub(comp.scroll_offset()) == 0
                 {
                     continue;
                 }
 
-                f.render_widget(comp.clone(), area);
+                f.render_widget(comp.clone(), text_area);
             }
             Component::Image(img) => {
-                if img.y_offset().saturating_sub(img.scroll_offset()) >= area.height
+                if img.y_offset().saturating_sub(img.scroll_offset()) >= text_area.height
                     || (img.y_offset() + img.height()).saturating_sub(img.scroll_offset()) == 0
                 {
                     continue;
@@ -690,7 +707,7 @@ fn render_markdown(f: &mut Frame, app: &App, markdown: &mut ComponentRoot) {
                 let y = y.clamp(i32::from(i16::MIN), i32::from(i16::MAX)) as i16;
                 if let Some(image) = img.image() {
                     let position = SignedPosition::from((0, y));
-                    f.render_widget(SlicedImage::new(image, position), area);
+                    f.render_widget(SlicedImage::new(image, position), text_area);
                 }
             }
         }
@@ -826,6 +843,7 @@ fn open_editor(f: &mut Frame, app: &mut App, file_name: Option<&str>, source_lin
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crossterm::event::KeyCode;
     use ratatui::{Terminal, backend::TestBackend, widgets::Widget};
 
     fn buffer_rows(terminal: &Terminal<TestBackend>) -> Vec<String> {
@@ -837,6 +855,52 @@ mod tests {
                     .collect::<String>()
             })
             .collect()
+    }
+
+    /// Types `keys` in the document view and returns the view and its drawn rows.
+    fn view_after(text: &str, keys: &str, height: u16) -> (App, ComponentRoot, Vec<String>) {
+        let mut markdown = parse_markdown(None, text, 58);
+        let mut app = App::default();
+        app.mode = Mode::View;
+        app.set_width(60);
+        let mut tree = FileTree::default();
+        let mut watcher = PollWatcher::new(|_| {}, Config::default()).unwrap();
+        for c in keys.chars() {
+            md_tui::event_handler::handle_keyboard_input(
+                KeyCode::Char(c),
+                &mut app,
+                &mut markdown,
+                &mut tree,
+                height,
+                &mut watcher,
+            );
+        }
+        markdown.set_scroll(app.vertical_scroll);
+        let mut terminal = Terminal::new(TestBackend::new(60, height)).expect("test terminal");
+        terminal
+            .draw(|frame| render_markdown(frame, &app, &mut markdown))
+            .expect("draw document");
+        let rows = buffer_rows(&terminal);
+        (app, markdown, rows)
+    }
+
+    #[test]
+    fn up_never_pushes_a_placed_line_out_of_the_document_area() {
+        let text = "# Title\n\nOne\ntwo\nthree\n\nFour\n\nFive\n\nSix\n\nSeven\n";
+        let (_, _, rows) = view_after(text, &format!("7G{}", "k".repeat(30)), 12);
+        assert!(rows.iter().any(|row| row.contains("Four")), "{rows:#?}");
+    }
+
+    #[test]
+    fn up_after_a_counted_bottom_lowers_the_line_past_the_top_of_the_document() {
+        let text = "# Title\n\nOne\ntwo\nthree\n\nFour\n\nFive\n\nSix\n\nSeven\n";
+        let (app, markdown, rows) = view_after(text, "7Gkkkkkk", 12);
+        let row_of_four = rows.iter().position(|row| row.contains("Four"));
+        assert_eq!(row_of_four, Some(6), "{rows:#?}");
+
+        // The line in the screen's middle row is the one saved and opened in the editor.
+        let middle = markdown.source_line_at_scroll(app.vertical_scroll, app.position_height(12));
+        assert_eq!(middle, 7);
     }
 
     #[test]

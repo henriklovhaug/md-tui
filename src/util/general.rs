@@ -21,6 +21,16 @@ pub struct GeneralConfig {
     pub escape_quits: bool,
 }
 
+impl GeneralConfig {
+    /// Rows left for the document on a screen `height` rows tall, under its header line, if a
+    /// named document shows one, and above the help bar.
+    #[must_use]
+    pub fn document_height(&self, height: u16, named: bool) -> u16 {
+        let header = u16::from(self.document_header && named);
+        height.saturating_sub(header + if self.help_menu { 5 } else { 0 })
+    }
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Centering {
