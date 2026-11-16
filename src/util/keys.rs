@@ -1,6 +1,8 @@
 use std::sync::LazyLock;
 
-use config::{Config, Environment, File};
+use config::{Config, File};
+
+use super::general;
 use crossterm::event::KeyCode;
 
 pub enum Action {
@@ -172,7 +174,7 @@ pub static KEY_CONFIG: LazyLock<KeyConfig> = LazyLock::new(|| {
     let config_file = config_dir.join(".config").join("mdt").join("config.toml");
     let settings = Config::builder()
         .add_source(File::with_name(config_file.to_str().unwrap()).required(false))
-        .add_source(Environment::with_prefix("MDT").separator("_"))
+        .add_source(general::environment())
         .build()
         .unwrap_or_default();
 

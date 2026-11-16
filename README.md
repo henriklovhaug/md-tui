@@ -190,7 +190,8 @@ image_max_height = 20 # maximum terminal rows used by an inline image
 remember_position = true # restore recently viewed documents at their last position
 position_cache_ttl_minutes = 60 # ignore older positions; 0 means never expire
 escape_quits = false # true makes Escape quit once nothing is selected or searched
-# Environment variable MDT_ESCAPE_QUITS=true does the same for one launch, e.g. inside a tmux popup
+# Any key can be set for one launch with an MDT_ environment variable, e.g. inside a tmux popup:
+# MDT_ESCAPE_QUITS=true, MDT_HELP_MENU=false
 
 # Inline styling
 bold_color = "reset"

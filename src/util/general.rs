@@ -41,10 +41,19 @@ pub static GENERAL_CONFIG: LazyLock<GeneralConfig> = LazyLock::new(|| {
     let config_file = config_dir.join(".config").join("mdt").join("config.toml");
     let settings = Config::builder()
         .add_source(File::with_name(config_file.to_str().unwrap()).required(false))
-        .add_source(Environment::with_prefix("MDT").separator("_"))
+        .add_source(environment())
         .build()
         .unwrap_or_default();
+    general_config(&settings)
+});
 
+/// `MDT_<KEY>` overrides `<key>` from the config file for one launch. The keys are flat, so
+/// there is no nesting separator: `MDT_HELP_MENU` reads as `help_menu`, not `help.menu`.
+pub fn environment() -> Environment {
+    Environment::with_prefix("MDT")
+}
+
+fn general_config(settings: &Config) -> GeneralConfig {
     let width = settings.get::<u16>("width").unwrap_or(100);
     GeneralConfig {
         // width = 0 means "use full terminal width"
@@ -54,7 +63,7 @@ pub static GENERAL_CONFIG: LazyLock<GeneralConfig> = LazyLock::new(|| {
             .get::<Centering>("alignment")
             .unwrap_or(Centering::Left),
         help_menu: settings.get::<bool>("help_menu").unwrap_or(true),
-        document_header: shows_document_header(&settings),
+        document_header: shows_document_header(settings),
         file_tree_directory_header: settings
             .get::<bool>("file_tree_directory_header")
             .unwrap_or(false),
@@ -71,13 +80,9 @@ pub static GENERAL_CONFIG: LazyLock<GeneralConfig> = LazyLock::new(|| {
         position_cache_ttl_minutes: settings
             .get::<u64>("position_cache_ttl_minutes")
             .unwrap_or(60),
-        // The "_" env separator delivers MDT_ESCAPE_QUITS as `escape.quits`.
-        escape_quits: settings
-            .get::<bool>("escape.quits")
-            .or_else(|_| settings.get::<bool>("escape_quits"))
-            .unwrap_or(false),
+        escape_quits: settings.get::<bool>("escape_quits").unwrap_or(false),
     }
-});
+}
 
 /// The full path option is the more specific of the two, so it shows the header by itself.
 fn shows_document_header(settings: &Config) -> bool {
@@ -98,6 +103,27 @@ mod tests {
             .and_then(|builder| builder.build())
             .unwrap();
         shows_document_header(&settings)
+    }
+
+    fn config_from_env(name: &str, value: &str) -> GeneralConfig {
+        let vars = [(name.to_string(), value.to_string())]
+            .into_iter()
+            .collect();
+        let settings = Config::builder()
+            .add_source(environment().source(Some(vars)))
+            .build()
+            .unwrap();
+        general_config(&settings)
+    }
+
+    #[test]
+    fn help_menu_env_var_hides_the_help_hint() {
+        assert!(!config_from_env("MDT_HELP_MENU", "false").help_menu);
+    }
+
+    #[test]
+    fn escape_quits_env_var_turns_it_on() {
+        assert!(config_from_env("MDT_ESCAPE_QUITS", "true").escape_quits);
     }
 
     #[test]

@@ -3,10 +3,11 @@ use std::{
     sync::{Arc, LazyLock, RwLock},
 };
 
-use config::{Config, ConfigBuilder, Environment, File, builder::DefaultState};
+use config::{Config, ConfigBuilder, File, builder::DefaultState};
 use ratatui::style::Color;
 use serde::{Deserialize, Serialize};
 
+use super::general;
 use crate::highlight::{DEFAULT_COLOR_MAP, HIGHLIGHT_NAMES};
 
 fn config_builder() -> ConfigBuilder<DefaultState> {
@@ -61,7 +62,7 @@ pub struct ColorConfig {
 #[must_use]
 pub fn read_color_config_from_file() -> ColorConfig {
     let settings = config_builder()
-        .add_source(Environment::with_prefix("MDT").separator("_"))
+        .add_source(general::environment())
         .build()
         .unwrap_or_default();
 
@@ -299,7 +300,7 @@ pub fn highlight_colors_from_settings(settings: &Config) -> HighlightColors {
 #[must_use]
 pub fn read_highlight_colors_from_file() -> HighlightColors {
     let settings = config_builder()
-        .add_source(Environment::with_prefix("MDT").separator("_"))
+        .add_source(general::environment())
         .build()
         .unwrap_or_default();
 
