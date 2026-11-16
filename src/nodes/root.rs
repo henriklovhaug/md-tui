@@ -272,50 +272,67 @@ impl ComponentRoot {
         }
     }
 
-    /// Return the source line for the text block at the viewport midpoint.
+    /// Records the source lines of every rendered row; `source` is the parsed markdown.
+    pub fn map_rows_to_source(&mut self, source: &str) {
+        let line_count = source.lines().count();
+        for text in self.components_mut() {
+            text.map_rows_to_source(line_count);
+        }
+    }
+
+    /// Return the source line shown at the viewport midpoint.
     #[must_use]
     pub fn source_line_at_scroll(&self, scroll: u16, viewport_height: u16) -> usize {
         let midpoint = scroll.saturating_add(viewport_height / 2);
         let mut last_source_line = 1;
-        for component in &self.components {
-            if let Component::TextComponent(text) = component
-                && !text.is_hidden()
-            {
-                last_source_line = text.source_line();
-                if text.y_offset().saturating_add(text.height()) > midpoint {
-                    return last_source_line;
-                }
+        for (y_offset, text) in self.sourced_blocks() {
+            if y_offset.saturating_add(text.height()) > midpoint {
+                return text.source_line_at_row(midpoint.saturating_sub(y_offset));
             }
+            last_source_line = text.source_lines().end - 1;
         }
         last_source_line
     }
 
-    /// Return a scroll offset that places the source block at the viewport midpoint.
+    /// Return a scroll offset that places the source line at the viewport midpoint.
     #[must_use]
     pub fn scroll_for_source_line(&self, source_line: usize, viewport_height: u16) -> u16 {
-        let mut y_offset: u16 = 0;
-        let mut matching_offset: u16 = 0;
-
-        for component in &self.components {
-            match component {
-                Component::TextComponent(text) if !text.is_hidden() => {
-                    if text.source_line() <= source_line {
-                        matching_offset = y_offset;
-                    } else {
-                        break;
-                    }
-                    y_offset = y_offset.saturating_add(text.height());
-                }
-                Component::TextComponent(_) => {}
-                Component::Image(image) => {
-                    y_offset = y_offset.saturating_add(image.height());
-                }
+        let mut row: u16 = 0;
+        for (y_offset, text) in self.sourced_blocks() {
+            let lines = text.source_lines();
+            if lines.start > source_line {
+                break;
             }
+            let row_in_block = if lines.contains(&source_line) {
+                text.row_for_source_line(source_line)
+            } else {
+                text.height() - 1
+            };
+            row = y_offset.saturating_add(row_in_block);
         }
 
-        matching_offset
-            .saturating_sub(viewport_height / 2)
+        row.saturating_sub(viewport_height / 2)
             .min(self.height().saturating_sub(viewport_height / 2))
+    }
+
+    /// Shown blocks parsed from the file, in document order, with the row each starts on as laid
+    /// out now (not as last drawn, which a details toggle makes stale).
+    fn sourced_blocks(&self) -> impl Iterator<Item = (u16, &TextComponent)> {
+        self.components
+            .iter()
+            .scan(0_u16, |y_offset, component| {
+                let top = *y_offset;
+                *y_offset = y_offset.saturating_add(component.height());
+                Some((top, component))
+            })
+            .filter_map(|(top, component)| match component {
+                Component::TextComponent(text)
+                    if text.height() > 0 && !text.source_lines().is_empty() =>
+                {
+                    Some((top, text))
+                }
+                _ => None,
+            })
     }
 
     pub fn heading_offset(&self, heading: &str) -> Result<u16, String> {

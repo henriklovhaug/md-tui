@@ -1,4 +1,7 @@
-use std::sync::atomic::{AtomicU32, Ordering};
+use std::{
+    ops::Range,
+    sync::atomic::{AtomicU32, Ordering},
+};
 
 use image::ImageReader;
 use itertools::Itertools;
@@ -65,22 +68,24 @@ pub fn parse_markdown(name: Option<&str>, content: &str, width: u16) -> Componen
 
     root.transform(width);
     root.recompute_visibility();
+    root.map_rows_to_source(content);
     root
 }
 
 fn parse_text(pair: Pair<'_, Rule>) -> ParseNode {
-    let source_line = pair.as_span().start_pos().line_col().0
+    let first_line = pair.as_span().start_pos().line_col().0
         + pair
             .as_str()
             .lines()
             .take_while(|line| line.trim().is_empty())
             .count();
+    let source_lines = first_line..first_line + pair.as_str().trim().lines().count().max(1);
     let content = if pair.as_rule() == Rule::code_line {
         pair.as_str().replace('\t', "    ").replace('\r', "")
     } else {
         pair.as_str().replace('\n', " ")
     };
-    let mut component = ParseNode::new_at_line(pair.as_rule().into(), content, source_line);
+    let mut component = ParseNode::new_at_lines(pair.as_rule().into(), content, source_lines);
     let children = parse_node_children(pair.into_inner());
     component.add_children(children);
     component
@@ -108,16 +113,16 @@ fn parse_components(parse_node: ParseNode, width: u16) -> Vec<Component> {
     if parse_node.kind() == MdParseEnum::Details {
         return parse_details(parse_node, width);
     }
-    let source_line = parse_node.source_line();
+    let source_lines = parse_node.source_lines();
     let mut component = parse_component(parse_node, width);
     if let Component::TextComponent(text) = &mut component {
-        text.set_source_line(source_line);
+        text.set_source_lines(source_lines);
     }
     vec![component]
 }
 
 fn parse_details(parse_node: ParseNode, width: u16) -> Vec<Component> {
-    let source_line = parse_node.source_line();
+    let mut summary_lines = parse_node.source_lines().start..parse_node.source_lines().start + 1;
     let mut header_text = String::from("Details");
     let mut body_components: Vec<Component> = Vec::new();
     let mut open_attr_present = false;
@@ -128,6 +133,7 @@ fn parse_details(parse_node: ParseNode, width: u16) -> Vec<Component> {
                 open_attr_present = true;
             }
             MdParseEnum::DetailsSummary => {
+                summary_lines = child.source_lines();
                 let text: String = get_leaf_nodes(child)
                     .into_iter()
                     .map(|n| n.content().to_string())
@@ -164,7 +170,7 @@ fn parse_details(parse_node: ParseNode, width: u16) -> Vec<Component> {
         },
         vec![Word::new(header_text, WordType::Normal)],
     );
-    summary.set_source_line(source_line);
+    summary.set_source_lines(summary_lines);
     out.push(Component::TextComponent(summary));
     out.extend(body_components);
     out
@@ -258,7 +264,7 @@ fn parse_component(parse_node: ParseNode, width: u16) -> Component {
                     let comp = Word::new(" ".to_owned(), word_type);
                     words.push(comp);
                 }
-                words.push(Word::new(content, word_type));
+                words.push(Word::new(content, word_type).at_line(node.source_lines().start));
             }
             Component::TextComponent(TextComponent::new(TextNode::Task, words))
         }
@@ -279,7 +285,7 @@ fn parse_component(parse_node: ParseNode, width: u16) -> Component {
                     let comp = Word::new(" ".to_owned(), word_type);
                     words.push(comp);
                 }
-                words.push(Word::new(content, word_type));
+                words.push(Word::new(content, word_type).at_line(node.source_lines().start));
             }
             if let Some(w) = words.first_mut() {
                 w.set_content(w.content().trim_start().to_owned());
@@ -327,7 +333,7 @@ fn parse_component(parse_node: ParseNode, width: u16) -> Component {
                     let comp = Word::new(" ".to_owned(), word_type);
                     words.push(comp);
                 }
-                words.push(Word::new(content, word_type));
+                words.push(Word::new(content, word_type).at_line(node.source_lines().start));
             }
 
             if let Some(w) = words
@@ -359,7 +365,7 @@ fn parse_component(parse_node: ParseNode, width: u16) -> Component {
                     let comp = Word::new(" ".to_owned(), word_type);
                     words.push(comp);
                 }
-                words.push(Word::new(content, word_type));
+                words.push(Word::new(content, word_type).at_line(node.source_lines().start));
             }
             if let Some(w) = words.first_mut() {
                 w.set_content(w.content().trim_start().to_owned());
@@ -423,7 +429,8 @@ fn parse_component(parse_node: ParseNode, width: u16) -> Component {
                         inner_words.push(comp);
                     }
 
-                    inner_words.push(Word::new(content, word_type));
+                    inner_words
+                        .push(Word::new(content, word_type).at_line(node.source_lines().start));
                 }
                 if kind == MdParseEnum::UnorderedList {
                     inner_words.push(Word::new(
@@ -476,7 +483,8 @@ fn parse_component(parse_node: ParseNode, width: u16) -> Component {
                         inner_words.push(comp);
                     }
 
-                    inner_words.push(Word::new(content, word_type));
+                    inner_words
+                        .push(Word::new(content, word_type).at_line(word.source_lines().start));
                 }
                 words.push(inner_words);
             }
@@ -644,22 +652,22 @@ pub struct ParseNode {
     kind: MdParseEnum,
     content: String,
     children: Vec<ParseNode>,
-    source_line: usize,
+    source_lines: Range<usize>,
 }
 
 impl ParseNode {
     #[must_use]
     pub fn new(kind: MdParseEnum, content: String) -> Self {
-        Self::new_at_line(kind, content, 1)
+        Self::new_at_lines(kind, content, 0..0)
     }
 
     #[must_use]
-    pub fn new_at_line(kind: MdParseEnum, content: String, source_line: usize) -> Self {
+    pub fn new_at_lines(kind: MdParseEnum, content: String, source_lines: Range<usize>) -> Self {
         Self {
             kind,
             content,
             children: Vec::new(),
-            source_line,
+            source_lines,
         }
     }
 
@@ -674,8 +682,8 @@ impl ParseNode {
     }
 
     #[must_use]
-    pub fn source_line(&self) -> usize {
-        self.source_line
+    pub fn source_lines(&self) -> Range<usize> {
+        self.source_lines.clone()
     }
 
     pub fn add_children(&mut self, children: Vec<ParseNode>) {
@@ -1069,9 +1077,9 @@ mod tests {
             .find(|component| matches!(component.kind(), TextNode::Table(_, _)))
             .expect("table");
 
-        assert_eq!(heading.source_line(), 1);
-        assert_eq!(paragraph.source_line(), 3);
-        assert_eq!(table.source_line(), 5);
+        assert_eq!(heading.source_lines().start, 1);
+        assert_eq!(paragraph.source_lines().start, 3);
+        assert_eq!(table.source_lines().start, 5);
 
         drop(components);
         markdown.set_scroll(0);
@@ -1081,8 +1089,191 @@ mod tests {
             .find(|component| matches!(component.kind(), TextNode::Table(_, _)))
             .expect("table")
             .y_offset();
-        assert_eq!(markdown.source_line_at_scroll(0, table_offset * 2), 5);
-        assert_eq!(markdown.scroll_for_source_line(5, 0), table_offset);
+        // Line 5 is the header row, drawn under the table's top border.
+        assert_eq!(markdown.source_line_at_scroll(table_offset + 1, 0), 5);
+        assert_eq!(markdown.scroll_for_source_line(5, 0), table_offset + 1);
+    }
+
+    const LAYOUT_SAMPLE: &str = "# Title
+
+First paragraph line one
+continues on line two
+and line three.
+
+```rust
+fn a() {}
+fn b() {}
+fn c() {}
+```
+
+| A | B |
+|---|---|
+| 1 | 2 |
+| 3 | 4 |
+
+- apple
+- banana
+- cherry
+
+Last.
+";
+
+    /// The row the document shows `text` on, rendered as `mdt` draws it with no scroll.
+    fn row_showing(markdown: &mut ComponentRoot, text: &str) -> u16 {
+        use ratatui::{buffer::Buffer, layout::Rect, widgets::Widget};
+        markdown.set_scroll(0);
+        let area = Rect::new(0, 0, 80, markdown.height());
+        let mut buffer = Buffer::empty(area);
+        for component in markdown.components() {
+            component.clone().render(area, &mut buffer);
+        }
+        (0..area.height)
+            .find(|&row| {
+                (0..area.width)
+                    .map(|column| buffer[(column, row)].symbol())
+                    .collect::<String>()
+                    .contains(text)
+            })
+            .unwrap_or_else(|| panic!("{text:?} is not on screen"))
+    }
+
+    #[test]
+    fn every_line_of_a_code_block_table_or_list_maps_to_the_row_that_shows_it() {
+        let mut markdown = parse_markdown(None, LAYOUT_SAMPLE, 80);
+        assert_lines_on_their_rows(
+            &mut markdown,
+            &[
+                (8, "fn a"),
+                (9, "fn b"),
+                (10, "fn c"),
+                (13, "A"),
+                (15, "1"),
+                (16, "3"),
+                (18, "apple"),
+                (19, "banana"),
+                (20, "cherry"),
+                (22, "Last."),
+            ],
+        );
+    }
+
+    /// Checks that each `(source line, text)` maps to the row showing `text`, and back.
+    fn assert_lines_on_their_rows(markdown: &mut ComponentRoot, expected: &[(usize, &str)]) {
+        for &(source_line, text) in expected {
+            let row = row_showing(markdown, text);
+            assert_eq!(
+                markdown.scroll_for_source_line(source_line, 0),
+                row,
+                "line {source_line} ({text})"
+            );
+            assert_eq!(
+                markdown.source_line_at_scroll(row, 0),
+                source_line,
+                "row {row} ({text})"
+            );
+        }
+    }
+
+    #[test]
+    fn each_line_of_a_rewrapped_paragraph_maps_to_the_row_where_it_starts() {
+        let mut markdown = parse_markdown(None, LAYOUT_SAMPLE, 30);
+        assert_lines_on_their_rows(&mut markdown, &[(3, "First"), (4, "continues")]);
+    }
+
+    #[test]
+    fn each_line_of_a_wrapped_paragraph_maps_to_the_row_where_it_starts() {
+        let mut markdown = parse_markdown(None, "aaaa bbbb cccc dddd\neeee ffff\ngggg\n", 12);
+        assert_lines_on_their_rows(&mut markdown, &[(1, "aaaa"), (2, "eeee"), (3, "gggg")]);
+    }
+
+    #[test]
+    fn the_lines_after_an_empty_quote_line_keep_their_rows() {
+        let mut markdown =
+            parse_markdown(None, "> alphaaaaaaa\n>\n> betaaaaaaaa\n> gammaaaaaaa\n", 14);
+        assert_lines_on_their_rows(&mut markdown, &[(1, "alpha"), (3, "beta"), (4, "gamma")]);
+    }
+
+    #[test]
+    fn a_table_on_the_first_line_maps_its_header_to_the_header_row() {
+        let mut markdown = parse_markdown(None, "| Head | B |\n|---|---|\n| 1 | 2 |\n", 80);
+        assert_lines_on_their_rows(&mut markdown, &[(1, "Head"), (3, "1")]);
+    }
+
+    #[test]
+    fn each_line_of_an_indented_code_block_maps_to_its_row() {
+        let mut markdown = parse_markdown(None, "Intro\n\n    c1\n    c2\n    c3\n\nEnd\n", 80);
+        assert_lines_on_their_rows(
+            &mut markdown,
+            &[(3, "c1"), (4, "c2"), (5, "c3"), (7, "End")],
+        );
+    }
+
+    #[test]
+    fn a_line_that_starts_mid_row_maps_to_that_row() {
+        let mut markdown = parse_markdown(None, "aaaa bbbb\ncccc dddd eeee ffff\n", 15);
+        let row = row_showing(&mut markdown, "bbbb cccc");
+        assert_eq!(markdown.scroll_for_source_line(2, 0), row);
+    }
+
+    #[test]
+    fn a_wrapped_list_item_does_not_shift_the_items_around_it() {
+        let mut markdown = parse_markdown(
+            None,
+            "- apple\n- a very long banana item that wraps a lot here\n- cherry\n",
+            20,
+        );
+        assert_lines_on_their_rows(
+            &mut markdown,
+            &[(1, "apple"), (2, "a very long"), (3, "cherry")],
+        );
+    }
+
+    #[test]
+    fn a_footnote_definition_takes_no_row_and_does_not_break_the_mapping() {
+        for text in [
+            "Para\n\n[^1]: a\n[^2]: b\n\nAfter\n",
+            "# H\n[^1]: the note\nAfter\n",
+            "```\ncode\n```\n[^1]: note\n",
+        ] {
+            let mut markdown = parse_markdown(None, text, 80);
+            markdown.set_scroll(0);
+            let file_lines = 1..=text.lines().count();
+            for scroll in 0..=markdown.height() {
+                assert!(file_lines.contains(&markdown.source_line_at_scroll(scroll, 0)));
+            }
+        }
+    }
+
+    #[test]
+    fn the_bottom_of_the_document_maps_to_a_line_of_the_file() {
+        let text = "Para one\n\nPara two\n\n\n\nPara three\n";
+        let mut markdown = parse_markdown(None, text, 80);
+        markdown.set_scroll(0);
+        let bottom = markdown.height().saturating_sub(1);
+        assert!(markdown.source_line_at_scroll(bottom, 0) <= text.lines().count());
+    }
+
+    #[test]
+    fn opening_a_details_block_moves_the_lines_after_it_at_once() {
+        let mut markdown = parse_markdown(
+            None,
+            "<details>\n<summary>Sum</summary>\n\nBody one\n\nBody two\n</details>\n\nAfter\n",
+            80,
+        );
+        markdown.select_details(0).unwrap();
+        markdown.toggle_selected_details().unwrap();
+        let row = markdown.scroll_for_source_line(9, 0);
+        assert_eq!(row, row_showing(&mut markdown, "After"));
+    }
+
+    #[test]
+    fn a_details_summary_maps_to_its_summary_line() {
+        let mut markdown = parse_markdown(
+            None,
+            "<details>\n<summary>Sum</summary>\n\nBody\n</details>\n",
+            80,
+        );
+        assert_lines_on_their_rows(&mut markdown, &[(2, "Sum")]);
     }
 
     #[test]
