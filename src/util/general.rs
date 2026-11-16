@@ -36,20 +36,23 @@ pub enum HeadingStyle {
     Bars,
 }
 
-pub static GENERAL_CONFIG: LazyLock<GeneralConfig> = LazyLock::new(|| {
+pub static GENERAL_CONFIG: LazyLock<GeneralConfig> = LazyLock::new(|| general_config(&settings()));
+
+/// The user's settings: `~/.config/mdt/config.toml`, overridden by the environment.
+#[must_use]
+pub fn settings() -> Config {
     let config_dir = dirs::home_dir().unwrap();
     let config_file = config_dir.join(".config").join("mdt").join("config.toml");
-    let settings = Config::builder()
+    Config::builder()
         .add_source(File::with_name(config_file.to_str().unwrap()).required(false))
         .add_source(environment())
         .build()
-        .unwrap_or_default();
-    general_config(&settings)
-});
+        .unwrap_or_default()
+}
 
 /// `MDT_<KEY>` overrides `<key>` from the config file for one launch. The keys are flat, so
 /// there is no nesting separator: `MDT_HELP_MENU` reads as `help_menu`, not `help.menu`.
-pub fn environment() -> Environment {
+fn environment() -> Environment {
     Environment::with_prefix("MDT")
 }
 

@@ -3,18 +3,12 @@ use std::{
     sync::{Arc, LazyLock, RwLock},
 };
 
-use config::{Config, ConfigBuilder, File, builder::DefaultState};
+use config::Config;
 use ratatui::style::Color;
 use serde::{Deserialize, Serialize};
 
 use super::general;
 use crate::highlight::{DEFAULT_COLOR_MAP, HIGHLIGHT_NAMES};
-
-fn config_builder() -> ConfigBuilder<DefaultState> {
-    let config_dir = dirs::home_dir().unwrap();
-    let config_file = config_dir.join(".config").join("mdt").join("config.toml");
-    Config::builder().add_source(File::with_name(config_file.to_str().unwrap()).required(false))
-}
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct ColorConfig {
@@ -61,10 +55,7 @@ pub struct ColorConfig {
 
 #[must_use]
 pub fn read_color_config_from_file() -> ColorConfig {
-    let settings = config_builder()
-        .add_source(general::environment())
-        .build()
-        .unwrap_or_default();
+    let settings = general::settings();
 
     ColorConfig {
         heading_bg_color: Color::from_str(
@@ -299,10 +290,7 @@ pub fn highlight_colors_from_settings(settings: &Config) -> HighlightColors {
 
 #[must_use]
 pub fn read_highlight_colors_from_file() -> HighlightColors {
-    let settings = config_builder()
-        .add_source(general::environment())
-        .build()
-        .unwrap_or_default();
+    let settings = general::settings();
 
     highlight_colors_from_settings(&settings)
 }
@@ -331,7 +319,7 @@ pub struct HeadingColors {
 
 #[must_use]
 pub fn read_heading_colors_from_file() -> HeadingColors {
-    let settings = config_builder().build().unwrap_or_default();
+    let settings = general::settings();
 
     HeadingColors {
         level_2: settings
@@ -373,7 +361,7 @@ pub fn heading_colors() -> HeadingColors {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use config::FileFormat;
+    use config::{File, FileFormat};
 
     fn settings_from(toml: &str) -> Config {
         Config::builder()
