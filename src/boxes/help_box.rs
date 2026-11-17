@@ -9,7 +9,7 @@ use ratatui::{
 use crate::util::{Mode, colors::color_config, keys::KEY_CONFIG};
 
 /// Lines in the expanded document help: the header and one per key.
-pub const MARKDOWN_HELP_ROWS: u16 = 19;
+pub const MARKDOWN_HELP_ROWS: u16 = 20;
 
 #[derive(Debug, Clone, Copy, Default)]
 pub struct HelpBox {
@@ -143,6 +143,10 @@ fn render_markdown_help(expandend: bool, area: Rect, buf: &mut Buffer) {
         Row::new(vec![
             format!("{}", KEY_CONFIG.bottom),
             "Move to bottom".to_string(),
+        ]),
+        Row::new(vec![
+            format!("<n>{}", KEY_CONFIG.bottom),
+            "Move to source line n".to_string(),
         ]),
         Row::new(vec![
             format!("{}", KEY_CONFIG.top),

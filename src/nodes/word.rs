@@ -108,6 +108,8 @@ pub struct Word {
     content: String,
     word_type: WordType,
     previous_type: Option<WordType>,
+    /// The markdown file line this word was parsed from; 0 for words mdt adds.
+    source_line: usize,
 }
 
 impl Word {
@@ -117,7 +119,19 @@ impl Word {
             word_type,
             previous_type: None,
             content,
+            source_line: 0,
         }
+    }
+
+    #[must_use]
+    pub fn at_line(mut self, source_line: usize) -> Self {
+        self.source_line = source_line;
+        self
+    }
+
+    #[must_use]
+    pub fn source_line(&self) -> usize {
+        self.source_line
     }
 
     #[must_use]
@@ -169,6 +183,7 @@ impl Word {
             content: self.content.split_off(at),
             word_type: self.word_type,
             previous_type: self.previous_type,
+            source_line: self.source_line,
         }
     }
 }

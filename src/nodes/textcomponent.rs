@@ -1,4 +1,4 @@
-use std::cmp;
+use std::{cmp, ops::Range};
 
 use itertools::Itertools;
 use mermaid_text::render_with_width;
@@ -50,7 +50,11 @@ pub struct TextComponent {
     focused_index: usize,
     owning_details_ids: Vec<u32>,
     hidden: bool,
-    source_line: usize,
+    /// Lines of the markdown file this block was parsed from; empty for a block mdt added.
+    source_lines: Range<usize>,
+    /// The first and last source lines each rendered row shows, set by `map_rows_to_source`
+    /// after `transform`.
+    row_lines: Vec<(usize, usize)>,
 }
 
 impl TextComponent {
@@ -81,7 +85,8 @@ impl TextComponent {
             focused_index: 0,
             owning_details_ids: Vec::new(),
             hidden: false,
-            source_line: 1,
+            source_lines: 0..0,
+            row_lines: Vec::new(),
         }
     }
 
@@ -120,7 +125,8 @@ impl TextComponent {
             focused_index: 0,
             owning_details_ids: Vec::new(),
             hidden: false,
-            source_line: 1,
+            source_lines: 0..0,
+            row_lines: Vec::new(),
         }
     }
 
@@ -135,12 +141,56 @@ impl TextComponent {
     }
 
     #[must_use]
-    pub fn source_line(&self) -> usize {
-        self.source_line
+    pub fn source_lines(&self) -> Range<usize> {
+        self.source_lines.clone()
     }
 
-    pub fn set_source_line(&mut self, source_line: usize) {
-        self.source_line = source_line;
+    pub fn set_source_lines(&mut self, source_lines: Range<usize>) {
+        self.source_lines = source_lines;
+    }
+
+    /// Records the source lines each rendered row shows. A range past the file's `line_count`
+    /// lines (a trailing separator) is cut to it.
+    pub fn map_rows_to_source(&mut self, line_count: usize) {
+        let lines = self.source_lines.start.max(1)..self.source_lines.end.min(line_count + 1);
+        let rows = usize::from(self.height);
+        if lines.is_empty() || rows == 0 {
+            self.source_lines = 0..0;
+            self.row_lines = Vec::new();
+            return;
+        }
+        self.row_lines = match &self.kind {
+            TextNode::Paragraph | TextNode::Quote | TextNode::Task | TextNode::List => {
+                rows_by_words(&self.content, &lines)
+            }
+            TextNode::Table(_, row_heights) if !row_heights.is_empty() => {
+                table_rows(&lines, row_heights)
+            }
+            TextNode::CodeBlock => code_rows(&lines, rows),
+            _ => spread(&lines, rows),
+        };
+        self.row_lines.resize(rows, (lines.end - 1, lines.end - 1));
+        self.source_lines = lines;
+    }
+
+    /// The row of this block where `source_line` starts, even mid-row.
+    #[must_use]
+    pub fn row_for_source_line(&self, source_line: usize) -> u16 {
+        let row = self
+            .row_lines
+            .partition_point(|&(_, last)| last < source_line)
+            .min(self.row_lines.len().saturating_sub(1));
+        row as u16
+    }
+
+    /// The source line `row` of this block starts with.
+    #[must_use]
+    pub fn source_line_at_row(&self, row: u16) -> usize {
+        self.row_lines
+            .get(usize::from(row))
+            .or(self.row_lines.last())
+            .map_or(self.source_lines.start, |&(first, _)| first)
+            .max(self.source_lines.start)
     }
 
     #[must_use]
@@ -531,6 +581,61 @@ impl TextComponent {
     }
 }
 
+/// The source lines of each row's first and last parsed words. A row with none (a quote's empty
+/// line) holds on to the line before it.
+fn rows_by_words(rows: &[Vec<Word>], lines: &Range<usize>) -> Vec<(usize, usize)> {
+    let mut line = lines.start;
+    rows.iter()
+        .map(|row| {
+            let mut parsed = row
+                .iter()
+                .filter(|word| word.source_line() > 0 && !word.content().trim().is_empty())
+                .map(Word::source_line);
+            let first = parsed.next().unwrap_or(line).max(line);
+            line = parsed.next_back().unwrap_or(first).max(first);
+            (first, line)
+        })
+        .collect()
+}
+
+/// A table draws a border, the header row, a separator, the body rows and a border; each body
+/// row may wrap over several rows. The top border belongs to the line before (0 before line 1),
+/// so the header line lands on the header row.
+fn table_rows(lines: &Range<usize>, row_heights: &[u16]) -> Vec<(usize, usize)> {
+    let line = |n: usize| (lines.start + n).min(lines.end - 1);
+    let mut rows = vec![lines.start - 1];
+    for (index, &height) in row_heights.iter().enumerate() {
+        let row_line = if index == 0 { line(0) } else { line(index + 1) };
+        rows.extend(std::iter::repeat_n(row_line, usize::from(height)));
+        if index == 0 {
+            rows.push(line(1));
+        }
+    }
+    rows.push(lines.end - 1);
+    rows.into_iter().map(|line| (line, line)).collect()
+}
+
+/// A fenced code block draws one row per line, its fences as blank rows. An indented block has
+/// no fence lines but still gets a blank row above and below them.
+fn code_rows(lines: &Range<usize>, rows: usize) -> Vec<(usize, usize)> {
+    if rows != lines.len() + 2 {
+        return spread(lines, rows);
+    }
+    let mut out = vec![(lines.start - 1, lines.start - 1)];
+    out.extend(lines.clone().map(|line| (line, line)));
+    out.push((lines.end - 1, lines.end - 1));
+    out
+}
+
+/// Lines spread evenly over the rows: one row per line when the counts match (a fenced code
+/// block, a heading), else an estimate (a mermaid diagram).
+fn spread(lines: &Range<usize>, rows: usize) -> Vec<(usize, usize)> {
+    (0..rows)
+        .map(|row| lines.start + row * lines.len() / rows)
+        .map(|line| (line, line))
+        .collect()
+}
+
 pub(crate) fn word_wrapping<'a>(
     words: impl IntoIterator<Item = &'a Word>,
     width: usize,
@@ -577,7 +682,7 @@ pub(crate) fn word_wrapping<'a>(
                 content.push('-');
             }
 
-            line.push(Word::new(content, word.kind()));
+            line.push(word_piece(word, content));
             lines.push(line);
 
             while display_width(&newline_content) > width {
@@ -595,7 +700,7 @@ pub(crate) fn word_wrapping<'a>(
                     content.push('-');
                 }
 
-                line = vec![Word::new(content, word.kind())];
+                line = vec![word_piece(word, content)];
                 lines.push(line);
                 newline_content = next_newline_content;
             }
@@ -605,7 +710,7 @@ pub(crate) fn word_wrapping<'a>(
                 line = Vec::new();
             } else {
                 line_len = display_width(&newline_content);
-                line = vec![Word::new(newline_content, word.kind())];
+                line = vec![word_piece(word, newline_content)];
             }
         }
     }
@@ -615,6 +720,11 @@ pub(crate) fn word_wrapping<'a>(
     }
 
     lines
+}
+
+/// Part of `word` split off by wrapping; it keeps the word's kind and source line.
+fn word_piece(word: &Word, content: String) -> Word {
+    Word::new(content, word.kind()).at_line(word.source_line())
 }
 
 fn display_width(text: &str) -> usize {

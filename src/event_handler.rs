@@ -11,7 +11,7 @@ use crate::{
     pages::file_explorer::FileTree,
     parser::parse_markdown,
     util::{
-        App, Boxes, Jump, LinkType, Mode,
+        App, Boxes, Jump, LinkType, Mode, Placement,
         general::GENERAL_CONFIG,
         keys::{Action, KEY_CONFIG, key_to_action},
     },
@@ -41,6 +41,9 @@ pub fn handle_keyboard_input(
     }
     if app.headings_open {
         handle_heading_popup(key, app, markdown, height);
+        return KeyBoardAction::Continue;
+    }
+    if goes_to_counted_line(key, app, markdown, height) {
         return KeyBoardAction::Continue;
     }
     if key == KeyCode::Char('q') && app.boxes == Boxes::None && !app.annotation_selected {
@@ -793,6 +796,65 @@ fn heading_page_size(screen_height: u16) -> usize {
     usize::from(screen_height.saturating_sub(6).clamp(1, 18))
 }
 
+/// Vim's count: digits build up a source line number and bottom then goes to it, so `42G` puts
+/// line 42 on the top row. Each `k` right after lowers it a row, past the document's top if
+/// need be, so an editor can line it up with its cursor. Any other key drops the count and the
+/// placement. Returns whether the key was used up.
+fn goes_to_counted_line(
+    key: KeyCode,
+    app: &mut App,
+    markdown: &ComponentRoot,
+    height: u16,
+) -> bool {
+    let count = app.count.take();
+    let placement = app.placement.take();
+    if app.mode != Mode::View || app.boxes != Boxes::None {
+        return false;
+    }
+    let action = view_action(key, app.annotation_selected);
+    if let (Action::None, KeyCode::Char(c)) = (&action, key)
+        && let Some(digit) = c.to_digit(10)
+    {
+        app.count = Some(
+            count
+                .unwrap_or(0)
+                .saturating_mul(10)
+                .saturating_add(digit as usize),
+        );
+        return true;
+    }
+    if let (Action::ToBottom, Some(line)) = (&action, count) {
+        app.placement = Some(Placement {
+            line,
+            screen_row: 0,
+            lead: 0,
+        });
+        keep_placement(app, markdown, height);
+        return true;
+    }
+    let selecting = app.selected || app.details_selected || app.annotation_selected;
+    if let (Action::Up, Some(mut placed), false) = (&action, placement, selecting) {
+        let rows = GENERAL_CONFIG.document_height(height, markdown.file_name().is_some());
+        placed.screen_row = (placed.screen_row + 1).min(rows.saturating_sub(1));
+        app.placement = Some(placed);
+        keep_placement(app, markdown, height);
+        return true;
+    }
+    false
+}
+
+/// Shows the placed source line on its screen row, with blank lead rows above a line near the
+/// document's top, within the scroll limit of the other moves. Called again on every new parse.
+pub fn keep_placement(app: &mut App, markdown: &ComponentRoot, height: u16) {
+    if let Some(placed) = app.placement.as_mut() {
+        let doc_row = markdown.scroll_for_source_line(placed.line, 0);
+        placed.lead = placed.screen_row.saturating_sub(doc_row);
+        app.vertical_scroll = doc_row
+            .saturating_sub(placed.screen_row)
+            .min(markdown.height().saturating_sub(height / 2));
+    }
+}
+
 fn view_action(key: KeyCode, annotation_selected: bool) -> Action {
     if key == KeyCode::Char('q') && annotation_selected {
         Action::Escape
@@ -849,6 +911,190 @@ mod tests {
 
     fn parsed(markdown: &str) -> ComponentRoot {
         parse_markdown(None, markdown, 80)
+    }
+
+    /// Types `keys`, with `⎋` standing for Escape and `⏎` for Enter.
+    fn press(keys: &str, app: &mut App, markdown: &mut ComponentRoot, height: u16) {
+        let mut watcher = PollWatcher::new(|_| {}, notify::Config::default()).unwrap();
+        let mut tree = FileTree::default();
+        for c in keys.chars() {
+            let key = match c {
+                '⎋' => KeyCode::Esc,
+                '⏎' => KeyCode::Enter,
+                _ => KeyCode::Char(c),
+            };
+            handle_keyboard_input(key, app, markdown, &mut tree, height, &mut watcher);
+        }
+    }
+
+    fn hundred_paragraphs() -> ComponentRoot {
+        let text = (1..=100)
+            .map(|n| format!("Paragraph {n}."))
+            .collect::<Vec<_>>()
+            .join("\n\n");
+        parsed(&text)
+    }
+
+    /// The source line shown on `row` of the viewport.
+    fn line_on_row(markdown: &mut ComponentRoot, app: &App, row: u16) -> usize {
+        markdown.set_scroll(app.vertical_scroll);
+        markdown.source_line_at_scroll(app.vertical_scroll + row, 0)
+    }
+
+    #[test]
+    fn a_count_before_bottom_puts_that_source_line_on_the_top_row() {
+        let height = 10;
+        let mut markdown = hundred_paragraphs();
+        let mut app = App::default();
+        app.mode = Mode::View;
+
+        press("41G", &mut app, &mut markdown, height);
+        assert_eq!(line_on_row(&mut markdown, &app, 0), 41);
+
+        press("3G", &mut app, &mut markdown, height);
+        assert_eq!(line_on_row(&mut markdown, &app, 0), 3);
+    }
+
+    #[test]
+    fn down_after_a_counted_bottom_near_the_end_never_scrolls_up() {
+        let height = 10;
+        let mut markdown = hundred_paragraphs();
+        let mut app = App::default();
+        app.mode = Mode::View;
+
+        press("199G", &mut app, &mut markdown, height);
+        let placed = app.vertical_scroll;
+        press("j", &mut app, &mut markdown, height);
+        assert!(
+            app.vertical_scroll >= placed,
+            "{placed} -> {}",
+            app.vertical_scroll
+        );
+    }
+
+    #[test]
+    fn a_new_parse_keeps_the_placed_line_on_its_row() {
+        let height = 20;
+        let mut markdown = hundred_paragraphs();
+        let mut app = App::default();
+        app.mode = Mode::View;
+        press("41Gkkk", &mut app, &mut markdown, height);
+
+        // The file is saved with four source lines added above that mdt draws on one row.
+        let text = (1..=100)
+            .map(|n| format!("Paragraph {n}."))
+            .collect::<Vec<_>>()
+            .join("\n\n");
+        let mut markdown = parsed(&format!("An\nintro\nin\nfour.\n\n{text}"));
+        keep_placement(&mut app, &markdown, height);
+        assert_eq!(line_on_row(&mut markdown, &app, 3), 41);
+
+        // Near the top, the blank rows above the document follow the new layout too.
+        press("3Gkkkkk", &mut app, &mut markdown, height);
+        assert_eq!(app.lead(), 5);
+        let markdown = parsed(&format!("One.\n\nTwo.\n\n{text}"));
+        keep_placement(&mut app, &markdown, height);
+        assert_eq!((app.vertical_scroll, app.lead()), (0, 3));
+    }
+
+    #[test]
+    fn up_after_a_counted_bottom_lowers_the_line_to_the_editor_row() {
+        let height = 20;
+        let mut markdown = hundred_paragraphs();
+        let mut app = App::default();
+        app.mode = Mode::View;
+
+        press("41Gkkk", &mut app, &mut markdown, height);
+        assert_eq!(line_on_row(&mut markdown, &app, 3), 41);
+
+        // Near the top, blank rows above the document lower it the rest of the way.
+        press("3Gkkkkk", &mut app, &mut markdown, height);
+        assert_eq!((app.vertical_scroll, app.lead()), (0, 3));
+
+        // Any other key ends the placement and its blank rows.
+        press("j", &mut app, &mut markdown, height);
+        assert_eq!(app.lead(), 0);
+    }
+
+    #[test]
+    fn up_never_lowers_a_placed_line_below_the_last_row() {
+        let height = 10;
+        let mut markdown = hundred_paragraphs();
+        let mut app = App::default();
+        app.mode = Mode::View;
+
+        press(
+            &format!("3G{}", "k".repeat(40)),
+            &mut app,
+            &mut markdown,
+            height,
+        );
+        let last_row = GENERAL_CONFIG.document_height(height, false) - 1;
+        assert_eq!(app.lead() + 2 - app.vertical_scroll, last_row);
+    }
+
+    #[test]
+    fn up_still_moves_a_link_selection_after_a_counted_bottom() {
+        let height = 10;
+        let mut markdown = parsed("[one](a)\n\n[two](b)\n\n[three](c)\n");
+        let mut app = App::default();
+        app.mode = Mode::View;
+
+        press("sjj5Gk", &mut app, &mut markdown, height);
+        assert_eq!(app.select_index, 1);
+    }
+
+    #[test]
+    fn leaving_the_view_drops_a_pending_count_and_placement() {
+        let height = 10;
+        let mut markdown = hundred_paragraphs();
+        let mut app = App::default();
+        app.mode = Mode::View;
+
+        press("3Gk4", &mut app, &mut markdown, height);
+        app.boxes = Boxes::Error;
+        press("x", &mut app, &mut markdown, height);
+        assert_eq!((app.count, app.lead()), (None, 0));
+    }
+
+    #[test]
+    fn bottom_without_a_count_still_goes_to_the_end() {
+        let height = 10;
+        let mut markdown = hundred_paragraphs();
+        let bottom = markdown.height().saturating_sub(height / 2);
+        let mut app = App::default();
+        app.mode = Mode::View;
+
+        press("G", &mut app, &mut markdown, height);
+        assert_eq!(app.vertical_scroll, bottom);
+
+        press("41jG", &mut app, &mut markdown, height);
+        assert_eq!(app.vertical_scroll, bottom);
+
+        press("?41⎋G", &mut app, &mut markdown, height);
+        assert_eq!(app.vertical_scroll, bottom);
+
+        // Digits typed into the search box are the query, not a count.
+        press("g/777⏎⏎G", &mut app, &mut markdown, height);
+        assert_eq!(app.vertical_scroll, bottom);
+    }
+
+    #[test]
+    fn a_count_too_long_for_a_line_number_goes_to_the_end() {
+        let height = 10;
+        let mut markdown = hundred_paragraphs();
+        let mut app = App::default();
+        app.mode = Mode::View;
+
+        press(
+            &format!("{}G", "9".repeat(30)),
+            &mut app,
+            &mut markdown,
+            height,
+        );
+        let end = app.vertical_scroll;
+        press("G", &mut app, &mut markdown, height);
+        assert_eq!(end, app.vertical_scroll);
     }
 
     #[test]

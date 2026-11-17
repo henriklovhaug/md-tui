@@ -63,6 +63,20 @@ pub struct App {
     pub help_box: HelpBox,
     pub link_box: LinkBox,
     pub theme: themes::ThemeChooser,
+    /// Digits typed before a key, as in vim: `42G` goes to source line 42.
+    pub count: Option<usize>,
+    /// A line put on screen by a counted bottom, which each `k` right after lowers a row.
+    pub placement: Option<Placement>,
+}
+
+/// The document row of a placed line, and the screen row it is shown on.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Placement {
+    /// The source line shown, from vim's count before bottom.
+    pub line: usize,
+    pub screen_row: u16,
+    /// Blank rows above the document that bring a line near its top down to `screen_row`.
+    pub lead: u16,
 }
 
 impl App {
@@ -78,6 +92,19 @@ impl App {
         self.heading_index = 0;
         self.boxes = Boxes::None;
         self.help_box.close();
+    }
+
+    /// Blank rows drawn above the document so a placed line near its top reaches its screen row.
+    #[must_use]
+    pub fn lead(&self) -> u16 {
+        self.placement.map_or(0, |placed| placed.lead)
+    }
+
+    /// The viewport height whose middle row is the screen's middle row once `lead` blank rows
+    /// push the document down; positions saved or opened in the editor use it.
+    #[must_use]
+    pub fn position_height(&self, height: u16) -> u16 {
+        height.saturating_sub(self.lead().saturating_mul(2))
     }
 
     pub fn set_width(&mut self, width: u16) -> bool {

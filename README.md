@@ -78,6 +78,7 @@ for configuration options.
 | `b`              | Go back to previous file (file tree if no previous file)          |
 | `g`              | Go to top of file                                                 |
 | `G`              | Go to bottom of the file                                          |
+| `<n>G`           | Show line `<n>` of the source file on the top row, e.g. `42G`     |
 | `e`              | Edit file in `$EDITOR`                                            |
 | `o`              | Sort files in file tree                                           |
 | `q`              | Quit the application                                              |
