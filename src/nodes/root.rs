@@ -318,6 +318,86 @@ impl ComponentRoot {
             .min(self.height().saturating_sub(viewport_height / 2))
     }
 
+    /// Return where document row `row` is, in terms that survive re-wrapping.
+    #[must_use]
+    pub fn position_of_row(&self, row: u16) -> Option<RowPosition> {
+        let mut y_offset: u16 = 0;
+        for (block, component) in self.components.iter().enumerate() {
+            let height = component.height();
+            if row < y_offset.saturating_add(height) {
+                let row = row - y_offset;
+                let chars = Self::row_starts(component).map(|starts| starts[usize::from(row)]);
+                return Some(RowPosition {
+                    block,
+                    row,
+                    height,
+                    chars,
+                });
+            }
+            y_offset = y_offset.saturating_add(height);
+        }
+        None
+    }
+
+    /// Return the document row at `position`, which may come from before a
+    /// re-wrap. In text, that is the row holding the same characters; in
+    /// tables and images, the row as far into the block.
+    #[must_use]
+    pub fn row_of_position(&self, position: RowPosition) -> Option<u16> {
+        let component = self.components.get(position.block)?;
+        let y_offset = self.components[..position.block]
+            .iter()
+            .fold(0u16, |y_offset, component| {
+                y_offset.saturating_add(component.height())
+            });
+        let row = match (position.chars, Self::row_starts(component)) {
+            // A row that still starts at the same character stays, blank lines in code included
+            (Some(chars), Some(starts))
+                if starts.get(usize::from(position.row)) == Some(&chars) =>
+            {
+                usize::from(position.row)
+            }
+            (Some(chars), Some(starts)) => starts
+                .iter()
+                .rposition(|&start| start <= chars)
+                .unwrap_or(0),
+            _ => {
+                usize::from(position.row) * usize::from(component.height())
+                    / usize::from(position.height.max(1))
+            }
+        };
+        Some(y_offset.saturating_add(u16::try_from(row).unwrap_or(u16::MAX)))
+    }
+
+    /// Return the visible characters before each row of a text block, or
+    /// `None` if its rows are not lines of text, as in tables.
+    fn row_starts(component: &Component) -> Option<Vec<usize>> {
+        let Component::TextComponent(text) = component else {
+            return None;
+        };
+        // A table's content is its cells
+        if matches!(text.kind(), TextNode::Table(..))
+            || text.content().len() != usize::from(text.height())
+        {
+            return None;
+        }
+        let mut chars = 0;
+        Some(
+            text.content()
+                .iter()
+                .map(|line| {
+                    let start = chars;
+                    chars += line
+                        .iter()
+                        .flat_map(|word| word.content().chars())
+                        .filter(|c| !c.is_whitespace())
+                        .count();
+                    start
+                })
+                .collect(),
+        )
+    }
+
     pub fn heading_offset(&self, heading: &str) -> Result<u16, String> {
         let mut y_offset = 0;
         for component in &self.components {
@@ -597,6 +677,16 @@ impl ComponentRoot {
         self.recompute_visibility();
         Ok(())
     }
+}
+
+/// A document row as a block, the row within it, the block's height and, for
+/// text, the visible characters before the row.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct RowPosition {
+    block: usize,
+    row: u16,
+    height: u16,
+    chars: Option<usize>,
 }
 
 pub trait ComponentProps {
